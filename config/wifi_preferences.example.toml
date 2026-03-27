@@ -1,0 +1,20 @@
+[general]
+scan_interval = 10
+connect_timeout = 8
+sync_profile_order_on_start = true
+log_level = 'INFO'
+log_file = ''
+interface_name = ''
+start_minimized_to_tray = false
+
+[[networks]]
+ssid = 'MyBestWiFi'
+auto_switch = true
+
+[[networks]]
+ssid = 'MySecondChoice'
+auto_switch = true
+
+[[networks]]
+ssid = 'PhoneHotspot'
+auto_switch = true
