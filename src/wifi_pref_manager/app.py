@@ -140,7 +140,7 @@ class Application:
         )
 
         if args.tray or config.start_minimized_to_tray:
-            tray_app = TrayApplication(service=service, logger=logger)
+            tray_app = TrayApplication(service=service, logger=logger, config_loader=loader)
             tray_app.run()
             return 0
 

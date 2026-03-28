@@ -69,6 +69,8 @@ class AppConfig:
             Path to the application log file.
         start_minimized_to_tray:
             Whether the tray app should start minimized.
+        auto_disable_wifi_on_ethernet:
+            Automatically disconnect Wi-Fi when an Ethernet connection is detected.
     """
 
     preferred_networks: list[WiFiProfilePreference] = field(default_factory=list)
@@ -79,3 +81,4 @@ class AppConfig:
     log_level: str = 'INFO'
     log_file: str = ''
     start_minimized_to_tray: bool = False
+    auto_disable_wifi_on_ethernet: bool = True

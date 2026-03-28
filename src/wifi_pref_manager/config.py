@@ -12,7 +12,8 @@ Description:
     TOML-backed configuration loading for PolyFi: Ranked.
 
 Functions:
-    None.
+    save_config:
+        Persist an AppConfig instance to a TOML file.
 
 Constants:
     DEFAULT_CONFIG_TEMPLATE:
@@ -46,6 +47,7 @@ log_level = 'INFO'
 log_file = ''
 interface_name = ''
 start_minimized_to_tray = false
+auto_disable_wifi_on_ethernet = true
 
 [[networks]]
 ssid = 'MyBestWiFi'
@@ -183,6 +185,46 @@ class ConfigLoader:
             log_level=str(general.get('log_level', 'INFO')).upper(),
             log_file=log_file,
             start_minimized_to_tray=bool(general.get('start_minimized_to_tray', False)),
+            auto_disable_wifi_on_ethernet=bool(general.get('auto_disable_wifi_on_ethernet', True)),
         )
         self.mark_loaded()
         return config
+
+
+def save_config(config: AppConfig, config_path: Path) -> None:
+    """
+    Persist an AppConfig to a TOML file.
+
+    Parameters:
+        config:
+            Application configuration to write.
+        config_path:
+            Destination path for the TOML file.
+    """
+
+    def _bool(value: bool) -> str:
+        return 'true' if value else 'false'
+
+    def _str(value: str) -> str:
+        escaped = value.replace('\\', '\\\\').replace("'", "\\'")
+        return f"'{escaped}'"
+
+    lines: list[str] = [
+        '[general]\n',
+        f'scan_interval = {config.scan_interval}\n',
+        f'connect_timeout = {config.connect_timeout}\n',
+        f'sync_profile_order_on_start = {_bool(config.sync_profile_order_on_start)}\n',
+        f'log_level = {_str(config.log_level)}\n',
+        f'log_file = {_str(config.log_file)}\n',
+        f'interface_name = {_str(config.interface_name or "")}\n',
+        f'start_minimized_to_tray = {_bool(config.start_minimized_to_tray)}\n',
+        f'auto_disable_wifi_on_ethernet = {_bool(config.auto_disable_wifi_on_ethernet)}\n',
+    ]
+
+    for network in config.preferred_networks:
+        lines.append('\n[[networks]]\n')
+        escaped_ssid = network.ssid.replace('\\', '\\\\').replace("'", "\\'")
+        lines.append(f"ssid = '{escaped_ssid}'\n")
+        lines.append(f'auto_switch = {_bool(network.auto_switch)}\n')
+
+    config_path.write_text(''.join(lines), encoding='utf-8')

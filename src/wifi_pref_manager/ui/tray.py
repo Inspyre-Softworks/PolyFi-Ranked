@@ -21,20 +21,26 @@ Dependencies:
     pystray
     PIL
     wifi_pref_manager.service
+    wifi_pref_manager.ui.settings (lazy import)
 
 Example Usage:
-    tray = TrayApplication(service=service, logger=logger)
+    tray = TrayApplication(service=service, config_loader=loader, logger=logger)
     tray.run()
 """
 
 from __future__ import annotations
 
 import logging
+import threading
+from typing import TYPE_CHECKING
 
 from PIL import Image, ImageDraw
 import pystray
 
 from wifi_pref_manager.service import WiFiPreferenceService
+
+if TYPE_CHECKING:
+    from wifi_pref_manager.ui.settings import SettingsWindow
 
 
 class TrayApplication:
@@ -46,10 +52,17 @@ class TrayApplication:
             Launch the tray icon event loop.
     """
 
-    def __init__(self, service: WiFiPreferenceService, logger: logging.Logger) -> None:
+    def __init__(
+        self,
+        service: WiFiPreferenceService,
+        logger: logging.Logger,
+        config_loader=None,
+    ) -> None:
         self.service = service
         self.logger = logger
+        self.config_loader = config_loader
         self.icon: pystray.Icon | None = None
+        self._settings_window: SettingsWindow | None = None
 
     def create_image(self) -> Image.Image:
         """
@@ -74,6 +87,24 @@ class TrayApplication:
         self.service.reload_config_if_needed()
         self.service.evaluate_and_switch()
 
+    def on_manage_networks(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        """
+        Open the network management settings window.
+        """
+        del icon, item
+        self.logger.info('Opening network settings window.')
+        if self._settings_window is None:
+            from wifi_pref_manager.ui.settings import SettingsWindow  # noqa: PLC0415
+            self._settings_window = SettingsWindow(
+                service=self.service,
+                config_loader=self.config_loader,
+                logger=self.logger,
+            )
+
+        # Run the settings window in its own thread so the tray stays responsive.
+        thread = threading.Thread(target=self._settings_window.open, daemon=True)
+        thread.start()
+
     def on_quit(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         """
         Stop the service and exit the tray app.
@@ -93,8 +124,11 @@ class TrayApplication:
             self.create_image(),
             'PolyFi: Ranked',
             menu=pystray.Menu(
+                pystray.MenuItem('Manage Networks…', self.on_manage_networks),
                 pystray.MenuItem('Rescan Now', self.on_rescan),
+                pystray.Menu.SEPARATOR,
                 pystray.MenuItem('Quit', self.on_quit),
             ),
         )
         self.icon.run()
+

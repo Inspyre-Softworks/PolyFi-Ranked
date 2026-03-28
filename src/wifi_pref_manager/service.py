@@ -85,6 +85,7 @@ class WiFiPreferenceService:
         self.on_config_reloaded = on_config_reloaded
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
+        self._wifi_disabled_by_ethernet: bool = False
 
         if not self.config.interface_name:
             self.config.interface_name = self.wifi_api.detect_wifi_interface()
@@ -197,6 +198,26 @@ class WiFiPreferenceService:
             NetshError:
                 If netsh operations fail.
         """
+        if self.config.auto_disable_wifi_on_ethernet:
+            ethernet_active = self.wifi_api.is_ethernet_connected(self.interface_name)
+            if ethernet_active:
+                current_ssid = self.wifi_api.get_current_ssid()
+                if current_ssid is not None:
+                    self.logger.info(
+                        'Ethernet connection detected. Disconnecting Wi-Fi (%r).', current_ssid
+                    )
+                    self.wifi_api.disconnect(self.interface_name)
+                    self._wifi_disabled_by_ethernet = True
+                else:
+                    if not self._wifi_disabled_by_ethernet:
+                        self.logger.debug('Ethernet active. Wi-Fi already disconnected.')
+                    self._wifi_disabled_by_ethernet = True
+                return
+            else:
+                if self._wifi_disabled_by_ethernet:
+                    self.logger.info('Ethernet disconnected. Resuming Wi-Fi preference management.')
+                    self._wifi_disabled_by_ethernet = False
+
         current_ssid = self.wifi_api.get_current_ssid()
         visible_ssids = self.wifi_api.get_visible_ssids()
         best_available = self.best_available_ssid(visible_ssids)

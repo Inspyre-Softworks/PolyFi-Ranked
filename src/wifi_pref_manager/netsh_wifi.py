@@ -59,6 +59,8 @@ class NetshWiFiApi:
             Disconnect current Wi-Fi.
         sync_profile_order:
             Set Windows profile order.
+        is_ethernet_connected:
+            Check whether a non-Wi-Fi interface is currently connected.
     """
 
     def __init__(self, logger: logging.Logger) -> None:
@@ -189,6 +191,38 @@ class NetshWiFiApi:
                 Wireless interface name.
         """
         self.run_netsh(['wlan', 'disconnect', f'interface={interface_name}'])
+
+    def is_ethernet_connected(self, wifi_interface_name: str | None = None) -> bool:
+        """
+        Check whether a non-Wi-Fi dedicated interface is currently connected.
+
+        Parameters:
+            wifi_interface_name:
+                Optional name of the wireless interface to exclude from the check.
+
+        Returns:
+            True when at least one enabled, connected, dedicated interface that
+            is not the Wi-Fi adapter is found.
+        """
+        try:
+            output = self.run_netsh(['interface', 'show', 'interface'])
+        except NetshError:
+            return False
+
+        for line in output.splitlines():
+            parts = line.split(None, 3)
+            if len(parts) < 4:
+                continue
+            admin_state, state, iface_type, iface_name = (p.strip() for p in parts)
+            if (
+                admin_state.lower() == 'enabled'
+                and state.lower() == 'connected'
+                and iface_type.lower() == 'dedicated'
+                and (wifi_interface_name is None or iface_name != wifi_interface_name)
+            ):
+                return True
+
+        return False
 
     def sync_profile_order(self, interface_name: str, ssids: list[str]) -> None:
         """
