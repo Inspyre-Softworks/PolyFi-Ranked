@@ -209,9 +209,10 @@ class WiFiPreferenceService:
                     self.wifi_api.disconnect(self.interface_name)
                     self._wifi_disabled_by_ethernet = True
                 else:
+                    # Wi-Fi is already disconnected; just log once per transition.
                     if not self._wifi_disabled_by_ethernet:
                         self.logger.debug('Ethernet active. Wi-Fi already disconnected.')
-                    self._wifi_disabled_by_ethernet = True
+                        self._wifi_disabled_by_ethernet = True
                 return
             else:
                 if self._wifi_disabled_by_ethernet:

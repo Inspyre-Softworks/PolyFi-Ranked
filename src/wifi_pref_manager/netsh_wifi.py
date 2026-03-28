@@ -61,6 +61,8 @@ class NetshWiFiApi:
             Set Windows profile order.
         is_ethernet_connected:
             Check whether a non-Wi-Fi interface is currently connected.
+        _get_all_wireless_interface_names:
+            Return the names of every WLAN adapter detected by Windows.
     """
 
     def __init__(self, logger: logging.Logger) -> None:
@@ -192,22 +194,52 @@ class NetshWiFiApi:
         """
         self.run_netsh(['wlan', 'disconnect', f'interface={interface_name}'])
 
+    def _get_all_wireless_interface_names(self) -> set[str]:
+        """
+        Return the lower-cased names of every WLAN adapter detected by Windows.
+
+        Returns:
+            Set of lower-cased wireless interface names.
+        """
+        try:
+            output = self.run_netsh(['wlan', 'show', 'interfaces'])
+        except NetshError:
+            return set()
+
+        return {
+            match.group(1).strip().lower()
+            for match in re.finditer(r'^\s*Name\s*:\s*(.+?)\s*$', output, re.MULTILINE)
+        }
+
     def is_ethernet_connected(self, wifi_interface_name: str | None = None) -> bool:
         """
         Check whether a non-Wi-Fi dedicated interface is currently connected.
 
+        On Windows, both Ethernet and Wi-Fi adapters have the "Dedicated" interface
+        type, so the Wi-Fi adapter name alone cannot be used to distinguish them.
+        This method fetches *all* WLAN adapter names from ``netsh wlan show
+        interfaces`` and excludes every one of them (case-insensitively) before
+        deciding whether a connected dedicated interface is an Ethernet port.
+
         Parameters:
             wifi_interface_name:
-                Optional name of the wireless interface to exclude from the check.
+                Optional extra wireless interface name to exclude (e.g. the
+                auto-detected primary Wi-Fi adapter). Supplemental to the full
+                list obtained from ``netsh wlan show interfaces``.
 
         Returns:
             True when at least one enabled, connected, dedicated interface that
-            is not the Wi-Fi adapter is found.
+            is not a known Wi-Fi adapter is found.
         """
         try:
             output = self.run_netsh(['interface', 'show', 'interface'])
         except NetshError:
             return False
+
+        # Collect *all* wireless interface names so we can exclude them.
+        wireless_names: set[str] = self._get_all_wireless_interface_names()
+        if wifi_interface_name:
+            wireless_names.add(wifi_interface_name.strip().lower())
 
         for line in output.splitlines():
             parts = line.split(None, 3)
@@ -218,7 +250,7 @@ class NetshWiFiApi:
                 admin_state.lower() == 'enabled'
                 and state.lower() == 'connected'
                 and iface_type.lower() == 'dedicated'
-                and (wifi_interface_name is None or iface_name != wifi_interface_name)
+                and iface_name.lower() not in wireless_names
             ):
                 return True
 

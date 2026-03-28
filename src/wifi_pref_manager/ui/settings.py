@@ -79,7 +79,7 @@ class SettingsWindow:
             # Another thread is already opening the window
             return
         try:
-            if self._window is not None and tk.Toplevel.winfo_exists(self._window):
+            if self._window is not None and self._window.winfo_exists():
                 self._window.lift()
                 self._window.focus_force()
                 return
