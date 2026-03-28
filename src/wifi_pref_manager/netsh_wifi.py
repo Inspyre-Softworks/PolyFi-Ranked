@@ -213,13 +213,18 @@ class NetshWiFiApi:
 
     def is_ethernet_connected(self, wifi_interface_name: str | None = None) -> bool:
         """
-        Check whether a non-Wi-Fi dedicated interface is currently connected.
+        Check whether a physical Ethernet interface is currently connected.
 
-        On Windows, both Ethernet and Wi-Fi adapters have the "Dedicated" interface
-        type, so the Wi-Fi adapter name alone cannot be used to distinguish them.
-        This method fetches *all* WLAN adapter names from ``netsh wlan show
-        interfaces`` and excludes every one of them (case-insensitively) before
-        deciding whether a connected dedicated interface is an Ethernet port.
+        On Windows, both Ethernet and Wi-Fi adapters (as well as virtual
+        adapters created by Hyper-V, Docker, and WSL2) are reported with the
+        ``Dedicated`` interface type in ``netsh interface show interface``.
+        This method uses two strategies to filter out non-Ethernet adapters:
+
+        1. **Wireless exclusion** – all WLAN adapter names are collected from
+           ``netsh wlan show interfaces`` and excluded case-insensitively.
+        2. **Virtual adapter exclusion** – adapter names that begin with
+           ``vEthernet`` (the standard Hyper-V/Docker/WSL2 prefix) are
+           excluded so they cannot produce a false positive.
 
         Parameters:
             wifi_interface_name:
@@ -228,8 +233,8 @@ class NetshWiFiApi:
                 list obtained from ``netsh wlan show interfaces``.
 
         Returns:
-            True when at least one enabled, connected, dedicated interface that
-            is not a known Wi-Fi adapter is found.
+            True when at least one enabled, connected, dedicated, non-wireless,
+            non-virtual interface is found.
         """
         try:
             output = self.run_netsh(['interface', 'show', 'interface'])
@@ -246,11 +251,13 @@ class NetshWiFiApi:
             if len(parts) < 4:
                 continue
             admin_state, state, iface_type, iface_name = (p.strip() for p in parts)
+            iface_name_lower = iface_name.lower()
             if (
                 admin_state.lower() == 'enabled'
                 and state.lower() == 'connected'
                 and iface_type.lower() == 'dedicated'
-                and iface_name.lower() not in wireless_names
+                and iface_name_lower not in wireless_names
+                and not iface_name_lower.startswith('vethernet')
             ):
                 return True
 

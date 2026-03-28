@@ -81,4 +81,4 @@ class AppConfig:
     log_level: str = 'INFO'
     log_file: str = ''
     start_minimized_to_tray: bool = False
-    auto_disable_wifi_on_ethernet: bool = True
+    auto_disable_wifi_on_ethernet: bool = False
