@@ -20,6 +20,7 @@ Constants:
 Dependencies:
     logging
     threading
+    time
     wifi_pref_manager.config
     wifi_pref_manager.models
     wifi_pref_manager.netsh_wifi
@@ -32,6 +33,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from collections.abc import Callable
 
 from wifi_pref_manager.config import ConfigError, ConfigLoader
@@ -221,7 +223,6 @@ class WiFiPreferenceService:
                         self.wifi_api.enable_wifi_adapter(self.interface_name)
                         self._wifi_disabled_by_ethernet = False
                         # Give the adapter a moment to come back up
-                        import time
                         time.sleep(2)
                     except NetshError as exc:
                         self.logger.error('Failed to re-enable Wi-Fi adapter: %s', exc)
