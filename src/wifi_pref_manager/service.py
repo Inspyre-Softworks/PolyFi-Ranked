@@ -273,6 +273,14 @@ class WiFiPreferenceService:
             )
 
         self.logger.info('Wi-Fi preference service started.')
+        if self.config.auto_disable_wifi_on_ethernet:
+            self.logger.info('Ethernet detection: ENABLED — Wi-Fi will be disconnected when Ethernet is active.')
+        else:
+            self.logger.warning(
+                'Ethernet detection: DISABLED '
+                '(auto_disable_wifi_on_ethernet = false in config). '
+                'Set it to true to enable automatic Wi-Fi disable on Ethernet.'
+            )
 
         while not self._stop_event.is_set():
             try:

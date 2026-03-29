@@ -47,7 +47,7 @@ log_level = 'INFO'
 log_file = ''
 interface_name = ''
 start_minimized_to_tray = false
-auto_disable_wifi_on_ethernet = false
+auto_disable_wifi_on_ethernet = true
 
 [[networks]]
 ssid = 'MyBestWiFi'
@@ -185,7 +185,7 @@ class ConfigLoader:
             log_level=str(general.get('log_level', 'INFO')).upper(),
             log_file=log_file,
             start_minimized_to_tray=bool(general.get('start_minimized_to_tray', False)),
-            auto_disable_wifi_on_ethernet=bool(general.get('auto_disable_wifi_on_ethernet', False)),
+            auto_disable_wifi_on_ethernet=bool(general.get('auto_disable_wifi_on_ethernet', True)),
         )
         self.mark_loaded()
         return config
