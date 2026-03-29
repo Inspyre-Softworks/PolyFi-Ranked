@@ -121,7 +121,8 @@ class NetshWiFiApi:
             OSError:
                 If the ``powershell`` executable is not found.
             subprocess.SubprocessError:
-                If the subprocess cannot be started.
+                If the subprocess cannot be started or exits with a non-zero
+                return code.
         """
         result = subprocess.run(
             ['powershell', '-NoProfile', '-NonInteractive', '-Command', script],
@@ -131,6 +132,11 @@ class NetshWiFiApi:
             errors='replace',
             shell=False,
         )
+        if result.returncode != 0:
+            raise subprocess.SubprocessError(
+                f'PowerShell exited with code {result.returncode}.\n'
+                f'stderr:\n{result.stderr}'
+            )
         return result.stdout.strip()
 
     def detect_wifi_interface(self) -> str:
@@ -246,16 +252,16 @@ class NetshWiFiApi:
         """
         Check whether a physical Ethernet interface is currently connected.
 
-        Uses PowerShell's ``Get-NetAdapter -Physical`` with a ``MediaType``
-        filter to *positively* identify physical Ethernet (``'802.3'``).
-        This is definitive: Wi-Fi is always ``'Native 802.11'``, so no
-        name-based exclusion list is needed.  Virtual adapters (Hyper-V,
-        Docker, WSL2) are excluded by the ``-Physical`` flag.  VPN and
-        Bluetooth adapters are excluded because their ``MediaType`` is not
-        ``'802.3'``.
+        Uses PowerShell's ``Get-NetAdapter -Physical`` with an ``InterfaceType``
+        filter to *positively* identify physical Ethernet.  IANA interface type
+        ``6`` (``ethernetCsmacd``) is always used by Windows for physical
+        Ethernet — regardless of driver or Windows version — and is never used
+        for Wi-Fi (``71``), VPN tunnels (``131``), Bluetooth PAN (``259``), or
+        any other adapter type.  The ``-Physical`` flag additionally excludes
+        all virtual adapters (Hyper-V, Docker, WSL2).
 
         Falls back to a ``netsh``-based heuristic if PowerShell is
-        unavailable.
+        unavailable or returns a non-zero exit code.
 
         Parameters:
             wifi_interface_name:
@@ -269,7 +275,7 @@ class NetshWiFiApi:
         try:
             output = self._run_powershell(
                 'if (Get-NetAdapter -Physical |'
-                ' Where-Object { $_.MediaType -eq "802.3" -and $_.Status -eq "Up" })'
+                ' Where-Object { $_.InterfaceType -eq 6 -and $_.Status -eq "Up" })'
                 ' { "YES" } else { "NO" }'
             )
             return output.upper() == 'YES'
