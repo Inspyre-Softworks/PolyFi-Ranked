@@ -200,24 +200,33 @@ class WiFiPreferenceService:
         """
         if self.config.auto_disable_wifi_on_ethernet:
             ethernet_active = self.wifi_api.is_ethernet_connected(self.interface_name)
+            self.logger.debug('Ethernet connection check: ethernet_active=%s, _wifi_disabled_by_ethernet=%s',
+                            ethernet_active, self._wifi_disabled_by_ethernet)
+            
             if ethernet_active:
-                current_ssid = self.wifi_api.get_current_ssid()
-                if current_ssid is not None:
-                    self.logger.info(
-                        'Ethernet connection detected. Disconnecting Wi-Fi (%r).', current_ssid
-                    )
-                    self.wifi_api.disconnect(self.interface_name)
-                    self._wifi_disabled_by_ethernet = True
-                else:
-                    # Wi-Fi is already disconnected; just log once per transition.
-                    if not self._wifi_disabled_by_ethernet:
-                        self.logger.debug('Ethernet active. Wi-Fi already disconnected.')
+                # Ethernet is connected - disable WiFi adapter completely
+                if not self._wifi_disabled_by_ethernet:
+                    self.logger.info('Ethernet connection detected. Disabling Wi-Fi adapter completely.')
+                    try:
+                        self.wifi_api.disable_wifi_adapter(self.interface_name)
                         self._wifi_disabled_by_ethernet = True
+                    except NetshError as exc:
+                        self.logger.error('Failed to disable Wi-Fi adapter: %s', exc)
                 return
             else:
+                # Ethernet is not connected - re-enable WiFi if it was disabled
                 if self._wifi_disabled_by_ethernet:
-                    self.logger.info('Ethernet disconnected. Resuming Wi-Fi preference management.')
-                    self._wifi_disabled_by_ethernet = False
+                    self.logger.info('Ethernet disconnected. Re-enabling Wi-Fi adapter.')
+                    try:
+                        self.wifi_api.enable_wifi_adapter(self.interface_name)
+                        self._wifi_disabled_by_ethernet = False
+                        # Give the adapter a moment to come back up
+                        import time
+                        time.sleep(2)
+                    except NetshError as exc:
+                        self.logger.error('Failed to re-enable Wi-Fi adapter: %s', exc)
+                        # Clear the flag anyway to avoid getting stuck
+                        self._wifi_disabled_by_ethernet = False
 
         current_ssid = self.wifi_api.get_current_ssid()
         visible_ssids = self.wifi_api.get_visible_ssids()

@@ -57,6 +57,10 @@ class NetshWiFiApi:
             Connect to a saved Wi-Fi profile.
         disconnect:
             Disconnect current Wi-Fi.
+        disable_wifi_adapter:
+            Disable the Wi-Fi adapter (turn off the radio).
+        enable_wifi_adapter:
+            Enable the Wi-Fi adapter (turn on the radio).
         sync_profile_order:
             Set Windows profile order.
         is_ethernet_connected:
@@ -231,6 +235,42 @@ class NetshWiFiApi:
         """
         self.run_netsh(['wlan', 'disconnect', f'interface={interface_name}'])
 
+    def disable_wifi_adapter(self, interface_name: str) -> None:
+        """
+        Disable the Wi-Fi adapter (turn off the radio).
+
+        This is equivalent to pressing the WiFi button in Windows Quick Settings,
+        completely disabling the wireless radio while leaving Ethernet active.
+
+        Parameters:
+            interface_name:
+                Wireless interface name to disable.
+
+        Raises:
+            NetshError:
+                If the command fails.
+        """
+        self.logger.info('Disabling Wi-Fi adapter: %s', interface_name)
+        self.run_netsh(['interface', 'set', 'interface', interface_name, 'admin=disabled'])
+
+    def enable_wifi_adapter(self, interface_name: str) -> None:
+        """
+        Enable the Wi-Fi adapter (turn on the radio).
+
+        This re-enables a previously disabled wireless adapter, allowing it to
+        scan for and connect to networks.
+
+        Parameters:
+            interface_name:
+                Wireless interface name to enable.
+
+        Raises:
+            NetshError:
+                If the command fails.
+        """
+        self.logger.info('Enabling Wi-Fi adapter: %s', interface_name)
+        self.run_netsh(['interface', 'set', 'interface', interface_name, 'admin=enabled'])
+
     def _get_all_wireless_interface_names(self) -> set[str]:
         """
         Return the lower-cased names of every WLAN adapter detected by Windows.
@@ -278,7 +318,9 @@ class NetshWiFiApi:
                 ' Where-Object { $_.InterfaceType -eq 6 -and $_.Status -eq "Up" })'
                 ' { "YES" } else { "NO" }'
             )
-            return output.upper() == 'YES'
+            result = output.upper() == 'YES'
+            self.logger.debug('PowerShell Ethernet detection result: %s (raw output: %r)', result, output)
+            return result
         except (OSError, subprocess.SubprocessError):
             self.logger.debug(
                 'PowerShell Ethernet detection unavailable; falling back to netsh.',
