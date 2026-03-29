@@ -60,9 +60,13 @@ class NetshWiFiApi:
         sync_profile_order:
             Set Windows profile order.
         is_ethernet_connected:
-            Check whether a non-Wi-Fi interface is currently connected.
+            Check whether a physical Ethernet interface is currently connected.
+        _run_powershell:
+            Run a PowerShell one-liner and return its output.
         _get_all_wireless_interface_names:
             Return the names of every WLAN adapter detected by Windows.
+        _is_ethernet_connected_netsh:
+            Netsh-based fallback for Ethernet detection.
     """
 
     def __init__(self, logger: logging.Logger) -> None:
@@ -101,6 +105,33 @@ class NetshWiFiApi:
             )
 
         return result.stdout
+
+    def _run_powershell(self, script: str) -> str:
+        """
+        Run a PowerShell one-liner and return its stripped stdout.
+
+        Parameters:
+            script:
+                PowerShell script to execute.
+
+        Returns:
+            Stripped standard output from PowerShell.
+
+        Raises:
+            OSError:
+                If the ``powershell`` executable is not found.
+            subprocess.SubprocessError:
+                If the subprocess cannot be started.
+        """
+        result = subprocess.run(
+            ['powershell', '-NoProfile', '-NonInteractive', '-Command', script],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            shell=False,
+        )
+        return result.stdout.strip()
 
     def detect_wifi_interface(self) -> str:
         """
@@ -215,26 +246,54 @@ class NetshWiFiApi:
         """
         Check whether a physical Ethernet interface is currently connected.
 
-        On Windows, both Ethernet and Wi-Fi adapters (as well as virtual
-        adapters created by Hyper-V, Docker, and WSL2) are reported with the
-        ``Dedicated`` interface type in ``netsh interface show interface``.
-        This method uses two strategies to filter out non-Ethernet adapters:
+        Uses PowerShell's ``Get-NetAdapter -Physical`` with a ``MediaType``
+        filter to *positively* identify physical Ethernet (``'802.3'``).
+        This is definitive: Wi-Fi is always ``'Native 802.11'``, so no
+        name-based exclusion list is needed.  Virtual adapters (Hyper-V,
+        Docker, WSL2) are excluded by the ``-Physical`` flag.  VPN and
+        Bluetooth adapters are excluded because their ``MediaType`` is not
+        ``'802.3'``.
 
-        1. **Wireless exclusion** – all WLAN adapter names are collected from
-           ``netsh wlan show interfaces`` and excluded case-insensitively.
-        2. **Virtual adapter exclusion** – adapter names that begin with
-           ``vEthernet`` (the standard Hyper-V/Docker/WSL2 prefix) are
-           excluded so they cannot produce a false positive.
+        Falls back to a ``netsh``-based heuristic if PowerShell is
+        unavailable.
 
         Parameters:
             wifi_interface_name:
-                Optional extra wireless interface name to exclude (e.g. the
-                auto-detected primary Wi-Fi adapter). Supplemental to the full
-                list obtained from ``netsh wlan show interfaces``.
+                Ignored when PowerShell detection succeeds; forwarded to the
+                netsh fallback for backwards compatibility.
 
         Returns:
-            True when at least one enabled, connected, dedicated, non-wireless,
-            non-virtual interface is found.
+            ``True`` when at least one physical Ethernet adapter with
+            ``Status 'Up'`` is detected.
+        """
+        try:
+            output = self._run_powershell(
+                'if (Get-NetAdapter -Physical |'
+                ' Where-Object { $_.MediaType -eq "802.3" -and $_.Status -eq "Up" })'
+                ' { "YES" } else { "NO" }'
+            )
+            return output.upper() == 'YES'
+        except (OSError, subprocess.SubprocessError):
+            self.logger.debug(
+                'PowerShell Ethernet detection unavailable; falling back to netsh.',
+                exc_info=True,
+            )
+            return self._is_ethernet_connected_netsh(wifi_interface_name)
+
+    def _is_ethernet_connected_netsh(self, wifi_interface_name: str | None = None) -> bool:
+        """
+        Netsh-based fallback for Ethernet detection.
+
+        Checks ``netsh interface show interface`` for any enabled, connected,
+        Dedicated interface that is not a known wireless adapter and does not
+        have the ``vEthernet`` virtual-adapter prefix.
+
+        Parameters:
+            wifi_interface_name:
+                Optional extra wireless interface name to exclude.
+
+        Returns:
+            ``True`` when at least one candidate Ethernet interface is found.
         """
         try:
             output = self.run_netsh(['interface', 'show', 'interface'])
