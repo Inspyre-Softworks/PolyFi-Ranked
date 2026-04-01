@@ -41,10 +41,14 @@ class WiFiProfilePreference:
             Saved Windows Wi-Fi profile name / SSID.
         auto_switch:
             Whether the manager may automatically switch to this network.
+        min_db:
+            Optional minimum signal threshold. When set, the network is treated
+            as unavailable if the observed signal is weaker than this value.
     """
 
     ssid: str
     auto_switch: bool = True
+    min_db: int | None = None
 
 
 @dataclass
@@ -71,6 +75,18 @@ class AppConfig:
             Whether the tray app should start minimized.
         auto_disable_wifi_on_ethernet:
             Automatically disconnect Wi-Fi when an Ethernet connection is detected.
+        show_wifi_disabled_dialog:
+            Whether to show a dialog when PolyFi disables the Wi-Fi adapter.
+        enable_speed_tests:
+            Whether automatic speed tests are enabled.
+        speed_test_on_new_connection:
+            Whether to run a speed test when connecting to a new Wi-Fi network.
+        speed_test_interval:
+            Seconds between repeated speed tests while staying on the same Wi-Fi network.
+        save_speed_test_history:
+            Whether completed speed-test results should be appended to a history file.
+        speed_test_history_file:
+            Path to the speed-test history file. Blank uses the default local app-data path.
     """
 
     preferred_networks: list[WiFiProfilePreference] = field(default_factory=list)
@@ -82,3 +98,46 @@ class AppConfig:
     log_file: str = ''
     start_minimized_to_tray: bool = False
     auto_disable_wifi_on_ethernet: bool = True
+    show_wifi_disabled_dialog: bool = True
+    enable_speed_tests: bool = False
+    speed_test_on_new_connection: bool = True
+    speed_test_interval: int = 1800
+    save_speed_test_history: bool = False
+    speed_test_history_file: str = ''
+
+
+@dataclass
+class SpeedTestResult:
+    """
+    Stores the latest automatic speed-test state/result.
+
+    Parameters:
+        status:
+            Current state such as disabled, waiting, running, success, or error.
+        ssid:
+            SSID associated with the test or wait state.
+        download_mbps:
+            Measured download throughput in Mbps.
+        upload_mbps:
+            Measured upload throughput in Mbps.
+        ping_ms:
+            Measured latency in milliseconds.
+        message:
+            Short human-readable summary.
+        tested_at:
+            Unix timestamp for the last completed attempt.
+        local_ip:
+            Local IP address observed at the time of the test, if available.
+        public_ip:
+            Public IP address observed at the time of the test, if available.
+    """
+
+    status: str
+    ssid: Optional[str] = None
+    download_mbps: float | None = None
+    upload_mbps: float | None = None
+    ping_ms: float | None = None
+    message: str = ''
+    tested_at: float | None = None
+    local_ip: str | None = None
+    public_ip: str | None = None

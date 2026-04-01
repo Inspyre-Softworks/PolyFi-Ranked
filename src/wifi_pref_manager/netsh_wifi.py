@@ -29,11 +29,14 @@ Example Usage:
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 import re
 import subprocess
 import time
 from typing import Sequence
+import xml.etree.ElementTree as ET
 
 
 class NetshError(RuntimeError):
@@ -49,6 +52,8 @@ class NetshWiFiApi:
             Detect a wireless interface name.
         get_current_ssid:
             Get the currently connected SSID.
+        get_visible_network_signals:
+            Get visible SSIDs with their strongest observed signal levels.
         get_visible_ssids:
             Get visible SSIDs.
         get_saved_profiles:
@@ -63,18 +68,53 @@ class NetshWiFiApi:
             Enable the Wi-Fi adapter (turn on the radio).
         sync_profile_order:
             Set Windows profile order.
+        get_active_ethernet_interfaces:
+            Return active Ethernet interface names.
         is_ethernet_connected:
             Check whether a physical Ethernet interface is currently connected.
         _run_powershell:
             Run a PowerShell one-liner and return its output.
+        _get_known_wireless_interface_names:
+            Return Wi-Fi interface names even when currently disabled.
         _get_all_wireless_interface_names:
             Return the names of every WLAN adapter detected by Windows.
-        _is_ethernet_connected_netsh:
+        _get_active_ethernet_interfaces_netsh:
             Netsh-based fallback for Ethernet detection.
     """
 
     def __init__(self, logger: logging.Logger) -> None:
         self.logger = logger
+        self._ethernet_exclusion_terms = (
+            'bluetooth',
+            'loopback',
+            'npcap',
+            'vethernet',
+            'virtual',
+            'vmware',
+            'wireless',
+            'wi-fi',
+            'wifi',
+            'wlan',
+        )
+
+    @staticmethod
+    def is_elevation_required_error(exc: BaseException) -> bool:
+        """
+        Determine whether a command failure indicates missing administrator rights.
+
+        Parameters:
+            exc:
+                Raised exception to inspect.
+
+        Returns:
+            True when the error text matches a common elevation-required failure.
+        """
+        message = str(exc).lower()
+        return (
+            'requires elevation' in message
+            or 'run as administrator' in message
+            or 'requested operation requires elevation' in message
+        )
 
     def run_netsh(self, args: Sequence[str]) -> str:
         """
@@ -152,9 +192,18 @@ class NetshWiFiApi:
         """
         output = self.run_netsh(['wlan', 'show', 'interfaces'])
         match = re.search(r'^\s*Name\s*:\s*(.+?)\s*$', output, re.MULTILINE)
-        if not match:
-            raise NetshError('Could not detect a wireless interface.')
-        return match.group(1).strip()
+        if match:
+            return match.group(1).strip()
+
+        candidates = self._get_known_wireless_interface_names()
+        if candidates:
+            self.logger.debug(
+                'No active WLAN interface reported by netsh; falling back to known Wi-Fi interface %s.',
+                candidates[0],
+            )
+            return candidates[0]
+
+        raise NetshError('Could not detect a wireless interface.')
 
     def get_current_ssid(self) -> str | None:
         """
@@ -178,13 +227,53 @@ class NetshWiFiApi:
         Returns:
             Unique list of SSIDs.
         """
+        return list(self.get_visible_network_signals())
+
+    @staticmethod
+    def signal_percent_to_dbm(signal_percent: int) -> int:
+        """
+        Convert Windows Wi-Fi signal quality percent to an approximate dBm value.
+
+        Parameters:
+            signal_percent:
+                Windows-reported signal quality percentage.
+
+        Returns:
+            Approximate dBm reading, where values closer to zero are stronger.
+        """
+        clamped = max(0, min(100, signal_percent))
+        return int((clamped / 2) - 100)
+
+    def get_visible_network_signals(self) -> dict[str, int]:
+        """
+        Get visible SSIDs and their strongest observed signal strengths.
+
+        Returns:
+            Mapping of SSID to strongest approximate dBm reading observed in the
+            current scan.
+        """
         output = self.run_netsh(['wlan', 'show', 'networks', 'mode=bssid'])
-        ssids: list[str] = []
-        for match in re.finditer(r'^\s*SSID\s+\d+\s*:\s*(.*?)\s*$', output, re.MULTILINE):
-            ssid = match.group(1).strip()
-            if ssid and ssid not in ssids:
-                ssids.append(ssid)
-        return ssids
+        networks: dict[str, int] = {}
+        current_ssid: str | None = None
+
+        for line in output.splitlines():
+            ssid_match = re.match(r'^[ \t]*SSID\s+\d+[ \t]*:[ \t]*(.*?)[ \t]*$', line)
+            if ssid_match:
+                ssid = ssid_match.group(1).strip()
+                current_ssid = ssid or None
+                if current_ssid is not None and current_ssid not in networks:
+                    networks[current_ssid] = -100
+                continue
+
+            signal_match = re.match(r'^[ \t]*Signal\s*:\s*(\d+)%\s*$', line)
+            if current_ssid is None or signal_match is None:
+                continue
+
+            signal_dbm = self.signal_percent_to_dbm(int(signal_match.group(1)))
+            if signal_dbm > networks[current_ssid]:
+                networks[current_ssid] = signal_dbm
+
+        return networks
 
     def get_saved_profiles(self) -> list[str]:
         """
@@ -195,9 +284,53 @@ class NetshWiFiApi:
         """
         output = self.run_netsh(['wlan', 'show', 'profiles'])
         profiles: list[str] = []
-        for match in re.finditer(r'^\s*All User Profile\s*:\s*(.+?)\s*$', output, re.MULTILINE):
+        for match in re.finditer(
+            r'^\s*(?:All User Profile|Current User Profile)\s*:\s*(.+?)\s*$',
+            output,
+            re.MULTILINE,
+        ):
             profiles.append(match.group(1).strip())
+        if profiles:
+            return profiles
+
+        if 'there is no wireless interface on the system' in output.lower():
+            fallback_profiles = self._get_saved_profiles_from_wlan_store()
+            if fallback_profiles:
+                self.logger.debug(
+                    'Falling back to the Windows WLAN profile store because netsh reported no wireless interface.'
+                )
+                return fallback_profiles
+
         return profiles
+
+    def _get_saved_profiles_from_wlan_store(self) -> list[str]:
+        """
+        Read saved Wi-Fi profile names directly from the Windows WLAN profile store.
+
+        Returns:
+            Sorted unique profile names discovered in the XML profile store.
+        """
+        profile_root = Path(r'C:\ProgramData\Microsoft\Wlansvc\Profiles\Interfaces')
+        if not profile_root.exists():
+            return []
+
+        profiles: set[str] = set()
+        for xml_path in profile_root.rglob('*.xml'):
+            try:
+                root = ET.parse(xml_path).getroot()
+            except (ET.ParseError, OSError):
+                self.logger.debug('Skipping unreadable WLAN profile XML: %s', xml_path, exc_info=True)
+                continue
+
+            name_node = root.find('{http://www.microsoft.com/networking/WLAN/profile/v1}name')
+            if name_node is None or name_node.text is None:
+                continue
+
+            profile_name = name_node.text.strip()
+            if profile_name:
+                profiles.add(profile_name)
+
+        return sorted(profiles)
 
     def connect(self, interface_name: str, ssid: str, timeout: int) -> bool:
         """
@@ -214,7 +347,7 @@ class NetshWiFiApi:
         Returns:
             True if connected to the requested SSID.
         """
-        self.logger.info('Attempting connection to %s', ssid)
+        self.logger.debug('Attempting connection to %s', ssid)
         self.run_netsh([
             'wlan',
             'connect',
@@ -235,6 +368,32 @@ class NetshWiFiApi:
         """
         self.run_netsh(['wlan', 'disconnect', f'interface={interface_name}'])
 
+    def is_interface_enabled(self, interface_name: str) -> bool:
+        """
+        Check whether an interface is administratively enabled.
+
+        Parameters:
+            interface_name:
+                Interface name to inspect.
+
+        Returns:
+            True when the interface admin state is enabled.
+
+        Raises:
+            NetshError:
+                If the interface cannot be found.
+        """
+        output = self.run_netsh(['interface', 'show', 'interface'])
+        for line in output.splitlines():
+            parts = line.split(None, 3)
+            if len(parts) < 4:
+                continue
+            admin_state, _state, _iface_type, iface_name = (part.strip() for part in parts)
+            if iface_name.lower() == interface_name.strip().lower():
+                return admin_state.lower() == 'enabled'
+
+        raise NetshError(f'Could not determine admin state for interface {interface_name!r}.')
+
     def disable_wifi_adapter(self, interface_name: str) -> None:
         """
         Disable the Wi-Fi adapter (turn off the radio).
@@ -250,7 +409,7 @@ class NetshWiFiApi:
             NetshError:
                 If the command fails.
         """
-        self.logger.info('Disabling Wi-Fi adapter: %s', interface_name)
+        self.logger.debug('Disabling Wi-Fi adapter: %s', interface_name)
         self.run_netsh(['interface', 'set', 'interface', interface_name, 'admin=disabled'])
 
     def enable_wifi_adapter(self, interface_name: str) -> None:
@@ -268,7 +427,7 @@ class NetshWiFiApi:
             NetshError:
                 If the command fails.
         """
-        self.logger.info('Enabling Wi-Fi adapter: %s', interface_name)
+        self.logger.debug('Enabling Wi-Fi adapter: %s', interface_name)
         self.run_netsh(['interface', 'set', 'interface', interface_name, 'admin=enabled'])
 
     def _get_all_wireless_interface_names(self) -> set[str]:
@@ -288,19 +447,97 @@ class NetshWiFiApi:
             for match in re.finditer(r'^\s*Name\s*:\s*(.+?)\s*$', output, re.MULTILINE)
         }
 
+    def _get_known_wireless_interface_names(self) -> list[str]:
+        """
+        Return Wi-Fi interface names, even if they are currently disabled.
+
+        Returns:
+            Ordered list of candidate Wi-Fi interface names.
+        """
+        try:
+            output = self._run_powershell(
+                'Get-NetAdapter |'
+                ' Where-Object { $_.InterfaceType -eq 71 } |'
+                ' Select-Object -ExpandProperty Name'
+            )
+        except (OSError, subprocess.SubprocessError):
+            self.logger.debug(
+                'PowerShell Wi-Fi interface fallback unavailable.',
+                exc_info=True,
+            )
+            return []
+
+        return [
+            line.strip()
+            for line in output.splitlines()
+            if line.strip()
+        ]
+
+    def _is_probable_ethernet_name(self, name: str) -> bool:
+        """
+        Determine whether an interface name/description looks like real Ethernet.
+
+        Parameters:
+            name:
+                Interface name or description.
+
+        Returns:
+            True when the text does not match a known non-Ethernet exclusion.
+        """
+        name_lower = name.strip().lower()
+        return not any(term in name_lower for term in self._ethernet_exclusion_terms)
+
+    def get_active_ethernet_interfaces(self, wifi_interface_name: str | None = None) -> list[str]:
+        """
+        Return the names of active wired Ethernet interfaces.
+
+        Parameters:
+            wifi_interface_name:
+                Optional wireless interface name to exclude in the fallback path.
+
+        Returns:
+            List of interface names that look like real, active Ethernet links.
+        """
+        try:
+            output = self._run_powershell(
+                '$adapters = Get-NetAdapter -Physical | Where-Object {'
+                ' $_.InterfaceType -eq 6'
+                ' -and $_.Status -eq "Up"'
+                ' -and $_.MediaConnectionState -eq "Connected"'
+                ' -and $_.PhysicalMediaType -eq "802.3"'
+                ' -and $_.ComponentID -ne "*msloop"'
+                ' } | Select-Object Name, InterfaceDescription;'
+                ' if ($adapters) { $adapters | ConvertTo-Json -Compress } else { "[]" }'
+            )
+            parsed = json.loads(output or '[]')
+            adapters = parsed if isinstance(parsed, list) else [parsed]
+            names = [
+                str(adapter.get('Name', '')).strip()
+                for adapter in adapters
+                if self._is_probable_ethernet_name(str(adapter.get('Name', '')))
+                and self._is_probable_ethernet_name(str(adapter.get('InterfaceDescription', '')))
+            ]
+            self.logger.debug(
+                'PowerShell Ethernet candidates: %s',
+                ', '.join(names) if names else '[none]',
+            )
+            return names
+        except (json.JSONDecodeError, OSError, subprocess.SubprocessError):
+            self.logger.debug(
+                'PowerShell Ethernet detection unavailable; falling back to netsh.',
+                exc_info=True,
+            )
+            return self._get_active_ethernet_interfaces_netsh(wifi_interface_name)
+
     def is_ethernet_connected(self, wifi_interface_name: str | None = None) -> bool:
         """
         Check whether a physical Ethernet interface is currently connected.
 
-        Uses PowerShell's ``Get-NetAdapter -Physical`` with an ``InterfaceType``
-        filter to *positively* identify physical Ethernet.  IANA interface type
-        ``6`` (``ethernetCsmacd``) is always used by Windows for physical
-        Ethernet — regardless of driver or Windows version — and is never used
-        for Wi-Fi (``71``), VPN tunnels (``131``), Bluetooth PAN (``259``), or
-        any other adapter type.  The ``-Physical`` flag additionally excludes
-        all virtual adapters (Hyper-V, Docker, WSL2).
-
-        Falls back to a ``netsh``-based heuristic if PowerShell is
+        Uses the active-Ethernet interface list generated by
+        ``get_active_ethernet_interfaces``. The PowerShell path requires a
+        connected type-6 adapter whose physical media type is ``802.3``, then
+        filters out loopback, Wi-Fi, Bluetooth, and other known non-Ethernet
+        names. Falls back to a ``netsh``-based heuristic if PowerShell is
         unavailable or returns a non-zero exit code.
 
         Parameters:
@@ -309,26 +546,12 @@ class NetshWiFiApi:
                 netsh fallback for backwards compatibility.
 
         Returns:
-            ``True`` when at least one physical Ethernet adapter with
-            ``Status 'Up'`` is detected.
+            ``True`` when at least one candidate active Ethernet interface is
+            detected.
         """
-        try:
-            output = self._run_powershell(
-                'if (Get-NetAdapter -Physical |'
-                ' Where-Object { $_.InterfaceType -eq 6 -and $_.Status -eq "Up" })'
-                ' { "YES" } else { "NO" }'
-            )
-            result = output.upper() == 'YES'
-            self.logger.debug('PowerShell Ethernet detection result: %s (raw output: %r)', result, output)
-            return result
-        except (OSError, subprocess.SubprocessError):
-            self.logger.debug(
-                'PowerShell Ethernet detection unavailable; falling back to netsh.',
-                exc_info=True,
-            )
-            return self._is_ethernet_connected_netsh(wifi_interface_name)
+        return bool(self.get_active_ethernet_interfaces(wifi_interface_name))
 
-    def _is_ethernet_connected_netsh(self, wifi_interface_name: str | None = None) -> bool:
+    def _get_active_ethernet_interfaces_netsh(self, wifi_interface_name: str | None = None) -> list[str]:
         """
         Netsh-based fallback for Ethernet detection.
 
@@ -341,18 +564,19 @@ class NetshWiFiApi:
                 Optional extra wireless interface name to exclude.
 
         Returns:
-            ``True`` when at least one candidate Ethernet interface is found.
+            List of candidate Ethernet interface names.
         """
         try:
             output = self.run_netsh(['interface', 'show', 'interface'])
         except NetshError:
-            return False
+            return []
 
         # Collect *all* wireless interface names so we can exclude them.
         wireless_names: set[str] = self._get_all_wireless_interface_names()
         if wifi_interface_name:
             wireless_names.add(wifi_interface_name.strip().lower())
 
+        connected_interfaces: list[str] = []
         for line in output.splitlines():
             parts = line.split(None, 3)
             if len(parts) < 4:
@@ -365,10 +589,15 @@ class NetshWiFiApi:
                 and iface_type.lower() == 'dedicated'
                 and iface_name_lower not in wireless_names
                 and not iface_name_lower.startswith('vethernet')
+                and self._is_probable_ethernet_name(iface_name)
             ):
-                return True
+                connected_interfaces.append(iface_name)
 
-        return False
+        self.logger.debug(
+            'Netsh Ethernet candidates: %s',
+            ', '.join(connected_interfaces) if connected_interfaces else '[none]',
+        )
+        return connected_interfaces
 
     def sync_profile_order(self, interface_name: str, ssids: list[str]) -> None:
         """

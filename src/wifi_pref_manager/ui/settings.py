@@ -31,7 +31,7 @@ from __future__ import annotations
 import logging
 import threading
 import tkinter as tk
-from tkinter import messagebox, simpledialog, ttk
+from tkinter import messagebox, ttk
 
 from wifi_pref_manager.config import save_config
 from wifi_pref_manager.models import AppConfig, WiFiProfilePreference
@@ -104,6 +104,11 @@ class SettingsWindow:
         self._window = win
 
         config = self.service.config
+        enable_speed_tests = getattr(config, 'enable_speed_tests', False)
+        speed_test_on_new_connection = getattr(config, 'speed_test_on_new_connection', True)
+        speed_test_interval = getattr(config, 'speed_test_interval', 1800)
+        save_speed_test_history = getattr(config, 'save_speed_test_history', False)
+        speed_test_history_file = getattr(config, 'speed_test_history_file', '')
 
         # ---- Network list frame ----------------------------------------
         frame_list = ttk.LabelFrame(win, text='Network Priority (highest first)', padding=6)
@@ -123,6 +128,8 @@ class SettingsWindow:
                 label = f'{idx + 1}. {pref.ssid}'
                 if not pref.auto_switch:
                     label += ' [manual]'
+                if pref.min_db is not None:
+                    label += f' [>= {pref.min_db} dBm]'
                 listbox.insert(tk.END, label)
 
         _refresh_list()
@@ -150,24 +157,93 @@ class SettingsWindow:
             listbox.selection_set(i + 1)
 
         def _add_network() -> None:
-            ssid = simpledialog.askstring(
-                'Add Network',
-                'Enter the SSID (network name):',
-                parent=win,
-            )
-            if not ssid:
-                return
-            ssid = ssid.strip()
-            if not ssid:
-                return
-            if any(p.ssid == ssid for p in network_list):
-                messagebox.showwarning(
-                    'Duplicate SSID',
-                    f'"{ssid}" is already in the list.',
+            existing_ssids = {profile.ssid for profile in network_list}
+            try:
+                available_networks = [
+                    ssid
+                    for ssid in self.service.wifi_api.get_saved_profiles()
+                    if ssid not in existing_ssids
+                ]
+            except Exception as exc:  # noqa: BLE001
+                self.logger.error('Failed to load saved Wi-Fi profiles for Add Network: %s', exc)
+                messagebox.showerror(
+                    'Add Network Failed',
+                    f'Could not load saved Windows Wi-Fi profiles:\n{exc}',
                     parent=win,
                 )
                 return
-            network_list.append(WiFiProfilePreference(ssid=ssid, auto_switch=True))
+
+            if not available_networks:
+                messagebox.showinfo(
+                    'No Networks Available',
+                    'No additional saved Windows Wi-Fi profiles are available to add.',
+                    parent=win,
+                )
+                return
+
+            selected_network: dict[str, str | None] = {'ssid': None}
+            dialog = tk.Toplevel(win)
+            dialog.title('Add Network')
+            dialog.resizable(False, False)
+            dialog.transient(win)
+            dialog.grab_set()
+
+            ttk.Label(dialog, text='Choose a saved Wi-Fi profile:').grid(
+                row=0,
+                column=0,
+                padx=12,
+                pady=(12, 6),
+                sticky='w',
+            )
+
+            network_var = tk.StringVar()
+            combo = ttk.Combobox(dialog, textvariable=network_var, values=available_networks, width=36)
+            combo.grid(row=1, column=0, padx=12, pady=(0, 12), sticky='ew')
+
+            def _filter_network_choices(*_args) -> None:
+                typed = network_var.get().strip().lower()
+                if not typed:
+                    combo['values'] = available_networks
+                    return
+                combo['values'] = [
+                    ssid for ssid in available_networks
+                    if typed in ssid.lower()
+                ]
+
+            def _confirm_add() -> None:
+                ssid = network_var.get().strip()
+                if not ssid:
+                    return
+                if ssid not in available_networks:
+                    messagebox.showerror(
+                        'Unknown Network',
+                        'Select one of the saved Windows Wi-Fi profiles from the dropdown list.',
+                        parent=dialog,
+                    )
+                    return
+                selected_network['ssid'] = ssid
+                dialog.destroy()
+
+            def _cancel_add() -> None:
+                dialog.destroy()
+
+            combo.bind('<KeyRelease>', _filter_network_choices)
+            combo.bind('<Return>', lambda _event: _confirm_add())
+            combo.focus_set()
+
+            button_row = ttk.Frame(dialog)
+            button_row.grid(row=2, column=0, padx=12, pady=(0, 12), sticky='e')
+            ttk.Button(button_row, text='Add', command=_confirm_add, width=10).pack(side='right', padx=(4, 0))
+            ttk.Button(button_row, text='Cancel', command=_cancel_add, width=10).pack(side='right')
+
+            dialog.protocol('WM_DELETE_WINDOW', _cancel_add)
+            dialog.wait_window()
+
+            ssid = selected_network['ssid']
+            if not ssid:
+                return
+
+            network_list.append(WiFiProfilePreference(ssid=ssid, auto_switch=True, min_db=None))
             _refresh_list()
             listbox.selection_set(tk.END)
 
@@ -197,6 +273,7 @@ class SettingsWindow:
             network_list[i] = WiFiProfilePreference(
                 ssid=pref.ssid,
                 auto_switch=not pref.auto_switch,
+                min_db=pref.min_db,
             )
             _refresh_list()
             listbox.selection_set(i)
@@ -243,6 +320,12 @@ class SettingsWindow:
                 log_file=config.log_file,
                 start_minimized_to_tray=config.start_minimized_to_tray,
                 auto_disable_wifi_on_ethernet=auto_eth_var.get(),
+                show_wifi_disabled_dialog=getattr(config, 'show_wifi_disabled_dialog', True),
+                enable_speed_tests=enable_speed_tests,
+                speed_test_on_new_connection=speed_test_on_new_connection,
+                speed_test_interval=speed_test_interval,
+                save_speed_test_history=save_speed_test_history,
+                speed_test_history_file=speed_test_history_file,
             )
 
             try:
