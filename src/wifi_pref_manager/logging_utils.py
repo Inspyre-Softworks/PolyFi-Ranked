@@ -9,7 +9,7 @@ File:
     logging_utils.py
 
 Description:
-    Logging helpers for console and rotating file logging.
+    Logging helpers backed by inspy-logger.
 
 Functions:
     configure_logging:
@@ -21,8 +21,8 @@ Constants:
 
 Dependencies:
     logging
-    logging.handlers
     pathlib
+    inspy_logger
 
 Example Usage:
     logger = configure_logging('INFO', 'logs/app.log')
@@ -31,8 +31,9 @@ Example Usage:
 from __future__ import annotations
 
 import logging
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
+from inspy_logger import InspyLogger
 
 
 LOGGER_NAME = 'polyfi_ranked'
@@ -52,27 +53,19 @@ def configure_logging(log_level: str, log_file: str) -> logging.Logger:
         Configured logger instance.
     """
     logger = logging.getLogger(LOGGER_NAME)
-    logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
     logger.handlers.clear()
-
-    Path(log_file).expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
-
-    formatter = logging.Formatter(
-        fmt='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-    )
-
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-
-    file_handler = RotatingFileHandler(
-        Path(log_file).expanduser().resolve(),
-        maxBytes=1_000_000,
-        backupCount=3,
-        encoding='utf-8',
-    )
-    file_handler.setFormatter(formatter)
-
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
+    logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
     logger.propagate = False
-    return logger
+
+    log_path = Path(log_file).expanduser().resolve()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    inspy_logger = InspyLogger(
+        LOGGER_NAME,
+        console_level=log_level.upper(),
+        file_level=log_level.upper(),
+        file_name=log_path.name,
+        file_path=log_path.parent,
+        announce_on_init=False,
+    )
+    return inspy_logger.logger

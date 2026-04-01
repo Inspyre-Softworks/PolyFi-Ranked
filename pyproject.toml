@@ -10,6 +10,10 @@ packages = [{ include = "wifi_pref_manager", from = "src" }]
 python = "^3.11"
 pystray = "^0.19.5"
 pillow = "^11.1.0"
+speedtest-cli = "^2.1.3"
+easy-exit-calls = {version = "^1.0.0.dev1", python = ">=3.12,<4.0"}
+inspy-logger = "^3.2.3"
+platformdirs = "^4.9.4"
 
 [tool.poetry.scripts]
 polyfi-ranked = "wifi_pref_manager.app:main"
