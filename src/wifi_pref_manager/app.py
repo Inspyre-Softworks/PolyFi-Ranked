@@ -38,17 +38,19 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+from datetime import datetime
 from pathlib import Path
 import subprocess
 import sys
 
+from wifi_pref_manager.console_output import ConsoleOutputManager
 from wifi_pref_manager.config import ConfigError, ConfigLoader
 from wifi_pref_manager.logging_utils import configure_logging
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
 from wifi_pref_manager.paths import APP_USER_MODEL_ID, AppPaths
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
-from wifi_pref_manager.ui.dialogs import show_dialog
+from wifi_pref_manager.ui.dialogs import show_dialog, show_native_message_box
 from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.windows_shell import StartMenuShortcutManager
 
@@ -70,6 +72,26 @@ class Application:
         self.speed_test_history_file_override: str | None = None
         self.original_argv: list[str] = list(sys.argv)
         self.single_instance_guard = SingleInstanceGuard(f'Local\\{APP_USER_MODEL_ID}')
+        self.console_output_manager: ConsoleOutputManager | None = None
+        self._run_in_tray_context = False
+        self.startup_trace_file = self.paths.local_data_dir / 'startup_trace.log'
+
+    def append_startup_trace(self, message: str) -> None:
+        """
+        Append an early-startup trace line that survives windowless launches.
+
+        Parameters:
+            message:
+                Trace message to append.
+        """
+        try:
+            self.paths.local_data_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().isoformat(timespec='seconds')
+            self.startup_trace_file.open('a', encoding='utf-8').write(
+                f'[{timestamp}] pid={Path(sys.executable).name}:{message}\n'
+            )
+        except OSError:
+            return
 
     def add_runtime_arguments(self, parser: argparse.ArgumentParser, *, include_tray: bool = True) -> None:
         """
@@ -242,7 +264,10 @@ class Application:
             Refreshed logger instance.
         """
         self.apply_runtime_overrides(config)
-        return configure_logging(self.resolve_log_level(config.log_level), config.log_file)
+        logger = configure_logging(self.resolve_log_level(config.log_level), config.log_file)
+        if self.console_output_manager is not None:
+            self.console_output_manager.attach_logger(logger)
+        return logger
 
     def apply_runtime_overrides(self, config) -> None:
         """
@@ -339,7 +364,7 @@ class Application:
             OSError:
                 If Windows could not start the elevated process.
         """
-        executable = self._resolve_relaunch_executable(windowed=False)
+        executable = self._resolve_relaunch_executable(windowed=self._run_in_tray_context)
         parameters = subprocess.list2cmdline(self._build_relaunch_arguments())
         released_guard = self.release_single_instance_guard()
         try:
@@ -429,10 +454,38 @@ class Application:
         if not config.auto_disable_wifi_on_ethernet or self.is_running_as_administrator():
             return None
 
+        self.append_startup_trace(
+            f'admin-requirements run_in_tray={self._run_in_tray_context} admin={self.is_running_as_administrator()}'
+        )
         logger.warning(
             'auto_disable_wifi_on_ethernet is enabled, but this process is not running as administrator. '
             'Prompting for startup recovery before the service starts.'
         )
+
+        if self._run_in_tray_context:
+            logger.warning(
+                'Tray launch is not elevated while auto Ethernet disable is enabled. '
+                'Attempting automatic administrator restart.'
+            )
+            try:
+                launched = self.restart_as_administrator()
+            except OSError as exc:
+                self.append_startup_trace(f'tray-admin-restart failed: {exc}')
+                logger.error('Failed to restart with administrator privileges during tray startup: %s', exc)
+                show_native_message_box(
+                    'error',
+                    'Restart Failed',
+                    'PolyFi could not restart as administrator.\n\n'
+                    f'{exc}\n\n'
+                    'Continuing with automatic Ethernet Wi-Fi disable turned off for this session.',
+                )
+            else:
+                if launched:
+                    self.append_startup_trace('tray-admin-restart launched successfully')
+                    logger.info('Administrator restart launched automatically for tray startup. Exiting current instance.')
+                    return 0
+                self.append_startup_trace('tray-admin-restart cancelled')
+                logger.warning('Administrator restart was cancelled during tray startup.')
 
         restart_requested = show_dialog(
             'warning',
@@ -449,6 +502,7 @@ class Application:
             try:
                 launched = self.restart_as_administrator()
             except OSError as exc:
+                self.append_startup_trace(f'admin-restart failed: {exc}')
                 logger.error('Failed to restart with administrator privileges during startup: %s', exc)
                 show_dialog(
                     'error',
@@ -458,8 +512,10 @@ class Application:
                 )
             else:
                 if launched:
+                    self.append_startup_trace('admin-restart launched successfully')
                     logger.info('Administrator restart launched during startup. Exiting current instance.')
                     return 0
+                self.append_startup_trace('admin-restart cancelled')
                 logger.warning('Administrator restart was cancelled during startup.')
 
         config.auto_disable_wifi_on_ethernet = False
@@ -502,7 +558,7 @@ class Application:
             return True
 
         if show_dialog_on_duplicate:
-            show_dialog(
+            show_native_message_box(
                 'info',
                 'PolyFi Already Running',
                 'PolyFi is already running. Close the existing instance before starting another one.',
@@ -609,8 +665,10 @@ class Application:
         if args.print_paths:
             return self.print_paths()
 
+        self.append_startup_trace(f'handle_run_command argv={argv if (argv := list(sys.argv[1:])) else []}')
         override_result = self.apply_cli_overrides_from_args(args)
         if override_result != 0:
+            self.append_startup_trace(f'cli override validation failed code={override_result}')
             return override_result
 
         loader = ConfigLoader(config_path=args.config)
@@ -619,28 +677,48 @@ class Application:
         try:
             config = loader.load()
         except ConfigError as exc:
+            self.append_startup_trace(f'config load failed: {exc}')
             print(f'Configuration error: {exc}', file=sys.stderr)
             print(f'Config path: {config_path}', file=sys.stderr)
             return 1
 
         self.apply_runtime_overrides(config)
+        run_in_tray = args.tray or config.start_minimized_to_tray
+        self._run_in_tray_context = run_in_tray
+        self.append_startup_trace(
+            f'config loaded run_in_tray={run_in_tray} admin={self.is_running_as_administrator()} '
+            f'auto_disable_wifi_on_ethernet={config.auto_disable_wifi_on_ethernet}'
+        )
+        if run_in_tray:
+            self.console_output_manager = ConsoleOutputManager(
+                self.paths.local_data_dir / 'polyfi_ranked_output_console.log'
+            )
+            self.console_output_manager.install_stream_proxies()
+            self.console_output_manager.hide_console()
+        else:
+            self.console_output_manager = None
         effective_log_level = self.resolve_log_level(config.log_level)
         logger = configure_logging(effective_log_level, config.log_file)
+        if self.console_output_manager is not None:
+            self.console_output_manager.attach_logger(logger)
         self.set_windows_app_user_model_id()
         logger.info('Using config file: %s', config_path)
         logger.info('Effective log level: %s', effective_log_level)
 
         startup_admin_result = self.handle_startup_admin_requirements(config, logger)
         if startup_admin_result is not None:
+            self.append_startup_trace(f'startup admin requirements returned code={startup_admin_result}')
             return startup_admin_result
 
         try:
             acquired = self.acquire_single_instance_guard(show_dialog_on_duplicate=True)
         except OSError as exc:
+            self.append_startup_trace(f'single instance guard failure: {exc}')
             logger.error('%s', exc)
             show_dialog('error', 'Startup Failed', str(exc))
             return 1
         if not acquired:
+            self.append_startup_trace('duplicate instance detected')
             logger.info('Another PolyFi instance is already running. Exiting duplicate launch.')
             return 0
 
@@ -653,24 +731,34 @@ class Application:
             on_config_reloaded=self.on_config_reloaded,
         )
         try:
-            if args.tray or config.start_minimized_to_tray:
+            if run_in_tray:
+                self.append_startup_trace('starting tray application')
                 tray_app = TrayApplication(
                     service=service,
                     logger=logger,
                     config_loader=loader,
                     restart_as_admin_callback=self.restart_as_administrator,
+                    show_output_console_callback=(
+                        self.console_output_manager.show_console_with_history
+                        if self.console_output_manager is not None
+                        else None
+                    ),
                 )
                 tray_app.run()
+                self.append_startup_trace('tray application exited normally')
                 return 0
 
             try:
+                self.append_startup_trace('starting foreground service loop')
                 service.run_forever()
             except KeyboardInterrupt:
+                self.append_startup_trace('foreground service loop interrupted')
                 logger.info('Keyboard interrupt received. Stopping service.')
                 service.stop()
 
             return 0
         finally:
+            self.append_startup_trace('releasing single instance guard')
             self.release_single_instance_guard()
 
     def run(self, argv: list[str] | None = None) -> int:
@@ -697,7 +785,12 @@ def main() -> int:
     Returns:
         Process exit code.
     """
-    return Application().run()
+    app = Application()
+    try:
+        return app.run()
+    except Exception as exc:  # noqa: BLE001
+        app.append_startup_trace(f'unhandled exception: {exc!r}')
+        raise
 
 
 if __name__ == '__main__':

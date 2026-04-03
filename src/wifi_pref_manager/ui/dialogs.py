@@ -4,10 +4,50 @@ Reusable Tkinter dialog helpers for lightweight runtime notifications.
 
 from __future__ import annotations
 
+import ctypes
 import threading
 import tkinter as tk
 from tkinter import messagebox, ttk
 from collections.abc import Callable, Sequence
+
+
+MB_OK = 0x00000000
+MB_ICONERROR = 0x00000010
+MB_ICONWARNING = 0x00000030
+MB_ICONINFORMATION = 0x00000040
+MB_SETFOREGROUND = 0x00010000
+MB_TOPMOST = 0x00040000
+
+
+def show_native_message_box(kind: str, title: str, message: str) -> None:
+    """
+    Display a native Windows message box when available.
+
+    Parameters:
+        kind:
+            Dialog kind such as ``warning``, ``error``, or ``info``.
+        title:
+            Dialog title text.
+        message:
+            Dialog body text.
+    """
+    icon_flag = MB_ICONINFORMATION
+    if kind == 'error':
+        icon_flag = MB_ICONERROR
+    elif kind == 'warning':
+        icon_flag = MB_ICONWARNING
+
+    try:
+        user32 = ctypes.windll.user32
+    except AttributeError:
+        return
+
+    user32.MessageBoxW(
+        None,
+        str(message),
+        str(title),
+        MB_OK | icon_flag | MB_TOPMOST | MB_SETFOREGROUND,
+    )
 
 
 def _show_dialog(

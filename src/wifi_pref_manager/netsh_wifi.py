@@ -98,6 +98,29 @@ class NetshWiFiApi:
         )
 
     @staticmethod
+    def _hidden_subprocess_kwargs() -> dict[str, object]:
+        """
+        Return Windows-specific subprocess flags that suppress console windows.
+
+        Returns:
+            Keyword arguments safe to splat into ``subprocess.run``.
+        """
+        kwargs: dict[str, object] = {}
+        create_no_window = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+        if create_no_window:
+            kwargs['creationflags'] = create_no_window
+
+        startupinfo_type = getattr(subprocess, 'STARTUPINFO', None)
+        startf_use_showwindow = getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
+        if startupinfo_type is not None and startf_use_showwindow:
+            startupinfo = startupinfo_type()
+            startupinfo.dwFlags |= startf_use_showwindow
+            startupinfo.wShowWindow = 0
+            kwargs['startupinfo'] = startupinfo
+
+        return kwargs
+
+    @staticmethod
     def is_elevation_required_error(exc: BaseException) -> bool:
         """
         Determine whether a command failure indicates missing administrator rights.
@@ -139,6 +162,7 @@ class NetshWiFiApi:
             encoding='utf-8',
             errors='replace',
             shell=False,
+            **self._hidden_subprocess_kwargs(),
         )
 
         if result.returncode != 0:
@@ -175,6 +199,7 @@ class NetshWiFiApi:
             encoding='utf-8',
             errors='replace',
             shell=False,
+            **self._hidden_subprocess_kwargs(),
         )
         if result.returncode != 0:
             raise subprocess.SubprocessError(

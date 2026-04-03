@@ -90,57 +90,62 @@ class StartMenuShortcutManager:
         return True
 
     def _build_shortcut_spec(self, launch_arguments: list[str]) -> ShortcutSpec:
-        launcher = self._resolve_powershell_executable()
+        launcher = self._resolve_wscript_executable()
+        launch_script = self._write_elevated_launch_script(launch_arguments)
         return ShortcutSpec(
             shortcut_path=self.get_shortcut_path(),
             target_path=launcher,
-            arguments=self._build_elevated_launch_arguments(launch_arguments),
-            working_directory=Path(__file__).resolve().parents[2],
+            arguments=[str(launch_script)],
+            working_directory=launch_script.parent,
             icon_path=self.paths.start_menu_icon_file,
             description=f'Launch {APP_NAME} in the system tray as administrator.',
         )
 
-    def _resolve_launcher_executable(self) -> Path:
+    def _resolve_runtime_launch_target(self) -> tuple[Path, list[str], Path]:
         """
-        Resolve the preferred Python launcher for a Start Menu launch.
+        Resolve the preferred executable and base arguments for a Start Menu launch.
         """
         executable = Path(sys.executable).resolve()
         pythonw = executable.with_name('pythonw.exe')
-        return pythonw if pythonw.exists() else executable
+        if pythonw.exists():
+            return pythonw, ['-m', 'wifi_pref_manager.app'], pythonw.parent
+        scripts_dir = executable.parent / 'Scripts'
+        packaged_launcher = scripts_dir / 'polyfi-ranked.exe'
+        if packaged_launcher.exists():
+            return packaged_launcher, [], packaged_launcher.parent
+        return executable, ['-m', 'wifi_pref_manager.app'], executable.parent
 
-    def _resolve_powershell_executable(self) -> Path:
+    def _resolve_wscript_executable(self) -> Path:
         """
-        Resolve the PowerShell executable used by the shortcut wrapper.
+        Resolve the Windows Script Host executable used by the shortcut.
         """
-        return Path(r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe')
+        return Path(r'C:\Windows\System32\wscript.exe')
 
-    def _build_elevated_launch_arguments(self, launch_arguments: list[str]) -> list[str]:
+    def _write_elevated_launch_script(self, launch_arguments: list[str]) -> Path:
         """
-        Build the PowerShell wrapper arguments that elevate the real tray launch.
+        Write a VBScript launcher that elevates the real tray app directly.
         """
+        launcher, base_runtime_args, working_directory = self._resolve_runtime_launch_target()
+        runtime_args = [*base_runtime_args, *launch_arguments]
+        script_path = self.paths.local_data_dir / 'polyfi_ranked_start_menu.vbs'
+        script_path.parent.mkdir(parents=True, exist_ok=True)
 
-        def ps_quote(value: str) -> str:
-            return "'" + value.replace("'", "''") + "'"
+        def vbs_quote(value: str) -> str:
+            return '"' + value.replace('"', '""') + '"'
 
-        launcher = self._resolve_launcher_executable()
-        runtime_args = ['-m', 'wifi_pref_manager.app', *launch_arguments]
-        argument_list = ', '.join(ps_quote(arg) for arg in runtime_args)
-        command = (
-            f"Start-Process -FilePath {ps_quote(str(launcher))} "
-            f"-ArgumentList @({argument_list}) "
-            f"-WorkingDirectory {ps_quote(str(Path(__file__).resolve().parents[2]))} "
-            "-Verb RunAs"
-        )
-        return [
-            '-NoProfile',
-            '-NonInteractive',
-            '-WindowStyle',
-            'Hidden',
-            '-ExecutionPolicy',
-            'Bypass',
-            '-Command',
-            command,
+        parameter_string = subprocess.list2cmdline(runtime_args)
+        script_lines = [
+            'Set shellApp = CreateObject("Shell.Application")',
+            (
+                f'shellApp.ShellExecute {vbs_quote(str(launcher))}, '
+                f'{vbs_quote(parameter_string)}, '
+                f'{vbs_quote(str(working_directory))}, '
+                '"runas", 0'
+            ),
         ]
+        script = '\n'.join(script_lines) + '\n'
+        script_path.write_text(script, encoding='utf-8', newline='\r\n')
+        return script_path
 
     def _create_shortcut(self, spec: ShortcutSpec) -> None:
         """

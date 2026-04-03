@@ -62,11 +62,13 @@ class TrayApplication:
         logger: logging.Logger,
         config_loader=None,
         restart_as_admin_callback: Callable[[], bool] | None = None,
+        show_output_console_callback: Callable[[], None] | None = None,
     ) -> None:
         self.service = service
         self.logger = logger
         self.config_loader = config_loader
         self.restart_as_admin_callback = restart_as_admin_callback
+        self.show_output_console_callback = show_output_console_callback
         self.icon: pystray.Icon | None = None
         self._settings_window: SettingsWindow | None = None
         self.service.set_status_changed_callback(self.refresh_menu)
@@ -184,6 +186,16 @@ class TrayApplication:
         # Run the settings window in its own thread so the tray stays responsive.
         thread = threading.Thread(target=self._settings_window.open, daemon=True)
         thread.start()
+
+    def on_show_output_console(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        """
+        Reveal the buffered output console for the tray session.
+        """
+        del icon, item
+        if self.show_output_console_callback is None:
+            return
+        self.logger.info('Showing the buffered output console from the tray.')
+        self.show_output_console_callback()
 
     def on_quit(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         """
@@ -322,6 +334,11 @@ class TrayApplication:
                 pystray.MenuItem('Manage Networks…', self.on_manage_networks),
                 pystray.MenuItem('Rescan Now', self.on_rescan),
                 pystray.MenuItem('Re-enable Wi-Fi (Disable Auto Ethernet)', self.on_reenable_wifi),
+                pystray.MenuItem(
+                    'Show Output Console',
+                    self.on_show_output_console,
+                    enabled=lambda item: self.show_output_console_callback is not None,
+                ),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem('Quit', self.on_quit),
             ),
