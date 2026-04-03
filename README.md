@@ -11,6 +11,7 @@ A Windows-focused Python application that lets you define an ordered list of Wi-
 - TOML configuration
 - Rotating log file support
 - Optional system tray app
+- Start-menu shortcut installation helpers (launch, uninstall, enable startup)
 - Optional Windows Task Scheduler startup registration
 - Default config and logs stored in platform app-data directories
 - Live config reload while the service is running
@@ -46,7 +47,22 @@ poetry run polyfi-ranked --tray
 
 ```powershell
 poetry run polyfi-ranked-install-task
+
+# Or use the consolidated startup manager:
+poetry run polyfi-ranked-startup enable-autostart
 ```
+
+## Start Menu shortcuts
+
+```powershell
+poetry run polyfi-ranked-startup install-shortcuts
+```
+
+This installs a `PolyFi Ranked` Start Menu folder containing:
+
+- `PolyFi: Ranked` (tray launch, requests elevation if needed)
+- `Uninstall PolyFi: Ranked`
+- `Enable Start with Windows`
 
 ## Live config reload
 

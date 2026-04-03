@@ -31,6 +31,8 @@ Example Usage:
 from __future__ import annotations
 
 import logging
+import subprocess
+import sys
 import threading
 from typing import TYPE_CHECKING
 
@@ -38,6 +40,7 @@ from PIL import Image, ImageDraw
 import pystray
 
 from wifi_pref_manager.service import WiFiPreferenceService
+from wifi_pref_manager.ui.log_viewer import LogHistoryHandler, LogViewerWindow
 
 if TYPE_CHECKING:
     from wifi_pref_manager.ui.settings import SettingsWindow
@@ -63,6 +66,10 @@ class TrayApplication:
         self.config_loader = config_loader
         self.icon: pystray.Icon | None = None
         self._settings_window: SettingsWindow | None = None
+        self._log_window: LogViewerWindow | None = None
+        self.log_handler = LogHistoryHandler()
+        self.log_handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s'))
+        self.logger.addHandler(self.log_handler)
 
     def create_image(self) -> Image.Image:
         """
@@ -114,21 +121,53 @@ class TrayApplication:
         self.service.stop()
         icon.stop()
 
+    def on_show_output(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        del icon, item
+        if self._log_window is None:
+            self._log_window = LogViewerWindow(
+                service=self.service,
+                config_loader=self.config_loader,
+                logger=self.logger,
+                log_handler=self.log_handler,
+            )
+        thread = threading.Thread(target=self._log_window.open, daemon=True)
+        thread.start()
+
+    def on_notify(self, title: str, message: str) -> None:
+        if self.icon is None:
+            return
+        try:
+            self.icon.notify(message, title=title)
+        except Exception:  # noqa: BLE001
+            self.logger.debug('Failed to show tray notification.', exc_info=True)
+
+    def on_install_start_menu(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        del icon, item
+        subprocess.run([sys.executable, '-m', 'wifi_pref_manager.startup', 'install-shortcuts'], check=False)
+
+    def on_enable_startup(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        del icon, item
+        subprocess.run([sys.executable, '-m', 'wifi_pref_manager.startup', 'enable-autostart'], check=False)
+
     def run(self) -> None:
         """
         Start the service and tray icon loop.
         """
         self.service.start()
+        self.service.on_notify = self.on_notify
         self.icon = pystray.Icon(
             'polyfi_ranked',
             self.create_image(),
             'PolyFi: Ranked',
             menu=pystray.Menu(
                 pystray.MenuItem('Manage Networks…', self.on_manage_networks),
+                pystray.MenuItem('Show Output…', self.on_show_output),
                 pystray.MenuItem('Rescan Now', self.on_rescan),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem('Install Start Menu Shortcuts', self.on_install_start_menu),
+                pystray.MenuItem('Enable Start With Windows', self.on_enable_startup),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem('Quit', self.on_quit),
             ),
         )
         self.icon.run()
-

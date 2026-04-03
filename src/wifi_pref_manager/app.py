@@ -38,12 +38,15 @@ from __future__ import annotations
 
 import argparse
 import sys
+from tkinter import messagebox
+import tkinter as tk
 
 from wifi_pref_manager.config import ConfigError, ConfigLoader
 from wifi_pref_manager.logging_utils import configure_logging
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
 from wifi_pref_manager.paths import AppPaths
 from wifi_pref_manager.service import WiFiPreferenceService
+from wifi_pref_manager.startup import is_running_as_admin, relaunch_as_admin
 from wifi_pref_manager.ui.tray import TrayApplication
 
 
@@ -83,9 +86,19 @@ class Application:
             action='store_true',
             help='Print the default config and log paths, then exit.',
         )
+        parser.add_argument(
+            '--require-admin',
+            action='store_true',
+            help='Require administrator rights (used by start-menu shortcut).',
+        )
+        parser.add_argument(
+            '--show-console',
+            action='store_true',
+            help='Show live console output even in tray mode.',
+        )
         return parser
 
-    def on_config_reloaded(self, config) -> object:
+    def on_config_reloaded(self, config, include_console: bool) -> object:
         """
         Reconfigure logging when the config changes.
 
@@ -96,7 +109,17 @@ class Application:
         Returns:
             Refreshed logger instance.
         """
-        return configure_logging(config.log_level, config.log_file)
+        return configure_logging(config.log_level, config.log_file, include_console=include_console)
+
+    def _prompt_admin_restart(self) -> bool:
+        root = tk.Tk()
+        root.withdraw()
+        should_restart = messagebox.askyesno(
+            'Administrator permissions required',
+            'PolyFi needs administrator privileges when started from the Start menu. Restart as administrator now?',
+        )
+        root.destroy()
+        return should_restart
 
     def run(self, argv: list[str] | None = None) -> int:
         """
@@ -127,8 +150,16 @@ class Application:
             print(f'Config path: {config_path}', file=sys.stderr)
             return 1
 
-        logger = configure_logging(config.log_level, config.log_file)
+        tray_mode = args.tray or config.start_minimized_to_tray
+        include_console = args.show_console or not tray_mode
+        logger = configure_logging(config.log_level, config.log_file, include_console=include_console)
         logger.info('Using config file: %s', config_path)
+
+        if args.require_admin and not is_running_as_admin():
+            logger.warning('Start-menu launch detected without administrator rights.')
+            if self._prompt_admin_restart() and relaunch_as_admin(sys.argv):
+                return 0
+            return 1
 
         wifi_api = NetshWiFiApi(logger=logger)
         service = WiFiPreferenceService(
@@ -136,10 +167,10 @@ class Application:
             wifi_api=wifi_api,
             logger=logger,
             config_loader=loader,
-            on_config_reloaded=self.on_config_reloaded,
+            on_config_reloaded=lambda updated_config: self.on_config_reloaded(updated_config, include_console=include_console),
         )
 
-        if args.tray or config.start_minimized_to_tray:
+        if tray_mode:
             tray_app = TrayApplication(service=service, logger=logger, config_loader=loader)
             tray_app.run()
             return 0

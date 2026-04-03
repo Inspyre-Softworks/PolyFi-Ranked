@@ -214,11 +214,17 @@ class SettingsWindow:
         frame_opts.grid(row=1, column=0, padx=10, pady=4, sticky='ew')
 
         auto_eth_var = tk.BooleanVar(value=config.auto_disable_wifi_on_ethernet)
+        close_hint_var = tk.BooleanVar(value=config.show_close_window_hint)
         ttk.Checkbutton(
             frame_opts,
             text='Automatically disconnect Wi-Fi when Ethernet is connected',
             variable=auto_eth_var,
         ).grid(row=0, column=0, sticky='w')
+        ttk.Checkbutton(
+            frame_opts,
+            text='Show reminder when closing the output window',
+            variable=close_hint_var,
+        ).grid(row=1, column=0, sticky='w')
 
         # ---- Action buttons --------------------------------------------
         frame_btns = ttk.Frame(win)
@@ -243,6 +249,7 @@ class SettingsWindow:
                 log_file=config.log_file,
                 start_minimized_to_tray=config.start_minimized_to_tray,
                 auto_disable_wifi_on_ethernet=auto_eth_var.get(),
+                show_close_window_hint=close_hint_var.get(),
             )
 
             try:

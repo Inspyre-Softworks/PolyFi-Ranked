@@ -48,6 +48,7 @@ log_file = ''
 interface_name = ''
 start_minimized_to_tray = false
 auto_disable_wifi_on_ethernet = true
+show_close_window_hint = true
 
 [[networks]]
 ssid = 'MyBestWiFi'
@@ -186,6 +187,7 @@ class ConfigLoader:
             log_file=log_file,
             start_minimized_to_tray=bool(general.get('start_minimized_to_tray', False)),
             auto_disable_wifi_on_ethernet=bool(general.get('auto_disable_wifi_on_ethernet', True)),
+            show_close_window_hint=bool(general.get('show_close_window_hint', True)),
         )
         self.mark_loaded()
         return config
@@ -219,6 +221,7 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         f'interface_name = {_str(config.interface_name or "")}\n',
         f'start_minimized_to_tray = {_bool(config.start_minimized_to_tray)}\n',
         f'auto_disable_wifi_on_ethernet = {_bool(config.auto_disable_wifi_on_ethernet)}\n',
+        f'show_close_window_hint = {_bool(config.show_close_window_hint)}\n',
     ]
 
     for network in config.preferred_networks:

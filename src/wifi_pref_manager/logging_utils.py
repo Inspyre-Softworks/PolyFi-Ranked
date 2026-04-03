@@ -38,7 +38,7 @@ from pathlib import Path
 LOGGER_NAME = 'polyfi_ranked'
 
 
-def configure_logging(log_level: str, log_file: str) -> logging.Logger:
+def configure_logging(log_level: str, log_file: str, *, include_console: bool = True) -> logging.Logger:
     """
     Configure and return the shared application logger.
 
@@ -61,8 +61,10 @@ def configure_logging(log_level: str, log_file: str) -> logging.Logger:
         fmt='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
     )
 
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
+    if include_console:
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
     file_handler = RotatingFileHandler(
         Path(log_file).expanduser().resolve(),
@@ -72,7 +74,6 @@ def configure_logging(log_level: str, log_file: str) -> logging.Logger:
     )
     file_handler.setFormatter(formatter)
 
-    logger.addHandler(console_handler)
     logger.addHandler(file_handler)
     logger.propagate = False
     return logger

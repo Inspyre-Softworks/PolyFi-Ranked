@@ -72,6 +72,18 @@ class TaskSchedulerInstaller:
         subprocess.run(command, check=True)
         print(f'Installed scheduled task: {TASK_NAME}')
 
+    def uninstall(self) -> None:
+        """Delete the scheduled task if it exists."""
+        command = [
+            'schtasks',
+            '/Delete',
+            '/F',
+            '/TN',
+            TASK_NAME,
+        ]
+        subprocess.run(command, check=False)
+        print(f'Removed scheduled task: {TASK_NAME}')
+
 
 def main() -> int:
     """

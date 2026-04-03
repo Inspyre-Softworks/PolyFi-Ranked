@@ -66,6 +66,7 @@ class WiFiPreferenceService:
         logger: logging.Logger,
         config_loader: ConfigLoader | None = None,
         on_config_reloaded: Callable[[AppConfig], logging.Logger] | None = None,
+        on_notify: Callable[[str, str], None] | None = None,
     ) -> None:
         """
         Parameters:
@@ -85,9 +86,11 @@ class WiFiPreferenceService:
         self.logger = logger
         self.config_loader = config_loader
         self.on_config_reloaded = on_config_reloaded
+        self.on_notify = on_notify
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
         self._wifi_disabled_by_ethernet: bool = False
+        self._ethernet_notified: bool = False
 
         if not self.config.interface_name:
             self.config.interface_name = self.wifi_api.detect_wifi_interface()
@@ -202,32 +205,43 @@ class WiFiPreferenceService:
         """
         if self.config.auto_disable_wifi_on_ethernet:
             ethernet_active = self.wifi_api.is_ethernet_connected(self.interface_name)
-            self.logger.debug('Ethernet connection check: ethernet_active=%s, _wifi_disabled_by_ethernet=%s',
-                            ethernet_active, self._wifi_disabled_by_ethernet)
-            
+            self.logger.debug(
+                'Ethernet connection check: ethernet_active=%s, _wifi_disabled_by_ethernet=%s',
+                ethernet_active,
+                self._wifi_disabled_by_ethernet,
+            )
+
             if ethernet_active:
-                # Ethernet is connected - disable WiFi adapter completely
+                if not self._ethernet_notified:
+                    self._notify(
+                        'Ethernet detected',
+                        'Ethernet is active. Wi-Fi will be disabled unless you turn off auto-disable in settings.',
+                    )
+                    self._ethernet_notified = True
+
                 if not self._wifi_disabled_by_ethernet:
                     self.logger.info('Ethernet connection detected. Disabling Wi-Fi adapter completely.')
                     try:
                         self.wifi_api.disable_wifi_adapter(self.interface_name)
                         self._wifi_disabled_by_ethernet = True
+                        self._notify(
+                            'Wi-Fi disabled',
+                            'Wi-Fi interface was disabled because Ethernet is connected.',
+                        )
                     except NetshError as exc:
                         self.logger.error('Failed to disable Wi-Fi adapter: %s', exc)
                 return
-            else:
-                # Ethernet is not connected - re-enable WiFi if it was disabled
-                if self._wifi_disabled_by_ethernet:
-                    self.logger.info('Ethernet disconnected. Re-enabling Wi-Fi adapter.')
-                    try:
-                        self.wifi_api.enable_wifi_adapter(self.interface_name)
-                        self._wifi_disabled_by_ethernet = False
-                        # Give the adapter a moment to come back up
-                        time.sleep(2)
-                    except NetshError as exc:
-                        self.logger.error('Failed to re-enable Wi-Fi adapter: %s', exc)
-                        # Clear the flag anyway to avoid getting stuck
-                        self._wifi_disabled_by_ethernet = False
+
+            self._ethernet_notified = False
+            if self._wifi_disabled_by_ethernet:
+                self.logger.info('Ethernet disconnected. Re-enabling Wi-Fi adapter.')
+                try:
+                    self.wifi_api.enable_wifi_adapter(self.interface_name)
+                    self._wifi_disabled_by_ethernet = False
+                    time.sleep(2)
+                except NetshError as exc:
+                    self.logger.error('Failed to re-enable Wi-Fi adapter: %s', exc)
+                    self._wifi_disabled_by_ethernet = False
 
         current_ssid = self.wifi_api.get_current_ssid()
         visible_ssids = self.wifi_api.get_visible_ssids()
@@ -268,6 +282,15 @@ class WiFiPreferenceService:
                 self.logger.info('Connected to %r', best_available)
             else:
                 self.logger.warning('Connection attempt to %r could not be confirmed.', best_available)
+
+    def _notify(self, title: str, message: str) -> None:
+        """Send a user notification when a callback is configured."""
+        if self.on_notify is None:
+            return
+        try:
+            self.on_notify(title, message)
+        except Exception:  # noqa: BLE001
+            self.logger.debug('Failed to send UI notification.', exc_info=True)
 
     def run_forever(self) -> None:
         """
