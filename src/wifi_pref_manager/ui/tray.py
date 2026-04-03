@@ -40,6 +40,7 @@ import pystray
 
 from wifi_pref_manager.config import save_config
 from wifi_pref_manager.icon_assets import create_app_icon_image
+from wifi_pref_manager.paths import APP_NAME
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.ui.dialogs import show_custom_dialog_async, show_dialog_async
 
@@ -343,5 +344,15 @@ class TrayApplication:
                 pystray.MenuItem('Quit', self.on_quit),
             ),
         )
-        self.icon.run()
+        self.icon.run(setup=self._on_icon_ready)
+
+    def _on_icon_ready(self, icon: pystray.Icon) -> None:
+        """
+        Called once the tray icon is active.  Shows a brief notification so the
+        user can locate the icon when it appears in the system tray overflow area.
+        """
+        try:
+            icon.notify(f'{APP_NAME} is now running in your system tray.', APP_NAME)
+        except Exception:  # noqa: BLE001
+            pass
 

@@ -42,6 +42,7 @@ from datetime import datetime
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 from wifi_pref_manager.console_output import ConsoleOutputManager
 from wifi_pref_manager.config import ConfigError, ConfigLoader
@@ -486,9 +487,47 @@ class Application:
                 return None
             else:
                 if launched:
-                    self.append_startup_trace('tray-admin-restart launched successfully')
-                    logger.info('Administrator restart launched automatically for tray startup. Exiting current instance.')
-                    return 0
+                    self.append_startup_trace('tray-admin-restart apparently launched, verifying elevated instance started')
+                    # ShellExecuteW can return a success code (> 32) even when the elevated
+                    # process is immediately killed by an administrator policy such as
+                    # AppLocker or a Software Restriction Policy.  Poll the single-instance
+                    # mutex for up to 3 seconds to confirm the elevated instance actually
+                    # started before giving up the current process.
+                    elevated_confirmed = False
+                    deadline = time.monotonic() + 2.0
+                    poll_interval = 0.05
+                    while time.monotonic() < deadline:
+                        time.sleep(poll_interval)
+                        poll_interval = min(poll_interval * 2, 0.4)
+                        try:
+                            acquired = self.single_instance_guard.acquire()
+                        except OSError as mutex_exc:
+                            self.append_startup_trace(f'tray-admin-restart: mutex check error: {mutex_exc}')
+                            logger.debug('Mutex check during elevated-instance verification failed: %s', mutex_exc)
+                            break
+                        if acquired:
+                            # Mutex is still free; elevated process hasn't acquired it yet.
+                            self.single_instance_guard.release()
+                        else:
+                            # Another process now holds the mutex — elevated instance running.
+                            elevated_confirmed = True
+                            break
+                    if elevated_confirmed:
+                        self.append_startup_trace('tray-admin-restart: elevated instance confirmed running')
+                        logger.info('Administrator restart launched automatically for tray startup. Exiting current instance.')
+                        return 0
+                    # The elevated process never acquired the mutex.  It was most likely
+                    # blocked by an administrator policy after ShellExecuteW returned success.
+                    self.append_startup_trace(
+                        'tray-admin-restart: elevated instance did not start within 2s, continuing without ethernet disable'
+                    )
+                    logger.warning(
+                        'Elevated process did not acquire the instance guard within 2 seconds. '
+                        'It was probably blocked by an administrator policy. '
+                        'Disabling automatic Wi-Fi disable on Ethernet for this session.'
+                    )
+                    config.auto_disable_wifi_on_ethernet = False
+                    return None
                 self.append_startup_trace('tray-admin-restart cancelled')
                 logger.warning('Administrator restart was cancelled during tray startup.')
 
