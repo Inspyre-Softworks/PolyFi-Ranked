@@ -479,6 +479,11 @@ class Application:
                     f'{exc}\n\n'
                     'Continuing with automatic Ethernet Wi-Fi disable turned off for this session.',
                 )
+                config.auto_disable_wifi_on_ethernet = False
+                logger.warning(
+                    'Disabled automatic Wi-Fi disable on Ethernet for this running instance because the process is not elevated.'
+                )
+                return None
             else:
                 if launched:
                     self.append_startup_trace('tray-admin-restart launched successfully')
