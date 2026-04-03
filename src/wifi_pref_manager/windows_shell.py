@@ -90,15 +90,14 @@ class StartMenuShortcutManager:
         return True
 
     def _build_shortcut_spec(self, launch_arguments: list[str]) -> ShortcutSpec:
-        launcher = self._resolve_wscript_executable()
-        launch_script = self._write_elevated_launch_script(launch_arguments)
+        executable, base_args, working_directory = self._resolve_runtime_launch_target()
         return ShortcutSpec(
             shortcut_path=self.get_shortcut_path(),
-            target_path=launcher,
-            arguments=[str(launch_script)],
-            working_directory=launch_script.parent,
+            target_path=executable,
+            arguments=[*base_args, *launch_arguments],
+            working_directory=working_directory,
             icon_path=self.paths.start_menu_icon_file,
-            description=f'Launch {APP_NAME} in the system tray as administrator.',
+            description=f'Launch {APP_NAME} in the system tray.',
         )
 
     def _resolve_runtime_launch_target(self) -> tuple[Path, list[str], Path]:
@@ -114,38 +113,6 @@ class StartMenuShortcutManager:
         if packaged_launcher.exists():
             return packaged_launcher, [], packaged_launcher.parent
         return executable, ['-m', 'wifi_pref_manager.app'], executable.parent
-
-    def _resolve_wscript_executable(self) -> Path:
-        """
-        Resolve the Windows Script Host executable used by the shortcut.
-        """
-        return Path(r'C:\Windows\System32\wscript.exe')
-
-    def _write_elevated_launch_script(self, launch_arguments: list[str]) -> Path:
-        """
-        Write a VBScript launcher that elevates the real tray app directly.
-        """
-        launcher, base_runtime_args, working_directory = self._resolve_runtime_launch_target()
-        runtime_args = [*base_runtime_args, *launch_arguments]
-        script_path = self.paths.local_data_dir / 'polyfi_ranked_start_menu.vbs'
-        script_path.parent.mkdir(parents=True, exist_ok=True)
-
-        def vbs_quote(value: str) -> str:
-            return '"' + value.replace('"', '""') + '"'
-
-        parameter_string = subprocess.list2cmdline(runtime_args)
-        script_lines = [
-            'Set shellApp = CreateObject("Shell.Application")',
-            (
-                f'shellApp.ShellExecute {vbs_quote(str(launcher))}, '
-                f'{vbs_quote(parameter_string)}, '
-                f'{vbs_quote(str(working_directory))}, '
-                '"runas", 0'
-            ),
-        ]
-        script = '\n'.join(script_lines) + '\n'
-        script_path.write_text(script, encoding='utf-8', newline='\r\n')
-        return script_path
 
     def _create_shortcut(self, spec: ShortcutSpec) -> None:
         """
