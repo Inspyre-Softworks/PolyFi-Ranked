@@ -45,13 +45,13 @@ import sys
 import time
 
 from wifi_pref_manager.console_output import ConsoleOutputManager
-from wifi_pref_manager.config import ConfigError, ConfigLoader
+from wifi_pref_manager.config import ConfigError, ConfigLoader, save_config
 from wifi_pref_manager.logging_utils import configure_logging
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
 from wifi_pref_manager.paths import APP_USER_MODEL_ID, AppPaths
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
-from wifi_pref_manager.ui.dialogs import show_dialog, show_native_message_box
+from wifi_pref_manager.ui.dialogs import show_custom_dialog, show_dialog, show_native_message_box
 from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.windows_shell import StartMenuShortcutManager
 
@@ -442,7 +442,38 @@ class Application:
         except (AttributeError, OSError):
             return False
 
-    def handle_startup_admin_requirements(self, config, logger) -> int | None:
+    def _permanently_disable_ethernet_feature(self, config, loader, logger) -> None:
+        """
+        Permanently disable auto_disable_wifi_on_ethernet in config and save to disk.
+
+        Parameters:
+            config:
+                Runtime configuration object to mutate.
+            loader:
+                ConfigLoader used to resolve the config file path.
+            logger:
+                Application logger.
+        """
+        config.auto_disable_wifi_on_ethernet = False
+        if loader is None:
+            self.append_startup_trace('auto_disable_wifi_on_ethernet disabled for session (no loader to save)')
+            logger.warning(
+                'Disabling automatic Wi-Fi disable on Ethernet for this running instance '
+                '(no config loader available to persist the change).'
+            )
+            return
+        try:
+            save_config(config, loader.config_path)
+            self.append_startup_trace('auto_disable_wifi_on_ethernet permanently disabled in config')
+            logger.info(
+                'Permanently disabled auto_disable_wifi_on_ethernet in config: %s',
+                loader.config_path,
+            )
+        except OSError as exc:
+            self.append_startup_trace(f'failed to save config after disabling ethernet feature: {exc}')
+            logger.warning('Could not save config after disabling ethernet feature: %s', exc)
+
+    def handle_startup_admin_requirements(self, config, logger, *, config_loader=None) -> int | None:
         """
         Proactively resolve admin-only startup requirements before the service begins.
 
@@ -451,6 +482,8 @@ class Application:
                 Loaded runtime configuration.
             logger:
                 Application logger.
+            config_loader:
+                Optional ConfigLoader used to permanently persist config changes.
 
         Returns:
             ``None`` when startup should continue, or a process exit code when the
@@ -478,25 +511,26 @@ class Application:
                 # Elevation failed (e.g. access denied, code ≤ 32).  In tray mode we
                 # must NOT show a blocking dialog here — MessageBoxW may appear behind
                 # other windows with no foreground focus, permanently preventing the
-                # tray icon from starting.  Log the failure and continue silently.
+                # tray icon from starting.  Permanently disable the feature so subsequent
+                # launches do not attempt elevation again (and do not trigger the UAC dialog).
                 self.append_startup_trace(f'tray-admin-restart failed: {exc}')
                 logger.warning(
                     'Could not restart as administrator (tray mode): %s. '
-                    'Disabling automatic Wi-Fi disable on Ethernet for this session.',
+                    'Permanently disabling automatic Wi-Fi disable on Ethernet.',
                     exc,
                 )
-                config.auto_disable_wifi_on_ethernet = False
+                self._permanently_disable_ethernet_feature(config, config_loader, logger)
                 return None
             else:
                 if not launched:
-                    # ShellExecuteW returned 1223 (user-cancelled UAC).  In tray mode
-                    # just disable the feature silently and continue.
+                    # ShellExecuteW returned a non-success code other than a policy block.
+                    # Permanently disable so subsequent launches do not prompt again.
                     self.append_startup_trace('tray-admin-restart cancelled by user')
                     logger.warning(
                         'Administrator restart was cancelled. '
-                        'Disabling automatic Wi-Fi disable on Ethernet for this session.'
+                        'Permanently disabling automatic Wi-Fi disable on Ethernet.'
                     )
-                    config.auto_disable_wifi_on_ethernet = False
+                    self._permanently_disable_ethernet_feature(config, config_loader, logger)
                     return None
                 self.append_startup_trace('tray-admin-restart apparently launched, verifying elevated instance started')
                 # ShellExecuteW can return a success code (> 32) even when the elevated
@@ -529,15 +563,16 @@ class Application:
                     return 0
                 # The elevated process never acquired the mutex.  It was most likely
                 # blocked by an administrator policy after ShellExecuteW returned success.
+                # Permanently disable so subsequent launches skip the elevation attempt.
                 self.append_startup_trace(
-                    'tray-admin-restart: elevated instance did not start within 2s, continuing without ethernet disable'
+                    'tray-admin-restart: elevated instance did not start within 2s, permanently disabling ethernet feature'
                 )
                 logger.warning(
                     'Elevated process did not acquire the instance guard within 2 seconds. '
                     'It was probably blocked by an administrator policy. '
-                    'Disabling automatic Wi-Fi disable on Ethernet for this session.'
+                    'Permanently disabling automatic Wi-Fi disable on Ethernet.'
                 )
-                config.auto_disable_wifi_on_ethernet = False
+                self._permanently_disable_ethernet_feature(config, config_loader, logger)
                 return None
 
         restart_requested = show_dialog(
@@ -557,12 +592,30 @@ class Application:
             except OSError as exc:
                 self.append_startup_trace(f'admin-restart failed: {exc}')
                 logger.error('Failed to restart with administrator privileges during startup: %s', exc)
-                show_dialog(
-                    'error',
+                # Offer the user a way to permanently disable so they aren't prompted every launch.
+                disable_permanently: list[bool] = [False]
+
+                def _on_disable_permanently() -> None:
+                    disable_permanently[0] = True
+
+                show_custom_dialog(
                     'Restart Failed',
                     f'PolyFi could not restart as administrator:\n\n{exc}\n\n'
-                    'Continuing with automatic Ethernet Wi-Fi disable turned off for this session.',
+                    'You can disable this feature permanently so PolyFi does not ask again, '
+                    'or continue with it turned off for this session only.',
+                    buttons=[
+                        ('Disable Permanently', _on_disable_permanently),
+                        ('This Session Only', None),
+                    ],
                 )
+                if disable_permanently[0]:
+                    self._permanently_disable_ethernet_feature(config, config_loader, logger)
+                else:
+                    config.auto_disable_wifi_on_ethernet = False
+                    logger.warning(
+                        'Disabled automatic Wi-Fi disable on Ethernet for this running instance.'
+                    )
+                return None
             else:
                 if launched:
                     self.append_startup_trace('admin-restart launched successfully')
@@ -736,10 +789,12 @@ class Application:
             return 1
 
         self.apply_runtime_overrides(config)
-        # pythonw.exe has no console window; always default to tray mode so the
-        # app remains visible even when the shortcut does not pass --tray.
-        running_under_pythonw = Path(sys.executable).stem.lower() == 'pythonw'
-        run_in_tray = args.tray or config.start_minimized_to_tray or running_under_pythonw
+        # pythonw.exe (and other consoleless launchers) redirect stdout to None
+        # because there is no console window attached.  Use this as the canonical
+        # indicator rather than inspecting the executable name, which may not always
+        # end in 'pythonw.exe' (e.g. packaged launchers, pyenv shims).
+        running_consoleless = sys.stdout is None
+        run_in_tray = args.tray or config.start_minimized_to_tray or running_consoleless
         self._run_in_tray_context = run_in_tray
         self.append_startup_trace(
             f'config loaded run_in_tray={run_in_tray} admin={self.is_running_as_administrator()} '
@@ -761,7 +816,7 @@ class Application:
         logger.info('Using config file: %s', config_path)
         logger.info('Effective log level: %s', effective_log_level)
 
-        startup_admin_result = self.handle_startup_admin_requirements(config, logger)
+        startup_admin_result = self.handle_startup_admin_requirements(config, logger, config_loader=loader)
         if startup_admin_result is not None:
             self.append_startup_trace(f'startup admin requirements returned code={startup_admin_result}')
             return startup_admin_result
