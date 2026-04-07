@@ -1153,6 +1153,8 @@ class Application:
         # because there is no console window attached.  Use this as the canonical
         # indicator rather than inspecting the executable name, which may not always
         # end in 'pythonw.exe' (e.g. packaged launchers, pyenv shims).
+        # Named `running_consoleless` to reflect that stdout=None is the specific
+        # condition we care about (tray mode needs to hide console / redirect I/O).
         running_consoleless = sys.stdout is None
         run_in_tray = args.tray or config.start_minimized_to_tray or running_consoleless
         self._run_in_tray_context = run_in_tray

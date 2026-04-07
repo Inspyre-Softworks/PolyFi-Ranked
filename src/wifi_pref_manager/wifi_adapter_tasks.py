@@ -147,7 +147,13 @@ class WifiAdapterTaskManager:
 
     @staticmethod
     def _encode_ps_command(script: str) -> str:
-        """Base64-encode a PowerShell script for use with ``-EncodedCommand``."""
+        """
+        Base64-encode a PowerShell script for use with ``-EncodedCommand``.
+
+        PowerShell's ``-EncodedCommand`` parameter expects the script encoded as
+        UTF-16LE (little-endian) and then base64-encoded.  UTF-8 or other
+        encodings will cause silent failures or decoding errors.
+        """
         return base64.b64encode(script.encode('utf-16-le')).decode('ascii')
 
     @staticmethod
