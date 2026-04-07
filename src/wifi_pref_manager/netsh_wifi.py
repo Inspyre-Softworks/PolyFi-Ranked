@@ -35,8 +35,11 @@ from pathlib import Path
 import re
 import subprocess
 import time
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 import xml.etree.ElementTree as ET
+
+if TYPE_CHECKING:
+    from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
 
 
 class NetshError(RuntimeError):
@@ -82,8 +85,13 @@ class NetshWiFiApi:
             Netsh-based fallback for Ethernet detection.
     """
 
-    def __init__(self, logger: logging.Logger) -> None:
-        self.logger = logger
+    def __init__(
+        self,
+        logger: logging.Logger | None = None,
+        task_manager: WifiAdapterTaskManager | None = None,
+    ) -> None:
+        self.logger = logger or logging.getLogger(__name__)
+        self.task_manager = task_manager
         self._ethernet_exclusion_terms = (
             'bluetooth',
             'loopback',
@@ -426,6 +434,11 @@ class NetshWiFiApi:
         This is equivalent to pressing the WiFi button in Windows Quick Settings,
         completely disabling the wireless radio while leaving Ethernet active.
 
+        When a task manager is configured and the corresponding scheduled task
+        is installed, the command is executed via ``schtasks /run`` so no
+        process elevation is needed.  The adapter state is verified afterwards;
+        if still enabled the method falls back to a direct ``netsh`` call.
+
         Parameters:
             interface_name:
                 Wireless interface name to disable.
@@ -435,6 +448,26 @@ class NetshWiFiApi:
                 If the command fails.
         """
         self.logger.debug('Disabling Wi-Fi adapter: %s', interface_name)
+        if self.task_manager is not None:
+            from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskError
+            try:
+                self.task_manager.disable_wifi()
+                try:
+                    if not self.is_interface_enabled(interface_name):
+                        return
+                    self.logger.warning(
+                        'Wi-Fi adapter %r still enabled after task trigger; '
+                        'falling back to direct netsh.',
+                        interface_name,
+                    )
+                except NetshError:
+                    pass  # Cannot verify — fall through to direct netsh.
+            except WifiAdapterTaskError as exc:
+                self.logger.warning(
+                    'Scheduled-task Wi-Fi disable failed (%s); '
+                    'falling back to direct netsh.',
+                    exc,
+                )
         self.run_netsh(['interface', 'set', 'interface', interface_name, 'admin=disabled'])
 
     def enable_wifi_adapter(self, interface_name: str) -> None:
@@ -443,6 +476,11 @@ class NetshWiFiApi:
 
         This re-enables a previously disabled wireless adapter, allowing it to
         scan for and connect to networks.
+
+        When a task manager is configured and the corresponding scheduled task
+        is installed, the command is executed via ``schtasks /run`` so no
+        process elevation is needed.  The adapter state is verified afterwards;
+        if still disabled the method falls back to a direct ``netsh`` call.
 
         Parameters:
             interface_name:
@@ -453,6 +491,26 @@ class NetshWiFiApi:
                 If the command fails.
         """
         self.logger.debug('Enabling Wi-Fi adapter: %s', interface_name)
+        if self.task_manager is not None:
+            from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskError
+            try:
+                self.task_manager.enable_wifi()
+                try:
+                    if self.is_interface_enabled(interface_name):
+                        return
+                    self.logger.warning(
+                        'Wi-Fi adapter %r still disabled after task trigger; '
+                        'falling back to direct netsh.',
+                        interface_name,
+                    )
+                except NetshError:
+                    pass  # Cannot verify — fall through to direct netsh.
+            except WifiAdapterTaskError as exc:
+                self.logger.warning(
+                    'Scheduled-task Wi-Fi enable failed (%s); '
+                    'falling back to direct netsh.',
+                    exc,
+                )
         self.run_netsh(['interface', 'set', 'interface', interface_name, 'admin=enabled'])
 
     def _get_all_wireless_interface_names(self) -> set[str]:
