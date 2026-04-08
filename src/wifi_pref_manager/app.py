@@ -1258,8 +1258,21 @@ class Application:
                         else None
                     ),
                     startup_marker_path=self.paths.first_tray_start_marker_file,
+                    startup_trace_path=self.startup_trace_file,
                 )
-                tray_app.run()
+                try:
+                    tray_app.run()
+                except Exception as exc:  # noqa: BLE001
+                    self.append_startup_trace(f'tray application crashed: {exc!r}')
+                    logger.exception('Tray application crashed: %s', exc)
+                    show_native_message_box(
+                        'error',
+                        'PolyFi Startup Failed',
+                        f'PolyFi encountered an unexpected error while starting '
+                        f'the system tray icon:\n\n{exc}\n\n'
+                        f'Diagnostic log:\n{self.startup_trace_file}',
+                    )
+                    return 1
                 self.append_startup_trace('tray application exited normally')
                 return 0
 

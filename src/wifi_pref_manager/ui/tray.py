@@ -58,6 +58,9 @@ class TrayApplication:
             Launch the tray icon event loop.
     """
 
+    # Seconds to wait for the pystray setup callback before showing a diagnostic.
+    _TRAY_SETUP_TIMEOUT: float = 30.0
+
     def __init__(
         self,
         service: WiFiPreferenceService,
@@ -66,6 +69,7 @@ class TrayApplication:
         restart_as_admin_callback: Callable[[], bool] | None = None,
         show_output_console_callback: Callable[[], None] | None = None,
         startup_marker_path: Path | None = None,
+        startup_trace_path: Path | None = None,
     ) -> None:
         self.service = service
         self.logger = logger
@@ -73,8 +77,11 @@ class TrayApplication:
         self.restart_as_admin_callback = restart_as_admin_callback
         self.show_output_console_callback = show_output_console_callback
         self._startup_marker_path = startup_marker_path
+        self._startup_trace_path = startup_trace_path
         self.icon: pystray.Icon | None = None
         self._settings_window: SettingsWindow | None = None
+        self._icon_ready_event: threading.Event | None = None
+        self._icon_run_done_event: threading.Event | None = None
         self.service.set_status_changed_callback(self.refresh_menu)
         self.service.set_runtime_warning_callback(self.show_runtime_warning)
         self.service.set_wifi_adapter_disabled_callback(self.show_wifi_adapter_disabled_dialog)
@@ -323,6 +330,8 @@ class TrayApplication:
         """
         Start the service and tray icon loop.
         """
+        self._icon_ready_event = threading.Event()
+        self._icon_run_done_event = threading.Event()
         self.service.start()
         self.icon = pystray.Icon(
             'polyfi_ranked',
@@ -347,7 +356,55 @@ class TrayApplication:
                 pystray.MenuItem('Quit', self.on_quit),
             ),
         )
-        self.icon.run(setup=self._on_icon_ready)
+        watchdog = threading.Thread(
+            target=self._setup_watchdog,
+            daemon=True,
+            name='polyfi-tray-watchdog',
+        )
+        watchdog.start()
+        try:
+            self.icon.run(setup=self._on_icon_ready)
+        finally:
+            self._icon_run_done_event.set()
+
+    def _setup_watchdog(self) -> None:
+        """
+        Background thread that fires a diagnostic dialog when the pystray setup
+        callback is not invoked within ``_TRAY_SETUP_TIMEOUT`` seconds.
+
+        This covers the silent-failure case where ``Shell_NotifyIcon(NIM_ADD)``
+        succeeds from pystray's perspective but the icon never appears in the
+        notification area, leaving the user with no feedback.
+        """
+        ready = self._icon_ready_event is not None and self._icon_ready_event.wait(
+            timeout=self._TRAY_SETUP_TIMEOUT
+        )
+        if ready:
+            return
+        # If icon.run() already exited (e.g. due to an exception) the caller in
+        # app.py will handle that path; avoid a redundant second dialog here.
+        if self._icon_run_done_event is not None and self._icon_run_done_event.is_set():
+            return
+        self.logger.warning(
+            'Tray icon setup callback was not invoked within %.0f s; '
+            'the system tray icon may not have registered successfully.',
+            self._TRAY_SETUP_TIMEOUT,
+        )
+        trace_hint = (
+            f'\n\nDiagnostic log:\n{self._startup_trace_path}'
+            if self._startup_trace_path is not None
+            else ''
+        )
+        show_native_message_box(
+            'warning',
+            APP_NAME,
+            f'{APP_NAME} started but its system tray icon has not appeared.\n\n'
+            'PolyFi is running in the background. If the icon is still not visible:\n'
+            '\u2022 Open Windows Settings \u2192 Personalization \u2192 Taskbar '
+            '\u2192 Other system tray icons, and make sure PolyFi is set to On.\n'
+            '\u2022 Check the notification area overflow (\u25b2 chevron near the clock).'
+            f'{trace_hint}',
+        )
 
     def _on_icon_ready(self, icon: pystray.Icon) -> None:
         """
@@ -356,6 +413,9 @@ class TrayApplication:
         On the very first tray launch a native message box is also shown so the
         user can find the hidden-icons area before they know where to look.
         """
+        # Signal the watchdog that icon registration succeeded.
+        if self._icon_ready_event is not None:
+            self._icon_ready_event.set()
         try:
             icon.notify(f'{APP_NAME} is now running in your system tray.', APP_NAME)
         except Exception:  # noqa: BLE001
