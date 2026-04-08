@@ -32,6 +32,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import logging
+from pathlib import Path
 import threading
 from typing import TYPE_CHECKING, Callable
 
@@ -42,7 +43,7 @@ from wifi_pref_manager.config import save_config
 from wifi_pref_manager.icon_assets import create_app_icon_image
 from wifi_pref_manager.paths import APP_NAME
 from wifi_pref_manager.service import WiFiPreferenceService
-from wifi_pref_manager.ui.dialogs import show_custom_dialog_async, show_dialog_async
+from wifi_pref_manager.ui.dialogs import show_custom_dialog_async, show_dialog_async, show_native_message_box
 
 if TYPE_CHECKING:
     from wifi_pref_manager.ui.settings import SettingsWindow
@@ -64,12 +65,14 @@ class TrayApplication:
         config_loader=None,
         restart_as_admin_callback: Callable[[], bool] | None = None,
         show_output_console_callback: Callable[[], None] | None = None,
+        startup_marker_path: Path | None = None,
     ) -> None:
         self.service = service
         self.logger = logger
         self.config_loader = config_loader
         self.restart_as_admin_callback = restart_as_admin_callback
         self.show_output_console_callback = show_output_console_callback
+        self._startup_marker_path = startup_marker_path
         self.icon: pystray.Icon | None = None
         self._settings_window: SettingsWindow | None = None
         self.service.set_status_changed_callback(self.refresh_menu)
@@ -350,9 +353,25 @@ class TrayApplication:
         """
         Called once the tray icon is active.  Shows a brief notification so the
         user can locate the icon when it appears in the system tray overflow area.
+        On the very first tray launch a native message box is also shown so the
+        user can find the hidden-icons area before they know where to look.
         """
         try:
             icon.notify(f'{APP_NAME} is now running in your system tray.', APP_NAME)
         except Exception:  # noqa: BLE001
             pass
+
+        if self._startup_marker_path is not None and not self._startup_marker_path.exists():
+            show_native_message_box(
+                'info',
+                APP_NAME,
+                f'{APP_NAME} is now running in the background.\n\n'
+                'Look for the PolyFi icon in the notification area near the clock on your '
+                'taskbar. You may need to click the \u25b2 (chevron) arrow to expand '
+                'hidden system tray icons.',
+            )
+            try:
+                self._startup_marker_path.touch()
+            except OSError:
+                pass
 

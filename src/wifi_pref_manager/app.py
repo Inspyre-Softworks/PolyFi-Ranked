@@ -966,7 +966,10 @@ class Application:
             show_native_message_box(
                 'info',
                 'PolyFi Already Running',
-                'PolyFi is already running. Close the existing instance before starting another one.',
+                'PolyFi is already running in the background.\n\n'
+                'Look for the PolyFi icon in the notification area near the clock on your '
+                'taskbar. You may need to click the \u25b2 (chevron) arrow to expand '
+                'hidden system tray icons.',
             )
         return False
 
@@ -1254,6 +1257,7 @@ class Application:
                         if self.console_output_manager is not None
                         else None
                     ),
+                    startup_marker_path=self.paths.first_tray_start_marker_file,
                 )
                 tray_app.run()
                 self.append_startup_trace('tray application exited normally')

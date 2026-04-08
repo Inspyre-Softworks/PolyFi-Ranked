@@ -72,6 +72,7 @@ class AppPaths:
         self.start_menu_programs_dir = roaming_root / 'Microsoft' / 'Windows' / 'Start Menu' / 'Programs'
         self.start_menu_folder = self.start_menu_programs_dir / APP_AUTHOR
         self.start_menu_shortcut_file = self.start_menu_folder / f'{APP_NAME}.lnk'
+        self.first_tray_start_marker_file = self.local_data_dir / 'tray_started.flag'
 
         legacy_roaming_root = Path.home() / 'AppData' / 'Roaming'
         legacy_local_root = Path.home() / 'AppData' / 'Local'
