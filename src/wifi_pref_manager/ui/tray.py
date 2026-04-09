@@ -70,6 +70,7 @@ class TrayApplication:
         show_output_console_callback: Callable[[], None] | None = None,
         startup_marker_path: Path | None = None,
         startup_trace_path: Path | None = None,
+        post_icon_ready_callback: Callable[[], None] | None = None,
     ) -> None:
         self.service = service
         self.logger = logger
@@ -78,6 +79,7 @@ class TrayApplication:
         self.show_output_console_callback = show_output_console_callback
         self._startup_marker_path = startup_marker_path
         self._startup_trace_path = startup_trace_path
+        self._post_icon_ready_callback = post_icon_ready_callback
         self.icon: pystray.Icon | None = None
         self._settings_window: SettingsWindow | None = None
         self._icon_ready_event: threading.Event | None = None
@@ -412,6 +414,8 @@ class TrayApplication:
         user can locate the icon when it appears in the system tray overflow area.
         On the very first tray launch a native message box is also shown so the
         user can find the hidden-icons area before they know where to look.
+        If a post-icon-ready callback was registered (e.g. deferred task setup),
+        it is fired on a background thread so the icon loop is not blocked.
         """
         # Signal the watchdog that icon registration succeeded.
         if self._icon_ready_event is not None:
@@ -434,4 +438,13 @@ class TrayApplication:
                 self._startup_marker_path.touch()
             except OSError:
                 pass
+
+        # Deferred one-time setup (e.g. scheduled task installation) runs here
+        # so the icon is already visible when the UAC prompt appears.
+        if self._post_icon_ready_callback is not None:
+            threading.Thread(
+                target=self._post_icon_ready_callback,
+                daemon=True,
+                name='polyfi-post-icon-setup',
+            ).start()
 

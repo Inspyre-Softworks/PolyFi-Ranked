@@ -77,6 +77,10 @@ class Application:
         self.console_output_manager: ConsoleOutputManager | None = None
         self._run_in_tray_context = False
         self.startup_trace_file = self.paths.local_data_dir / 'startup_trace.log'
+        # Populated by handle_startup_admin_requirements when tasks need to be
+        # installed but we are in tray mode and must not block startup.
+        # Holds (WifiAdapterTaskManager, interface_name) to set up after icon ready.
+        self._pending_task_setup: tuple | None = None
 
     def append_startup_trace(self, message: str) -> None:
         """
@@ -577,70 +581,22 @@ class Application:
             )
 
             if self._run_in_tray_context:
-                # Tray mode: attempt task setup silently via elevated PowerShell.
-                # Scheduled tasks are the only supported elevation path in tray mode —
-                # restarting the Python process as administrator introduces multi-instance
-                # race conditions and confusing "already running" dialogs.
-                logger.warning(
-                    'Tray mode: attempting silent scheduled-task installation for %r.',
-                    interface_name,
-                )
-                try:
-                    installed = task_manager.install_and_wait(interface_name)
-                except OSError as exc:
-                    self.append_startup_trace(f'tray-task-install failed (OSError): {exc}')
-                    logger.warning(
-                        'Scheduled-task installation raised an error for %r: %s. '
-                        'Disabling automatic Wi-Fi disable on Ethernet for this session.',
-                        interface_name,
-                        exc,
-                    )
-                    show_native_message_box(
-                        'warning',
-                        APP_NAME,
-                        'PolyFi could not install the scheduled task helper for\n'
-                        '"Disable Wi-Fi when Ethernet is connected":\n\n'
-                        f'{exc}\n\n'
-                        'The feature has been disabled for this session.\n\n'
-                        'To re-enable it, run the following from an elevated\n'
-                        'Command Prompt and then restart PolyFi:\n\n'
-                        '  polyfi-ranked windows wifi-tasks install',
-                    )
-                    config.auto_disable_wifi_on_ethernet = False
-                    return None
-
-                if installed:
-                    self.append_startup_trace('tray-task-install: tasks confirmed installed')
-                    logger.info(
-                        'Scheduled tasks installed successfully for %r. '
-                        'No elevation needed.',
-                        interface_name,
-                    )
-                    return None
-
-                # Task installation was cancelled or timed out (user declined the UAC
-                # prompt for PowerShell, or the tasks did not appear within the window).
-                # Disable for this session — the user can retry by reinstalling tasks.
+                # Tray mode: defer task installation to after the tray icon is
+                # visible.  Running install_and_wait here (up to 12 s) blocks the
+                # main thread before the single-instance guard is even acquired,
+                # making the app appear to do nothing and tempting users to launch
+                # it a second time.  Store the pending setup; the post-icon-ready
+                # callback created in handle_run_command will trigger it once the
+                # icon is on screen.
                 self.append_startup_trace(
-                    'tray-task-install: cancelled or timed out; disabling feature for session'
+                    f'tray-mode: deferring task setup for {interface_name!r} to post-icon-ready'
                 )
                 logger.warning(
-                    'Scheduled-task installation was not confirmed for %r '
-                    '(cancelled or timed out). '
-                    'Disabling automatic Wi-Fi disable on Ethernet for this session.',
+                    'Tray mode: deferring scheduled-task installation for %r '
+                    'to after the tray icon is visible.',
                     interface_name,
                 )
-                show_native_message_box(
-                    'warning',
-                    APP_NAME,
-                    'PolyFi could not set up the scheduled task helper for\n'
-                    '"Disable Wi-Fi when Ethernet is connected".\n\n'
-                    'The UAC prompt was cancelled or timed out.\n'
-                    'The feature has been disabled for this session.\n\n'
-                    'To re-enable it, run the following from an elevated\n'
-                    'Command Prompt and then restart PolyFi:\n\n'
-                    '  polyfi-ranked windows wifi-tasks install',
-                )
+                self._pending_task_setup = (task_manager, interface_name)
                 config.auto_disable_wifi_on_ethernet = False
                 return None
             else:
@@ -665,7 +621,8 @@ class Application:
         # because ShellExecuteW can return a false-success code even when an
         # AppLocker / SRP policy blocks the elevated process, leading to a
         # multi-instance race condition that shows a spurious "already running"
-        # dialog.  Disable the feature for this session instead.
+        # dialog.  Disable the feature silently — no MessageBox before the icon
+        # is on screen.
         if self._run_in_tray_context:
             self.append_startup_trace(
                 'tray-mode: interface_name is None; cannot install tasks; disabling ethernet feature for session'
@@ -674,17 +631,6 @@ class Application:
                 'No Wi-Fi interface name available in tray mode; '
                 'cannot install scheduled tasks. '
                 'Disabling automatic Wi-Fi disable on Ethernet for this session.'
-            )
-            show_native_message_box(
-                'warning',
-                APP_NAME,
-                'PolyFi could not identify the Wi-Fi adapter in time to set up\n'
-                '"Disable Wi-Fi when Ethernet is connected".\n\n'
-                'The feature has been disabled for this session. '
-                'PolyFi will try again on the next launch.\n\n'
-                'If the problem persists, pre-install the task helper from an\n'
-                'elevated Command Prompt and then restart PolyFi:\n\n'
-                '  polyfi-ranked windows wifi-tasks install',
             )
             config.auto_disable_wifi_on_ethernet = False
             return None
@@ -1226,6 +1172,75 @@ class Application:
             config_loader=loader,
             on_config_reloaded=self.on_config_reloaded,
         )
+
+        # ── Post-icon-ready task setup callback ───────────────────────────
+        # If handle_startup_admin_requirements deferred task installation,
+        # build a closure that runs install_and_wait on a background thread
+        # after the tray icon is visible.  On success the feature is activated
+        # for this session; on failure a native MessageBox explains what to do.
+        post_icon_ready_callback = None
+        if run_in_tray and self._pending_task_setup is not None:
+            _pending_tm, _pending_iface = self._pending_task_setup
+
+            def _post_icon_ready_callback():
+                self.append_startup_trace(f'deferred task setup starting for {_pending_iface!r}')
+                try:
+                    installed = _pending_tm.install_and_wait(_pending_iface)
+                except OSError as exc:
+                    self.append_startup_trace(f'deferred task setup failed (OSError): {exc}')
+                    logger.warning(
+                        'Deferred scheduled-task installation raised an error for %r: %s.',
+                        _pending_iface,
+                        exc,
+                    )
+                    show_native_message_box(
+                        'warning',
+                        APP_NAME,
+                        'PolyFi could not install the scheduled task helper for\n'
+                        '"Disable Wi-Fi when Ethernet is connected":\n\n'
+                        f'{exc}\n\n'
+                        'The feature remains disabled for this session.\n\n'
+                        'To enable it, run the following from an elevated\n'
+                        'Command Prompt and then restart PolyFi:\n\n'
+                        '  polyfi-ranked windows wifi-tasks install',
+                    )
+                    return
+
+                if installed:
+                    self.append_startup_trace(
+                        f'deferred task setup: tasks confirmed installed for {_pending_iface!r}'
+                    )
+                    logger.info(
+                        'Scheduled tasks installed for %r; activating Ethernet auto-disable feature.',
+                        _pending_iface,
+                    )
+                    wifi_api.task_manager = _pending_tm
+                    service.set_auto_disable_wifi_on_ethernet(True)
+                else:
+                    # UAC declined or timed out.
+                    self.append_startup_trace(
+                        'deferred task setup: cancelled or timed out'
+                    )
+                    logger.warning(
+                        'Deferred task installation was not confirmed for %r '
+                        '(UAC cancelled or timed out). '
+                        'Ethernet auto-disable remains off for this session.',
+                        _pending_iface,
+                    )
+                    show_native_message_box(
+                        'warning',
+                        APP_NAME,
+                        'PolyFi could not set up the scheduled task helper for\n'
+                        '"Disable Wi-Fi when Ethernet is connected".\n\n'
+                        'The UAC prompt was cancelled or timed out.\n'
+                        'The feature remains disabled for this session.\n\n'
+                        'To enable it, run the following from an elevated\n'
+                        'Command Prompt and then restart PolyFi:\n\n'
+                        '  polyfi-ranked windows wifi-tasks install',
+                    )
+
+            post_icon_ready_callback = _post_icon_ready_callback
+
         try:
             if run_in_tray:
                 self.append_startup_trace('starting tray application')
@@ -1241,6 +1256,7 @@ class Application:
                     ),
                     startup_marker_path=self.paths.first_tray_start_marker_file,
                     startup_trace_path=self.startup_trace_file,
+                    post_icon_ready_callback=post_icon_ready_callback,
                 )
                 try:
                     tray_app.run()
