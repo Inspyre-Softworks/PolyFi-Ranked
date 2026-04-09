@@ -42,14 +42,13 @@ from datetime import datetime
 from pathlib import Path
 import subprocess
 import sys
-import time
 
 from wifi_pref_manager.console_output import ConsoleOutputManager
 from wifi_pref_manager.config import ConfigError, ConfigLoader, save_config
 from wifi_pref_manager.logging_utils import configure_logging
 from wifi_pref_manager.managed_interface_state import ManagedInterfaceStateStore
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
-from wifi_pref_manager.paths import APP_USER_MODEL_ID, AppPaths
+from wifi_pref_manager.paths import APP_NAME, APP_USER_MODEL_ID, AppPaths
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
 from wifi_pref_manager.ui.dialogs import show_custom_dialog, show_dialog, show_native_message_box
@@ -66,10 +65,6 @@ class Application:
         run:
             Start the application in console or tray mode.
     """
-
-    _ELEVATED_INSTANCE_TIMEOUT: float = 2.0
-    _ELEVATED_INSTANCE_POLL_INITIAL: float = 0.05
-    _ELEVATED_INSTANCE_POLL_MAX: float = 0.4
 
     def __init__(self) -> None:
         self.paths = AppPaths()
@@ -583,8 +578,9 @@ class Application:
 
             if self._run_in_tray_context:
                 # Tray mode: attempt task setup silently via elevated PowerShell.
-                # If the user cancels the UAC prompt for powershell.exe, fall
-                # through to the traditional restart-as-admin path.
+                # Scheduled tasks are the only supported elevation path in tray mode —
+                # restarting the Python process as administrator introduces multi-instance
+                # race conditions and confusing "already running" dialogs.
                 logger.warning(
                     'Tray mode: attempting silent scheduled-task installation for %r.',
                     interface_name,
@@ -594,11 +590,24 @@ class Application:
                 except OSError as exc:
                     self.append_startup_trace(f'tray-task-install failed (OSError): {exc}')
                     logger.warning(
-                        'Scheduled-task installation raised an error: %s. '
-                        'Falling back to administrator restart.',
+                        'Scheduled-task installation raised an error for %r: %s. '
+                        'Disabling automatic Wi-Fi disable on Ethernet for this session.',
+                        interface_name,
                         exc,
                     )
-                    installed = False
+                    show_native_message_box(
+                        'warning',
+                        APP_NAME,
+                        'PolyFi could not install the scheduled task helper for\n'
+                        '"Disable Wi-Fi when Ethernet is connected":\n\n'
+                        f'{exc}\n\n'
+                        'The feature has been disabled for this session.\n\n'
+                        'To re-enable it, run the following from an elevated\n'
+                        'Command Prompt and then restart PolyFi:\n\n'
+                        '  polyfi-ranked windows wifi-tasks install',
+                    )
+                    config.auto_disable_wifi_on_ethernet = False
+                    return None
 
                 if installed:
                     self.append_startup_trace('tray-task-install: tasks confirmed installed')
@@ -609,10 +618,31 @@ class Application:
                     )
                     return None
 
+                # Task installation was cancelled or timed out (user declined the UAC
+                # prompt for PowerShell, or the tasks did not appear within the window).
+                # Disable for this session — the user can retry by reinstalling tasks.
                 self.append_startup_trace(
-                    'tray-task-install: failed or cancelled; falling back to admin restart'
+                    'tray-task-install: cancelled or timed out; disabling feature for session'
                 )
-                # Fall through to the traditional restart-as-admin path below.
+                logger.warning(
+                    'Scheduled-task installation was not confirmed for %r '
+                    '(cancelled or timed out). '
+                    'Disabling automatic Wi-Fi disable on Ethernet for this session.',
+                    interface_name,
+                )
+                show_native_message_box(
+                    'warning',
+                    APP_NAME,
+                    'PolyFi could not set up the scheduled task helper for\n'
+                    '"Disable Wi-Fi when Ethernet is connected".\n\n'
+                    'The UAC prompt was cancelled or timed out.\n'
+                    'The feature has been disabled for this session.\n\n'
+                    'To re-enable it, run the following from an elevated\n'
+                    'Command Prompt and then restart PolyFi:\n\n'
+                    '  polyfi-ranked windows wifi-tasks install',
+                )
+                config.auto_disable_wifi_on_ethernet = False
+                return None
             else:
                 # Console mode: show a dialog offering task setup as the
                 # primary option alongside the traditional admin restart.
@@ -624,88 +654,40 @@ class Application:
                     task_manager=task_manager,
                 )
 
-        # ── Traditional restart-as-admin path ────────────────────────────────
-        # Used when:
-        #   • interface_name is None (WiFi not detected before service start), OR
-        #   • tray mode task installation failed/was cancelled.
-        logger.warning(
-            'Falling back to administrator restart for auto Ethernet feature.'
-        )
-
+        # ── Tray mode: no interface name detected ────────────────────────────
+        # The task-based path above exits early (return None) for every tray-mode
+        # outcome when interface_name is known.  This point is only reached in
+        # tray mode when interface_name is None, which means we could not identify
+        # the Wi-Fi adapter before service startup and therefore cannot install or
+        # verify scheduled tasks.
+        #
+        # Restarting the Python process as administrator is not used in tray mode
+        # because ShellExecuteW can return a false-success code even when an
+        # AppLocker / SRP policy blocks the elevated process, leading to a
+        # multi-instance race condition that shows a spurious "already running"
+        # dialog.  Disable the feature for this session instead.
         if self._run_in_tray_context:
-            logger.warning(
-                'Tray launch is not elevated while auto Ethernet disable is enabled. '
-                'Attempting automatic administrator restart.'
+            self.append_startup_trace(
+                'tray-mode: interface_name is None; cannot install tasks; disabling ethernet feature for session'
             )
-            try:
-                launched = self.restart_as_administrator()
-            except OSError as exc:
-                # Elevation failed (e.g. access denied, code ≤ 32).  In tray mode we
-                # must NOT show a blocking dialog here — MessageBoxW may appear behind
-                # other windows with no foreground focus, permanently preventing the
-                # tray icon from starting.  Permanently disable the feature so subsequent
-                # launches do not attempt elevation again (and do not trigger the UAC dialog).
-                self.append_startup_trace(f'tray-admin-restart failed: {exc}')
-                logger.warning(
-                    'Could not restart as administrator (tray mode): %s. '
-                    'Permanently disabling automatic Wi-Fi disable on Ethernet.',
-                    exc,
-                )
-                self._permanently_disable_ethernet_feature(config, config_loader, logger)
-                return None
-            else:
-                if not launched:
-                    # ShellExecuteW returned a non-success code other than a policy block.
-                    # Permanently disable so subsequent launches do not prompt again.
-                    self.append_startup_trace('tray-admin-restart cancelled by user')
-                    logger.warning(
-                        'Administrator restart was cancelled. '
-                        'Permanently disabling automatic Wi-Fi disable on Ethernet.'
-                    )
-                    self._permanently_disable_ethernet_feature(config, config_loader, logger)
-                    return None
-                self.append_startup_trace('tray-admin-restart apparently launched, verifying elevated instance started')
-                # ShellExecuteW can return a success code (> 32) even when the elevated
-                # process is immediately killed by an administrator policy such as
-                # AppLocker or a Software Restriction Policy.  Poll the single-instance
-                # mutex for up to 2 seconds to confirm the elevated instance actually
-                # started before giving up the current process.
-                elevated_confirmed = False
-                deadline = time.monotonic() + self._ELEVATED_INSTANCE_TIMEOUT
-                poll_interval = self._ELEVATED_INSTANCE_POLL_INITIAL
-                while time.monotonic() < deadline:
-                    time.sleep(poll_interval)
-                    poll_interval = min(poll_interval * 2, self._ELEVATED_INSTANCE_POLL_MAX)
-                    try:
-                        acquired = self.single_instance_guard.acquire()
-                    except OSError as mutex_exc:
-                        self.append_startup_trace(f'tray-admin-restart: mutex check error: {mutex_exc}')
-                        logger.debug('Mutex check during elevated-instance verification failed: %s', mutex_exc)
-                        break
-                    if acquired:
-                        # Mutex is still free; elevated process hasn't acquired it yet.
-                        self.single_instance_guard.release()
-                    else:
-                        # Another process now holds the mutex — elevated instance running.
-                        elevated_confirmed = True
-                        break
-                if elevated_confirmed:
-                    self.append_startup_trace('tray-admin-restart: elevated instance confirmed running')
-                    logger.info('Administrator restart launched automatically for tray startup. Exiting current instance.')
-                    return 0
-                # The elevated process never acquired the mutex.  It was most likely
-                # blocked by an administrator policy after ShellExecuteW returned success.
-                # Permanently disable so subsequent launches skip the elevation attempt.
-                self.append_startup_trace(
-                    'tray-admin-restart: elevated instance did not start within 2s, permanently disabling ethernet feature'
-                )
-                logger.warning(
-                    'Elevated process did not acquire the instance guard within 2 seconds. '
-                    'It was probably blocked by an administrator policy. '
-                    'Permanently disabling automatic Wi-Fi disable on Ethernet.'
-                )
-                self._permanently_disable_ethernet_feature(config, config_loader, logger)
-                return None
+            logger.warning(
+                'No Wi-Fi interface name available in tray mode; '
+                'cannot install scheduled tasks. '
+                'Disabling automatic Wi-Fi disable on Ethernet for this session.'
+            )
+            show_native_message_box(
+                'warning',
+                APP_NAME,
+                'PolyFi could not identify the Wi-Fi adapter in time to set up\n'
+                '"Disable Wi-Fi when Ethernet is connected".\n\n'
+                'The feature has been disabled for this session. '
+                'PolyFi will try again on the next launch.\n\n'
+                'If the problem persists, pre-install the task helper from an\n'
+                'elevated Command Prompt and then restart PolyFi:\n\n'
+                '  polyfi-ranked windows wifi-tasks install',
+            )
+            config.auto_disable_wifi_on_ethernet = False
+            return None
 
         # Console mode without task support: show the traditional restart dialog.
         return self._handle_console_admin_requirements_restart_only(
