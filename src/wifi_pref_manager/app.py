@@ -446,30 +446,18 @@ class Application:
         except (AttributeError, OSError):
             return False
 
-    def handle_startup_admin_requirements(
-        self,
-        config,
-        logger,
-        *,
-        config_loader=None,  # noqa: ARG002
-        interface_name: str | None = None,  # noqa: ARG002
-    ) -> int | None:
+    def handle_startup_admin_requirements(self, config, logger) -> int | None:
         """
         Warn when the Ethernet auto-disable feature needs administrator rights.
 
         When the process is not elevated and ``auto_disable_wifi_on_ethernet`` is
-        enabled, the feature is disabled for this session and a warning is shown
-        telling the user to restart PolyFi as administrator if they want it.
+        enabled, the feature is disabled for this session and a warning is logged.
 
         Parameters:
             config:
                 Loaded runtime configuration.
             logger:
                 Application logger.
-            config_loader:
-                Unused; kept for call-site compatibility.
-            interface_name:
-                Unused; kept for call-site compatibility.
 
         Returns:
             Always ``None``; startup continues after showing the warning.
