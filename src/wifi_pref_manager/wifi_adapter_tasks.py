@@ -12,29 +12,34 @@ Description:
     Windows Task Scheduler helpers that let a non-elevated process control
     the Wi-Fi adapter.  When an administrator policy prevents Python from
     running elevated (e.g. an AppLocker rule targeting ``python.exe``),
-    PolyFi registers two SYSTEM-level scheduled tasks that execute
-    ``netsh.exe`` on its behalf.
+    PolyFi registers two on-demand scheduled tasks that execute ``netsh.exe``
+    on its behalf.
 
     Tasks are created by elevating ``powershell.exe`` — a Microsoft-signed
     system binary not typically covered by AppLocker rules for Python — so
     the one-time setup prompt shows "Windows PowerShell" in the UAC dialog
     rather than the blocked ``python.exe``.
 
-    At runtime, triggering the tasks via ``schtasks /run`` requires no UAC
-    because members of the local Administrators group may always invoke
-    scheduled tasks regardless of the process elevation level.
+    The tasks run as the currently logged-in user with ``RunLevel Highest``.
+    That lets a normal, non-elevated PolyFi tray process trigger them later
+    via ``schtasks /run`` without re-prompting for UAC.
 """
 
 from __future__ import annotations
 
 import base64
 import ctypes
+import json
+from pathlib import Path
 import subprocess
 import time
+
+from wifi_pref_manager.paths import AppPaths
 
 
 TASK_NAME_DISABLE = 'PolyFi-DisableWiFi'
 TASK_NAME_ENABLE = 'PolyFi-EnableWiFi'
+TASK_INSTALL_MARKER_VERSION = 2
 
 _INSTALL_POLL_INTERVAL = 0.5
 _INSTALL_TIMEOUT = 12.0
@@ -48,9 +53,10 @@ class WifiAdapterTaskManager:
     """
     Manage Windows scheduled tasks for privileged Wi-Fi adapter control.
 
-    Two SYSTEM-level scheduled tasks are registered — one to disable and
-    one to enable a specific Wi-Fi interface.  They can be triggered from
-    an unprivileged (non-elevated) admin process via ``schtasks /run``.
+    Two on-demand scheduled tasks are registered — one to disable and one to
+    enable a specific Wi-Fi interface.  They run as the interactive user with
+    highest privileges so a non-elevated PolyFi tray process can trigger them
+    later via ``schtasks /run``.
 
     Methods:
         are_installed:
@@ -66,6 +72,9 @@ class WifiAdapterTaskManager:
         enable_wifi:
             Trigger the enable task and wait briefly for execution.
     """
+
+    def __init__(self, marker_path: Path | None = None) -> None:
+        self.marker_path = marker_path or (AppPaths().local_data_dir / 'wifi_adapter_tasks.json')
 
     @staticmethod
     def _hidden_subprocess_kwargs() -> dict[str, object]:
@@ -97,6 +106,66 @@ class WifiAdapterTaskManager:
     def _task_exists(self, task_name: str) -> bool:
         """Quick existence check via schtasks (avoids PowerShell overhead)."""
         return self._run_schtasks('/query', '/tn', task_name).returncode == 0
+
+    def _clear_install_marker(self) -> None:
+        """
+        Remove the local install-confirmation marker if it exists.
+        """
+        try:
+            self.marker_path.unlink()
+        except FileNotFoundError:
+            return
+
+    def _read_install_marker(self) -> dict[str, object] | None:
+        """
+        Read the install-confirmation marker written by the elevated setup step.
+
+        Returns:
+            Parsed marker payload, or ``None`` when unavailable.
+        """
+        try:
+            with self.marker_path.open('r', encoding='utf-8-sig') as handle:
+                raw = handle.read()
+        except (FileNotFoundError, OSError):
+            return None
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            # Older PolyFi builds accidentally wrote PowerShell-escaped JSON
+            # with literal backticks. Accept that legacy marker format so a
+            # successful install is not reported as a timeout forever.
+            try:
+                payload = json.loads(raw.replace('`"', '"'))
+            except json.JSONDecodeError:
+                return None
+        if not isinstance(payload, dict):
+            return None
+        return payload
+
+    def _marker_matches_interface(self, interface_name: str) -> bool:
+        """
+        Determine whether the local marker confirms installation for the interface.
+
+        Parameters:
+            interface_name:
+                Wi-Fi interface name to verify.
+
+        Returns:
+            ``True`` when the marker matches the requested interface.
+        """
+        payload = self._read_install_marker()
+        if payload is None:
+            return False
+        try:
+            marker_version = int(payload.get('marker_version', 0))
+        except (TypeError, ValueError):
+            return False
+        if marker_version != TASK_INSTALL_MARKER_VERSION:
+            return False
+        if str(payload.get('status', '')).strip().lower() != 'installed':
+            return False
+        saved_interface = str(payload.get('interface_name', '')).strip()
+        return bool(saved_interface) and saved_interface.lower() == interface_name.strip().lower()
 
     def _get_task_action_arguments(self, task_name: str) -> str | None:
         """
@@ -130,20 +199,13 @@ class WifiAdapterTaskManager:
 
     def are_installed(self, interface_name: str) -> bool:
         """
-        Return True when both tasks exist and embed the given interface name.
+        Return True when the current PolyFi helper marker matches the interface.
 
         Parameters:
             interface_name:
                 Wi-Fi interface name to verify (case-insensitive).
         """
-        esc = interface_name.lower()
-        for name in (TASK_NAME_DISABLE, TASK_NAME_ENABLE):
-            args = self._get_task_action_arguments(name)
-            if args is None:
-                return False
-            if esc not in args.lower():
-                return False
-        return True
+        return self._marker_matches_interface(interface_name)
 
     @staticmethod
     def _encode_ps_command(script: str) -> str:
@@ -172,20 +234,26 @@ class WifiAdapterTaskManager:
         """
         return value.replace('`', '``').replace('"', '`"').replace('$', '`$')
 
-    def _build_install_script(self, interface_name: str) -> str:
+    def _build_install_script_text(self, interface_name: str) -> str:
         """
-        Build and encode a PowerShell script that creates both SYSTEM tasks.
+        Build the PowerShell script that creates both SYSTEM tasks.
 
         The interface name is embedded directly in the task action arguments
         after being escaped for PowerShell double-quoted string context, so
-        no variable interpolation risks exist at task execution time.
+        no variable interpolation risks exist at task execution time. A marker
+        file is written only after both tasks are registered successfully.
         """
         esc = self._escape_for_ps_double_quoted_string(interface_name)
+        marker_path = self._escape_for_ps_double_quoted_string(str(self.marker_path))
         disable_arg = f'interface set interface `"{esc}`" admin=disabled'
         enable_arg = f'interface set interface `"{esc}`" admin=enabled'
-        script = (
+        return (
+            f'$markerPath = "{marker_path}"\n'
+            '$markerDir = Split-Path -Parent $markerPath\n'
+            'if ($markerDir) { New-Item -ItemType Directory -Path $markerDir -Force | Out-Null }\n'
+            '$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name\n'
             '$principal = New-ScheduledTaskPrincipal '
-            "-UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest\n"
+            '-UserId $currentUser -LogonType Interactive -RunLevel Highest\n'
             f"Register-ScheduledTask -Force -TaskName '{TASK_NAME_DISABLE}' "
             "-Action (New-ScheduledTaskAction -Execute 'netsh.exe' "
             f'-Argument "{disable_arg}") '
@@ -193,9 +261,24 @@ class WifiAdapterTaskManager:
             f"Register-ScheduledTask -Force -TaskName '{TASK_NAME_ENABLE}' "
             "-Action (New-ScheduledTaskAction -Execute 'netsh.exe' "
             f'-Argument "{enable_arg}") '
-            "-Principal $principal"
+            "-Principal $principal\n"
+            '$markerPayload = [ordered]@{\n'
+            f'  marker_version = {TASK_INSTALL_MARKER_VERSION}\n'
+            f'  interface_name = "{esc}"\n'
+            '  installed_by = "PolyFi"\n'
+            '  principal_user = $currentUser\n'
+            '  principal_mode = "interactive-highest"\n'
+            '  status = "installed"\n'
+            '}\n'
+            '$markerPayload | ConvertTo-Json -Compress | '
+            'Set-Content -LiteralPath $markerPath -Encoding UTF8 -Force'
         )
-        return self._encode_ps_command(script)
+
+    def _build_install_script(self, interface_name: str) -> str:
+        """
+        Build and encode a PowerShell script that creates both SYSTEM tasks.
+        """
+        return self._encode_ps_command(self._build_install_script_text(interface_name))
 
     def install(self, interface_name: str) -> bool:
         """
@@ -218,6 +301,7 @@ class WifiAdapterTaskManager:
             OSError:
                 When ``ShellExecuteW`` returns a hard-error code.
         """
+        self._clear_install_marker()
         encoded = self._build_install_script(interface_name)
         try:
             result = ctypes.windll.shell32.ShellExecuteW(
@@ -261,14 +345,15 @@ class WifiAdapterTaskManager:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             time.sleep(_INSTALL_POLL_INTERVAL)
-            if self._task_exists(TASK_NAME_DISABLE) and self._task_exists(TASK_NAME_ENABLE):
-                return self.are_installed(interface_name)
+            if self._marker_matches_interface(interface_name):
+                return True
         return False
 
     def uninstall(self) -> None:
         """Delete both PolyFi Wi-Fi control tasks if they exist."""
         for name in (TASK_NAME_DISABLE, TASK_NAME_ENABLE):
             self._run_schtasks('/delete', '/tn', name, '/f')
+        self._clear_install_marker()
 
     def _trigger_task(self, task_name: str, post_wait: float) -> None:
         result = self._run_schtasks('/run', '/tn', task_name)

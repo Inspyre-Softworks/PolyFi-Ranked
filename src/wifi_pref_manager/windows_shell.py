@@ -23,6 +23,30 @@ from wifi_pref_manager.icon_assets import write_app_icon_file
 from wifi_pref_manager.paths import APP_NAME, AppPaths
 
 
+def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, list[str], Path]:
+    """
+    Resolve the preferred executable and base arguments for launching PolyFi.
+
+    Parameters:
+        prefer_windowless:
+            Whether to prefer ``pythonw.exe`` when available.
+
+    Returns:
+        ``(executable, arguments, working_directory)``.
+    """
+    executable = Path(sys.executable).resolve()
+    if prefer_windowless:
+        pythonw = executable.with_name('pythonw.exe')
+        if pythonw.exists():
+            return pythonw, ['-m', 'wifi_pref_manager.app'], pythonw.parent
+
+    packaged_launcher = executable.parent / 'polyfi-ranked.exe'
+    if packaged_launcher.exists():
+        return packaged_launcher, [], packaged_launcher.parent
+
+    return executable, ['-m', 'wifi_pref_manager.app'], executable.parent
+
+
 @dataclass(frozen=True)
 class ShortcutSpec:
     """
@@ -104,15 +128,7 @@ class StartMenuShortcutManager:
         """
         Resolve the preferred executable and base arguments for a Start Menu launch.
         """
-        executable = Path(sys.executable).resolve()
-        pythonw = executable.with_name('pythonw.exe')
-        if pythonw.exists():
-            return pythonw, ['-m', 'wifi_pref_manager.app'], pythonw.parent
-        scripts_dir = executable.parent / 'Scripts'
-        packaged_launcher = scripts_dir / 'polyfi-ranked.exe'
-        if packaged_launcher.exists():
-            return packaged_launcher, [], packaged_launcher.parent
-        return executable, ['-m', 'wifi_pref_manager.app'], executable.parent
+        return resolve_runtime_launch_target(prefer_windowless=True)
 
     def _create_shortcut(self, spec: ShortcutSpec) -> None:
         """

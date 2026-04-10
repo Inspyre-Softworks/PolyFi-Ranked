@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 from datetime import datetime
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -54,7 +55,10 @@ from wifi_pref_manager.single_instance import SingleInstanceGuard
 from wifi_pref_manager.ui.dialogs import show_custom_dialog, show_dialog, show_native_message_box
 from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
-from wifi_pref_manager.windows_shell import StartMenuShortcutManager
+from wifi_pref_manager.windows_shell import StartMenuShortcutManager, resolve_runtime_launch_target
+
+
+BACKGROUND_TRAY_ENV_VAR = 'POLYFI_BACKGROUND_TRAY'
 
 
 class Application:
@@ -111,34 +115,37 @@ class Application:
         """
         parser.add_argument(
             '--config',
-            default=None,
+            default=argparse.SUPPRESS,
             help='Optional path to the TOML configuration file. Defaults to the platform app-data config path.',
         )
         if include_tray:
             parser.add_argument(
                 '--tray',
                 action='store_true',
+                default=argparse.SUPPRESS,
                 help='Run as a system tray application.',
             )
         parser.add_argument(
             '-l',
             '--log-level',
-            default=None,
+            default=argparse.SUPPRESS,
             help='Override the configured log level for this run, for example DEBUG or INFO.',
         )
         parser.add_argument(
             '--save-speed-test-history',
             action='store_true',
+            default=argparse.SUPPRESS,
             help='Enable saving completed speed-test results for this run.',
         )
         parser.add_argument(
             '--no-save-speed-test-history',
             action='store_true',
+            default=argparse.SUPPRESS,
             help='Disable saving completed speed-test results for this run.',
         )
         parser.add_argument(
             '--speed-test-history-file',
-            default=None,
+            default=argparse.SUPPRESS,
             help='Override the speed-test history file path for this run.',
         )
 
@@ -419,8 +426,50 @@ class Application:
                 self.acquire_single_instance_guard(show_dialog_on_duplicate=False)
             if result == 1223:
                 return False
+            if result == 5:
+                raise OSError(
+                    'Windows blocked PolyFi from relaunching with administrator privileges '
+                    '(ShellExecuteW code 5: Access is denied). This is usually caused by a '
+                    'system policy or app-control rule. If you only need automatic Wi-Fi '
+                    'disable on Ethernet, install the helper tasks instead with:\n\n'
+                    '  polyfi-ranked windows wifi-tasks install'
+                )
             raise OSError(f'Windows elevation request failed with ShellExecuteW code {result}.')
         return True
+
+    def launch_detached_tray_process(self, args: argparse.Namespace) -> int:
+        """
+        Launch the tray runtime in a detached background process.
+
+        Parameters:
+            args:
+                Parsed runtime arguments to preserve.
+
+        Returns:
+            Background child process identifier.
+
+        Raises:
+            OSError:
+                If the tray process could not be started.
+        """
+        # Use the standard runtime here instead of ``pythonw.exe`` because the
+        # background child still detaches its own console once tray startup
+        # begins, and the regular interpreter is more reliable for inheriting
+        # the active Poetry environment than a direct ``pythonw.exe`` launch.
+        executable, base_args, _working_directory = resolve_runtime_launch_target(prefer_windowless=False)
+        command = [
+            str(executable),
+            *base_args,
+            *self.build_runtime_argument_list(args, force_tray=True),
+        ]
+        environment = os.environ.copy()
+        environment[BACKGROUND_TRAY_ENV_VAR] = '1'
+        process = subprocess.Popen(  # noqa: S603
+            command,
+            close_fds=True,
+            env=environment,
+        )
+        return process.pid
 
     def _resolve_relaunch_executable(self, *, windowed: bool) -> Path:
         """
@@ -1059,7 +1108,7 @@ class Application:
         Returns:
             Process exit code.
         """
-        if args.print_paths:
+        if getattr(args, 'print_paths', False):
             return self.print_paths()
 
         self.append_startup_trace(f'handle_run_command argv={argv if (argv := list(sys.argv[1:])) else []}')
@@ -1068,7 +1117,7 @@ class Application:
             self.append_startup_trace(f'cli override validation failed code={override_result}')
             return override_result
 
-        loader = ConfigLoader(config_path=args.config)
+        loader = ConfigLoader(config_path=getattr(args, 'config', None))
         config_path = loader.ensure_default_config()
 
         try:
@@ -1087,7 +1136,29 @@ class Application:
         # Named `running_consoleless` to reflect that stdout=None is the specific
         # condition we care about (tray mode needs to hide console / redirect I/O).
         running_consoleless = sys.stdout is None
-        run_in_tray = args.tray or config.start_minimized_to_tray or running_consoleless
+        run_in_tray = getattr(args, 'tray', False) or config.start_minimized_to_tray or running_consoleless
+        should_background_tray = (
+            run_in_tray
+            and not running_consoleless
+            and os.environ.get(BACKGROUND_TRAY_ENV_VAR) != '1'
+        )
+        if should_background_tray:
+            self.append_startup_trace('launching detached tray background process')
+            try:
+                child_pid = self.launch_detached_tray_process(args)
+            except OSError as exc:
+                self.append_startup_trace(f'detached tray launch failed: {exc}')
+                print(
+                    f'Could not launch PolyFi in background tray mode automatically: {exc}',
+                    file=sys.stderr,
+                )
+                print('Continuing in attached tray mode instead.', file=sys.stderr)
+            else:
+                self.append_startup_trace(f'detached tray background process started pid={child_pid}')
+                print(
+                    'PolyFi is starting in tray mode. Look for the icon in the notification area near the clock.',
+                )
+                return 0
         self._run_in_tray_context = run_in_tray
         self.append_startup_trace(
             f'config loaded run_in_tray={run_in_tray} admin={self.is_running_as_administrator()} '

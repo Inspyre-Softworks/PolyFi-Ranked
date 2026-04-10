@@ -596,6 +596,19 @@ class WiFiPreferenceService:
             return
 
         self._ethernet_disable_permission_warning_shown = True
+        if self.wifi_api.task_manager is not None:
+            self._notify_runtime_warning(
+                'Wi-Fi Task Helper Needs Reinstall',
+                'PolyFi detected an active Ethernet connection, but Windows denied the installed Wi-Fi task '
+                'helper.\n\n'
+                'Automatic "disable Wi-Fi on Ethernet" has been turned off for this session so the app can '
+                'keep running normally.\n\n'
+                'Reinstall the helper tasks from a normal terminal with:\n\n'
+                '  polyfi-ranked windows wifi-tasks install\n\n'
+                'Then restart PolyFi and re-enable the option if needed.',
+            )
+            return
+
         self._notify_runtime_warning(
             'Administrator Required',
             'PolyFi detected an active Ethernet connection, but Windows denied the Wi-Fi disable step because '

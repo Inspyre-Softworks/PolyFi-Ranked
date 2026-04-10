@@ -34,6 +34,7 @@ from dataclasses import replace
 import logging
 from pathlib import Path
 import threading
+from datetime import datetime
 from typing import TYPE_CHECKING, Callable
 
 from PIL import Image
@@ -97,6 +98,24 @@ class TrayApplication:
             Pillow image instance.
         """
         return create_app_icon_image(64)
+
+    def _append_startup_trace(self, message: str) -> None:
+        """
+        Append a tray-startup diagnostic line when a trace file is configured.
+
+        Parameters:
+            message:
+                Diagnostic message to record.
+        """
+        if self._startup_trace_path is None:
+            return
+        try:
+            timestamp = datetime.now().isoformat(timespec='seconds')
+            self._startup_trace_path.parent.mkdir(parents=True, exist_ok=True)
+            with self._startup_trace_path.open('a', encoding='utf-8') as handle:
+                handle.write(f'[{timestamp}] tray:{message}\n')
+        except OSError:
+            return
 
     def on_rescan(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         """
@@ -392,6 +411,7 @@ class TrayApplication:
             'the system tray icon may not have registered successfully.',
             self._TRAY_SETUP_TIMEOUT,
         )
+        self._append_startup_trace('setup callback timeout')
         trace_hint = (
             f'\n\nDiagnostic log:\n{self._startup_trace_path}'
             if self._startup_trace_path is not None
@@ -420,6 +440,8 @@ class TrayApplication:
         # Signal the watchdog that icon registration succeeded.
         if self._icon_ready_event is not None:
             self._icon_ready_event.set()
+        icon.visible = True
+        self._append_startup_trace('icon ready callback fired')
         try:
             icon.notify(f'{APP_NAME} is now running in your system tray.', APP_NAME)
         except Exception:  # noqa: BLE001
@@ -442,6 +464,7 @@ class TrayApplication:
         # Deferred one-time setup (e.g. scheduled task installation) runs here
         # so the icon is already visible when the UAC prompt appears.
         if self._post_icon_ready_callback is not None:
+            self._append_startup_trace('starting post-icon callback')
             threading.Thread(
                 target=self._post_icon_ready_callback,
                 daemon=True,
