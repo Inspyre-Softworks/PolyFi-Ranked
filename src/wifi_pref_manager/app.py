@@ -45,14 +45,13 @@ import subprocess
 import sys
 
 from wifi_pref_manager.console_output import ConsoleOutputManager
-from wifi_pref_manager.config import ConfigError, ConfigLoader, save_config
+from wifi_pref_manager.config import ConfigError, ConfigLoader
 from wifi_pref_manager.logging_utils import configure_logging
-from wifi_pref_manager.managed_interface_state import ManagedInterfaceStateStore
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
 from wifi_pref_manager.paths import APP_NAME, APP_USER_MODEL_ID, AppPaths
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
-from wifi_pref_manager.ui.dialogs import show_custom_dialog, show_dialog, show_native_message_box
+from wifi_pref_manager.ui.dialogs import show_dialog, show_native_message_box
 from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
 from wifi_pref_manager.windows_shell import StartMenuShortcutManager, resolve_runtime_launch_target
@@ -81,10 +80,6 @@ class Application:
         self.console_output_manager: ConsoleOutputManager | None = None
         self._run_in_tray_context = False
         self.startup_trace_file = self.paths.local_data_dir / 'startup_trace.log'
-        # Populated by handle_startup_admin_requirements when tasks need to be
-        # installed but we are in tray mode and must not block startup.
-        # Holds (WifiAdapterTaskManager, interface_name) to set up after icon ready.
-        self._pending_task_setup: tuple | None = None
 
     def append_startup_trace(self, message: str) -> None:
         """
@@ -394,49 +389,6 @@ class Application:
         print(f'Wrote default config file: {written_path}')
         return 0
 
-    def restart_as_administrator(self) -> bool:
-        """
-        Relaunch the current process with Windows administrator privileges.
-
-        Returns:
-            True when the elevation request was launched successfully.
-
-        Raises:
-            OSError:
-                If Windows could not start the elevated process.
-        """
-        executable = self._resolve_relaunch_executable(windowed=self._run_in_tray_context)
-        parameters = subprocess.list2cmdline(self._build_relaunch_arguments())
-        released_guard = self.release_single_instance_guard()
-        try:
-            result = ctypes.windll.shell32.ShellExecuteW(
-                None,
-                'runas',
-                str(executable),
-                parameters,
-                None,
-                1,
-            )
-        except Exception:
-            if released_guard:
-                self.acquire_single_instance_guard(show_dialog_on_duplicate=False)
-            raise
-        if result <= 32:
-            if released_guard:
-                self.acquire_single_instance_guard(show_dialog_on_duplicate=False)
-            if result == 1223:
-                return False
-            if result == 5:
-                raise OSError(
-                    'Windows blocked PolyFi from relaunching with administrator privileges '
-                    '(ShellExecuteW code 5: Access is denied). This is usually caused by a '
-                    'system policy or app-control rule. If you only need automatic Wi-Fi '
-                    'disable on Ethernet, install the helper tasks instead with:\n\n'
-                    '  polyfi-ranked windows wifi-tasks install'
-                )
-            raise OSError(f'Windows elevation request failed with ShellExecuteW code {result}.')
-        return True
-
     def launch_detached_tray_process(self, args: argparse.Namespace) -> int:
         """
         Launch the tray runtime in a detached background process.
@@ -471,32 +423,6 @@ class Application:
         )
         return process.pid
 
-    def _resolve_relaunch_executable(self, *, windowed: bool) -> Path:
-        """
-        Resolve the Python executable used to relaunch the current app.
-
-        Parameters:
-            windowed:
-                Whether to prefer ``pythonw.exe`` over ``python.exe``.
-
-        Returns:
-            Executable path.
-        """
-        executable = Path(sys.executable).resolve()
-        if not windowed:
-            return executable
-        pythonw = executable.with_name('pythonw.exe')
-        return pythonw if pythonw.exists() else executable
-
-    def _build_relaunch_arguments(self) -> list[str]:
-        """
-        Build arguments that relaunch this application with the current runtime parameters.
-
-        Returns:
-            Relaunch argument list.
-        """
-        return ['-m', 'wifi_pref_manager.app', *self.original_argv[1:]]
-
     def set_windows_app_user_model_id(self) -> None:
         """
         Set the Windows AppUserModelID so tray notifications identify as PolyFi.
@@ -520,60 +446,20 @@ class Application:
         except (AttributeError, OSError):
             return False
 
-    def _permanently_disable_ethernet_feature(self, config, loader, logger) -> None:
-        """
-        Permanently disable auto_disable_wifi_on_ethernet in config and save to disk.
-
-        Parameters:
-            config:
-                Runtime configuration object to mutate.
-            loader:
-                ConfigLoader used to resolve the config file path.
-            logger:
-                Application logger.
-        """
-        config.auto_disable_wifi_on_ethernet = False
-        if loader is None:
-            self.append_startup_trace('auto_disable_wifi_on_ethernet disabled for session (no loader to save)')
-            logger.warning(
-                'Disabling automatic Wi-Fi disable on Ethernet for this running instance '
-                '(no config loader available to persist the change).'
-            )
-            return
-        try:
-            save_config(config, loader.config_path)
-            self.append_startup_trace('auto_disable_wifi_on_ethernet permanently disabled in config')
-            logger.info(
-                'Permanently disabled auto_disable_wifi_on_ethernet in config: %s',
-                loader.config_path,
-            )
-        except OSError as exc:
-            self.append_startup_trace(f'failed to save config after disabling ethernet feature: {exc}')
-            logger.warning('Could not save config after disabling ethernet feature: %s', exc)
-
     def handle_startup_admin_requirements(
         self,
         config,
         logger,
         *,
-        config_loader=None,
-        interface_name: str | None = None,
+        config_loader=None,  # noqa: ARG002
+        interface_name: str | None = None,  # noqa: ARG002
     ) -> int | None:
         """
-        Proactively resolve admin-only startup requirements before the service begins.
+        Warn when the Ethernet auto-disable feature needs administrator rights.
 
         When the process is not elevated and ``auto_disable_wifi_on_ethernet`` is
-        enabled, the method attempts to satisfy the privilege requirement without
-        requiring the Python interpreter to restart elevated:
-
-        1. If scheduled tasks are already installed for ``interface_name``, no
-           elevation is needed — the tasks run ``netsh`` as SYSTEM.
-        2. Otherwise, attempt one-time task installation by elevating
-           ``powershell.exe`` (a signed system binary unlikely to be covered by
-           an AppLocker rule targeting ``python.exe``).
-        3. If task installation is unavailable (no interface name, elevation
-           blocked for PowerShell too, or user cancelled), fall back to the
-           traditional ``restart_as_administrator`` approach.
+        enabled, the feature is disabled for this session and a warning is shown
+        telling the user to restart PolyFi as administrator if they want it.
 
         Parameters:
             config:
@@ -581,329 +467,22 @@ class Application:
             logger:
                 Application logger.
             config_loader:
-                Optional ConfigLoader used to permanently persist config changes.
+                Unused; kept for call-site compatibility.
             interface_name:
-                Detected Wi-Fi interface name for task validation and setup.
-                When ``None``, the task-based path is skipped entirely.
+                Unused; kept for call-site compatibility.
 
         Returns:
-            ``None`` when startup should continue, or a process exit code when the
-            current instance should stop after launching a replacement.
+            Always ``None``; startup continues after showing the warning.
         """
         if not config.auto_disable_wifi_on_ethernet or self.is_running_as_administrator():
             return None
 
-        self.append_startup_trace(
-            f'admin-requirements run_in_tray={self._run_in_tray_context} admin={self.is_running_as_administrator()}'
-        )
+        self.append_startup_trace('admin-requirements: not admin, disabling ethernet feature for session')
         logger.warning(
-            'auto_disable_wifi_on_ethernet is enabled, but this process is not running as administrator. '
-            'Checking whether scheduled tasks can satisfy the requirement.'
+            'auto_disable_wifi_on_ethernet is enabled but this process is not running as administrator. '
+            'The feature will be disabled for this session.'
         )
-
-        # ── Task-based path ─────────────────────────────────────────────────────
-        # When the interface is known, check if scheduled tasks are already
-        # configured.  If they are, no elevation is needed at all — the
-        # NetshWiFiApi will trigger them at runtime via schtasks /run.
-        if interface_name is not None:
-            task_manager = WifiAdapterTaskManager()
-
-            if task_manager.are_installed(interface_name):
-                self.append_startup_trace(
-                    f'wifi-tasks already installed for {interface_name!r}; no elevation needed'
-                )
-                logger.info(
-                    'Scheduled tasks are installed for Wi-Fi interface %r. '
-                    'No elevation needed for auto Ethernet feature.',
-                    interface_name,
-                )
-                return None
-
-            # Tasks not installed — attempt one-time setup.
-            self.append_startup_trace(
-                f'wifi-tasks not installed for {interface_name!r}; attempting task setup'
-            )
-            logger.warning(
-                'Scheduled tasks not found for interface %r. '
-                'Attempting one-time task setup via elevated PowerShell.',
-                interface_name,
-            )
-
-            if self._run_in_tray_context:
-                # Tray mode: defer task installation to after the tray icon is
-                # visible.  Running install_and_wait here (up to 12 s) blocks the
-                # main thread before the single-instance guard is even acquired,
-                # making the app appear to do nothing and tempting users to launch
-                # it a second time.  Store the pending setup; the post-icon-ready
-                # callback created in handle_run_command will trigger it once the
-                # icon is on screen.
-                self.append_startup_trace(
-                    f'tray-mode: deferring task setup for {interface_name!r} to post-icon-ready'
-                )
-                logger.warning(
-                    'Tray mode: deferring scheduled-task installation for %r '
-                    'to after the tray icon is visible.',
-                    interface_name,
-                )
-                self._pending_task_setup = (task_manager, interface_name)
-                config.auto_disable_wifi_on_ethernet = False
-                return None
-            else:
-                # Console mode: show a dialog offering task setup as the
-                # primary option alongside the traditional admin restart.
-                return self._handle_console_admin_requirements_with_tasks(
-                    config,
-                    logger,
-                    config_loader=config_loader,
-                    interface_name=interface_name,
-                    task_manager=task_manager,
-                )
-
-        # ── Tray mode: no interface name detected ────────────────────────────
-        # The task-based path above exits early (return None) for every tray-mode
-        # outcome when interface_name is known.  This point is only reached in
-        # tray mode when interface_name is None, which means we could not identify
-        # the Wi-Fi adapter before service startup and therefore cannot install or
-        # verify scheduled tasks.
-        #
-        # Restarting the Python process as administrator is not used in tray mode
-        # because ShellExecuteW can return a false-success code even when an
-        # AppLocker / SRP policy blocks the elevated process, leading to a
-        # multi-instance race condition that shows a spurious "already running"
-        # dialog.  Disable the feature silently — no MessageBox before the icon
-        # is on screen.
-        if self._run_in_tray_context:
-            self.append_startup_trace(
-                'tray-mode: interface_name is None; cannot install tasks; disabling ethernet feature for session'
-            )
-            logger.warning(
-                'No Wi-Fi interface name available in tray mode; '
-                'cannot install scheduled tasks. '
-                'Disabling automatic Wi-Fi disable on Ethernet for this session.'
-            )
-            config.auto_disable_wifi_on_ethernet = False
-            return None
-
-        # Console mode without task support: show the traditional restart dialog.
-        return self._handle_console_admin_requirements_restart_only(
-            config, logger, config_loader=config_loader
-        )
-
-    def _handle_console_admin_requirements_with_tasks(
-        self,
-        config,
-        logger,
-        *,
-        config_loader,
-        interface_name: str,
-        task_manager: WifiAdapterTaskManager,
-    ) -> int | None:
-        """
-        Console-mode admin requirement dialog that offers task setup as the
-        primary option alongside the traditional administrator restart.
-
-        Parameters:
-            config:
-                Loaded runtime configuration.
-            logger:
-                Application logger.
-            config_loader:
-                Optional ConfigLoader.
-            interface_name:
-                Wi-Fi interface name for task setup.
-            task_manager:
-                WifiAdapterTaskManager instance to use.
-
-        Returns:
-            ``None`` to continue, or exit code 0 when an elevated instance was
-            launched.
-        """
-        choice: list[str] = ['session']
-
-        def _on_setup_tasks() -> None:
-            choice[0] = 'task'
-
-        def _on_restart_admin() -> None:
-            choice[0] = 'restart'
-
-        def _on_disable_permanently() -> None:
-            choice[0] = 'permanent'
-
-        show_custom_dialog(
-            'Administrator Required',
-            'The "disable Wi-Fi when Ethernet is connected" feature needs administrator '
-            'privileges to control the wireless adapter.\n\n'
-            'Choose how to proceed:\n\n'
-            '• Set Up Task Helper — installs a one-time Windows Task Scheduler helper '
-            '(requires accepting a UAC prompt for Windows PowerShell).\n\n'
-            '• Restart as Administrator — relaunches PolyFi elevated '
-            '(may be blocked by a system policy on this PC).\n\n'
-            '• Disable Permanently — saves the setting as disabled so this prompt '
-            'does not appear again.\n\n'
-            '• This Session Only — disables the feature until PolyFi is restarted.',
-            buttons=[
-                ('Set Up Task Helper', _on_setup_tasks),
-                ('Restart as Administrator', _on_restart_admin),
-                ('Disable Permanently', _on_disable_permanently),
-                ('This Session Only', None),
-            ],
-        )
-
-        if choice[0] == 'task':
-            self.append_startup_trace('console: user chose task setup')
-            try:
-                installed = task_manager.install_and_wait(interface_name)
-            except OSError as exc:
-                self.append_startup_trace(f'console-task-install failed: {exc}')
-                logger.error('Scheduled-task installation failed: %s', exc)
-                show_dialog(
-                    'error',
-                    'Task Setup Failed',
-                    f'PolyFi could not install the scheduled task helper:\n\n{exc}\n\n'
-                    'Disabling automatic Ethernet Wi-Fi control for this session.',
-                )
-                installed = False
-
-            if installed:
-                self.append_startup_trace('console-task-install: tasks confirmed installed')
-                logger.info(
-                    'Scheduled tasks installed for %r. Feature will work without elevation.',
-                    interface_name,
-                )
-                return None
-
-            # Installation was not confirmed (user cancelled UAC or PowerShell also blocked).
-            self.append_startup_trace('console-task-install: not confirmed within timeout')
-            logger.warning(
-                'Task setup was not confirmed for %r. '
-                'Disabling automatic Ethernet Wi-Fi control for this session.',
-                interface_name,
-            )
-            config.auto_disable_wifi_on_ethernet = False
-            return None
-
-        if choice[0] == 'restart':
-            self.append_startup_trace('console: user chose restart as admin')
-            try:
-                launched = self.restart_as_administrator()
-            except OSError as exc:
-                self.append_startup_trace(f'admin-restart failed: {exc}')
-                logger.error('Failed to restart with administrator privileges during startup: %s', exc)
-                disable_permanently: list[bool] = [False]
-
-                def _on_perm() -> None:
-                    disable_permanently[0] = True
-
-                show_custom_dialog(
-                    'Restart Failed',
-                    f'PolyFi could not restart as administrator:\n\n{exc}\n\n'
-                    'You can disable this feature permanently so PolyFi does not ask again, '
-                    'or continue with it turned off for this session only.',
-                    buttons=[
-                        ('Disable Permanently', _on_perm),
-                        ('This Session Only', None),
-                    ],
-                )
-                if disable_permanently[0]:
-                    self._permanently_disable_ethernet_feature(config, config_loader, logger)
-                else:
-                    config.auto_disable_wifi_on_ethernet = False
-                return None
-            else:
-                if launched:
-                    self.append_startup_trace('admin-restart launched successfully')
-                    logger.info('Administrator restart launched during startup. Exiting current instance.')
-                    return 0
-                self.append_startup_trace('admin-restart cancelled')
-                logger.warning('Administrator restart was cancelled during startup.')
-
-        if choice[0] == 'permanent':
-            self.append_startup_trace('console: user chose disable permanently')
-            self._permanently_disable_ethernet_feature(config, config_loader, logger)
-            return None
-
-        # 'session' or fall-through from cancelled restart.
         config.auto_disable_wifi_on_ethernet = False
-        logger.warning(
-            'Disabled automatic Wi-Fi disable on Ethernet for this running instance.'
-        )
-        return None
-
-    def _handle_console_admin_requirements_restart_only(
-        self,
-        config,
-        logger,
-        *,
-        config_loader,
-    ) -> int | None:
-        """
-        Console-mode admin requirement dialog when task-based setup is
-        unavailable (no interface name detected before service startup).
-
-        Parameters:
-            config:
-                Loaded runtime configuration.
-            logger:
-                Application logger.
-            config_loader:
-                Optional ConfigLoader.
-
-        Returns:
-            ``None`` to continue, or exit code 0 when an elevated instance was
-            launched.
-        """
-        restart_requested = show_dialog(
-            'warning',
-            'Administrator Required',
-            'The "disable Wi-Fi when Ethernet is connected" feature needs administrator privileges.\n\n'
-            'PolyFi detected that this setting is enabled, but the app was not started as administrator. '
-            'You can restart it elevated now, or continue with that feature disabled for this session.',
-            action_label='Restart as Administrator',
-            action_callback=lambda: None,
-            continue_label='Continue Without Auto Ethernet',
-        )
-
-        if restart_requested:
-            try:
-                launched = self.restart_as_administrator()
-            except OSError as exc:
-                self.append_startup_trace(f'admin-restart failed: {exc}')
-                logger.error('Failed to restart with administrator privileges during startup: %s', exc)
-                disable_permanently: list[bool] = [False]
-
-                def _on_disable_permanently() -> None:
-                    disable_permanently[0] = True
-
-                show_custom_dialog(
-                    'Restart Failed',
-                    f'PolyFi could not restart as administrator:\n\n{exc}\n\n'
-                    'You can disable this feature permanently so PolyFi does not ask again, '
-                    'or continue with it turned off for this session only.',
-                    buttons=[
-                        ('Disable Permanently', _on_disable_permanently),
-                        ('This Session Only', None),
-                    ],
-                )
-                if disable_permanently[0]:
-                    self._permanently_disable_ethernet_feature(config, config_loader, logger)
-                else:
-                    config.auto_disable_wifi_on_ethernet = False
-                    logger.warning(
-                        'Disabled automatic Wi-Fi disable on Ethernet for this running instance.'
-                    )
-                return None
-            else:
-                if launched:
-                    self.append_startup_trace('admin-restart launched successfully')
-                    logger.info('Administrator restart launched during startup. Exiting current instance.')
-                    return 0
-                self.append_startup_trace('admin-restart cancelled')
-                logger.warning('Administrator restart was cancelled during startup.')
-
-        config.auto_disable_wifi_on_ethernet = False
-        logger.warning(
-            'Disabled automatic Wi-Fi disable on Ethernet for this running instance because the process is not elevated.'
-        )
         return None
 
     def handle_paths_command(self, args: argparse.Namespace) -> int:
@@ -1180,30 +759,21 @@ class Application:
         logger.info('Using config file: %s', config_path)
         logger.info('Effective log level: %s', effective_log_level)
 
-        # ── Early interface detection ────────────────────────────────────────
-        # Detect the Wi-Fi interface name before handle_startup_admin_requirements
-        # so the task-based elevation path can check/install scheduled tasks with
-        # the correct interface name.  The service will re-detect (and persist)
-        # the name during its own initialisation; this is a best-effort preview.
-        early_wifi_interface: str | None = config.interface_name.strip() if config.interface_name else None
-        if not early_wifi_interface and config.auto_disable_wifi_on_ethernet and not self.is_running_as_administrator():
-            try:
-                early_wifi_interface = NetshWiFiApi(logger=logger).detect_wifi_interface()
-            except Exception:
-                # Interface not detected — fall back to persisted state if available.
-                saved = ManagedInterfaceStateStore(self.paths.managed_interface_file).load()
-                if saved:
-                    early_wifi_interface = saved.interface_name
-
-        startup_admin_result = self.handle_startup_admin_requirements(
-            config,
-            logger,
-            config_loader=loader,
-            interface_name=early_wifi_interface,
+        # Check whether admin is needed before handle_startup_admin_requirements
+        # modifies the config, so we can show a persistent warning afterwards.
+        needs_admin_notification = (
+            config.auto_disable_wifi_on_ethernet and not self.is_running_as_administrator()
         )
-        if startup_admin_result is not None:
-            self.append_startup_trace(f'startup admin requirements returned code={startup_admin_result}')
-            return startup_admin_result
+
+        self.handle_startup_admin_requirements(config, logger)
+
+        if needs_admin_notification and not run_in_tray:
+            print(
+                'Warning: The "disable Wi-Fi when Ethernet is connected" feature requires '
+                'administrator privileges. Restart PolyFi as administrator to use this feature. '
+                'The feature is disabled for this session.',
+                file=sys.stderr,
+            )
 
         try:
             acquired = self.acquire_single_instance_guard(show_dialog_on_duplicate=True)
@@ -1217,25 +787,7 @@ class Application:
             logger.info('Another PolyFi instance is already running. Exiting duplicate launch.')
             return 0
 
-        # ── Build task manager if tasks are installed ──────────────────────
-        # When scheduled tasks are present for the detected interface, wire the
-        # task manager into NetshWiFiApi so disable/enable calls go through
-        # schtasks /run (no elevation needed).
-        task_manager: WifiAdapterTaskManager | None = None
-        if (
-            config.auto_disable_wifi_on_ethernet
-            and not self.is_running_as_administrator()
-            and early_wifi_interface is not None
-        ):
-            candidate = WifiAdapterTaskManager()
-            if candidate.are_installed(early_wifi_interface):
-                task_manager = candidate
-                logger.info(
-                    'Using scheduled tasks for Wi-Fi adapter control on interface %r.',
-                    early_wifi_interface,
-                )
-
-        wifi_api = NetshWiFiApi(logger=logger, task_manager=task_manager)
+        wifi_api = NetshWiFiApi(logger=logger)
         service = WiFiPreferenceService(
             config=config,
             wifi_api=wifi_api,
@@ -1244,74 +796,6 @@ class Application:
             on_config_reloaded=self.on_config_reloaded,
         )
 
-        # ── Post-icon-ready task setup callback ───────────────────────────
-        # If handle_startup_admin_requirements deferred task installation,
-        # build a closure that runs install_and_wait on a background thread
-        # after the tray icon is visible.  On success the feature is activated
-        # for this session; on failure a native MessageBox explains what to do.
-        post_icon_ready_callback = None
-        if run_in_tray and self._pending_task_setup is not None:
-            _pending_tm, _pending_iface = self._pending_task_setup
-
-            def _post_icon_ready_callback():
-                self.append_startup_trace(f'deferred task setup starting for {_pending_iface!r}')
-                try:
-                    installed = _pending_tm.install_and_wait(_pending_iface)
-                except OSError as exc:
-                    self.append_startup_trace(f'deferred task setup failed (OSError): {exc}')
-                    logger.warning(
-                        'Deferred scheduled-task installation raised an error for %r: %s.',
-                        _pending_iface,
-                        exc,
-                    )
-                    show_native_message_box(
-                        'warning',
-                        APP_NAME,
-                        'PolyFi could not install the scheduled task helper for\n'
-                        '"Disable Wi-Fi when Ethernet is connected":\n\n'
-                        f'{exc}\n\n'
-                        'The feature remains disabled for this session.\n\n'
-                        'To enable it, run the following from an elevated\n'
-                        'Command Prompt and then restart PolyFi:\n\n'
-                        '  polyfi-ranked windows wifi-tasks install',
-                    )
-                    return
-
-                if installed:
-                    self.append_startup_trace(
-                        f'deferred task setup: tasks confirmed installed for {_pending_iface!r}'
-                    )
-                    logger.info(
-                        'Scheduled tasks installed for %r; activating Ethernet auto-disable feature.',
-                        _pending_iface,
-                    )
-                    wifi_api.task_manager = _pending_tm
-                    service.set_auto_disable_wifi_on_ethernet(True)
-                else:
-                    # UAC declined or timed out.
-                    self.append_startup_trace(
-                        'deferred task setup: cancelled or timed out'
-                    )
-                    logger.warning(
-                        'Deferred task installation was not confirmed for %r '
-                        '(UAC cancelled or timed out). '
-                        'Ethernet auto-disable remains off for this session.',
-                        _pending_iface,
-                    )
-                    show_native_message_box(
-                        'warning',
-                        APP_NAME,
-                        'PolyFi could not set up the scheduled task helper for\n'
-                        '"Disable Wi-Fi when Ethernet is connected".\n\n'
-                        'The UAC prompt was cancelled or timed out.\n'
-                        'The feature remains disabled for this session.\n\n'
-                        'To enable it, run the following from an elevated\n'
-                        'Command Prompt and then restart PolyFi:\n\n'
-                        '  polyfi-ranked windows wifi-tasks install',
-                    )
-
-            post_icon_ready_callback = _post_icon_ready_callback
-
         try:
             if run_in_tray:
                 self.append_startup_trace('starting tray application')
@@ -1319,7 +803,7 @@ class Application:
                     service=service,
                     logger=logger,
                     config_loader=loader,
-                    restart_as_admin_callback=self.restart_as_administrator,
+                    needs_admin_notification=needs_admin_notification,
                     show_output_console_callback=(
                         self.console_output_manager.show_console_with_history
                         if self.console_output_manager is not None
@@ -1327,7 +811,6 @@ class Application:
                     ),
                     startup_marker_path=self.paths.first_tray_start_marker_file,
                     startup_trace_path=self.startup_trace_file,
-                    post_icon_ready_callback=post_icon_ready_callback,
                 )
                 try:
                     tray_app.run()

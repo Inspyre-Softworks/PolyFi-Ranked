@@ -119,7 +119,6 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
         tray = TrayApplication(
             service=service,
             logger=logger,
-            restart_as_admin_callback=Mock(),
         )
 
         tray.show_runtime_warning(
@@ -132,18 +131,6 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             'Wi-Fi Task Helper Needs Reinstall',
             'Reinstall the helper tasks.',
         )
-
-    @patch.object(Application, 'release_single_instance_guard', return_value=False)
-    @patch('wifi_pref_manager.app.ctypes.windll.shell32.ShellExecuteW', return_value=5)
-    def test_restart_as_administrator_access_denied_mentions_task_helper(
-        self,
-        _mock_shell_execute: Mock,
-        _mock_release_guard: Mock,
-    ) -> None:
-        app = Application()
-
-        with self.assertRaisesRegex(OSError, 'install the helper tasks instead'):
-            app.restart_as_administrator()
 
 
 if __name__ == '__main__':

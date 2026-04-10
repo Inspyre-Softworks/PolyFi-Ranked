@@ -67,7 +67,7 @@ class TrayApplication:
         service: WiFiPreferenceService,
         logger: logging.Logger,
         config_loader=None,
-        restart_as_admin_callback: Callable[[], bool] | None = None,
+        needs_admin_notification: bool = False,
         show_output_console_callback: Callable[[], None] | None = None,
         startup_marker_path: Path | None = None,
         startup_trace_path: Path | None = None,
@@ -76,7 +76,7 @@ class TrayApplication:
         self.service = service
         self.logger = logger
         self.config_loader = config_loader
-        self.restart_as_admin_callback = restart_as_admin_callback
+        self._needs_admin_notification = needs_admin_notification
         self.show_output_console_callback = show_output_console_callback
         self._startup_marker_path = startup_marker_path
         self._startup_trace_path = startup_trace_path
@@ -249,16 +249,6 @@ class TrayApplication:
                 Warning body text.
         """
         self.logger.warning('%s: %s', title, message.replace('\n', ' '))
-        if title == 'Administrator Required' and self.restart_as_admin_callback is not None:
-            show_dialog_async(
-                'warning',
-                title,
-                message,
-                action_label='Restart as Administrator',
-                action_callback=self.restart_as_administrator,
-                continue_label='Continue Without Auto Ethernet',
-            )
-            return
         show_dialog_async('warning', title, message)
 
     def show_wifi_adapter_disabled_dialog(self, active_ethernet_interfaces: list[str]) -> None:
@@ -313,33 +303,6 @@ class TrayApplication:
         except Exception:  # noqa: BLE001
             self.logger.debug('Tray notification failed.', exc_info=True)
 
-    def restart_as_administrator(self) -> None:
-        """
-        Relaunch the app with elevation and stop the current tray instance.
-        """
-        if self.restart_as_admin_callback is None:
-            return
-
-        try:
-            launched = self.restart_as_admin_callback()
-        except Exception as exc:  # noqa: BLE001
-            self.logger.exception('Failed to restart with administrator privileges: %s', exc)
-            show_dialog_async(
-                'error',
-                'Restart Failed',
-                f'PolyFi could not restart as administrator:\n\n{exc}',
-            )
-            return
-
-        if not launched:
-            self.logger.warning('Administrator restart was cancelled or could not be started.')
-            return
-
-        self.logger.info('Administrator restart launched successfully. Shutting down current tray instance.')
-        self.service.stop()
-        if self.icon is not None:
-            self.icon.stop()
-
     def refresh_menu(self) -> None:
         """
         Refresh the tray menu so dynamic labels pick up new state.
@@ -354,10 +317,15 @@ class TrayApplication:
         self._icon_ready_event = threading.Event()
         self._icon_run_done_event = threading.Event()
         self.service.start()
+        icon_title = (
+            'PolyFi: Ranked \u26a0 Restart as Administrator for Ethernet control'
+            if self._needs_admin_notification
+            else 'PolyFi: Ranked'
+        )
         self.icon = pystray.Icon(
             'polyfi_ranked',
             self.create_image(),
-            'PolyFi: Ranked',
+            icon_title,
             menu=pystray.Menu(
                 pystray.MenuItem(
                     lambda item: self.service.get_speed_test_status_text(),
@@ -365,6 +333,12 @@ class TrayApplication:
                     enabled=False,
                 ),
                 pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    '\u26a0 Restart as Administrator for Ethernet control',
+                    lambda icon, item: None,
+                    enabled=False,
+                    visible=lambda item: self._needs_admin_notification,
+                ),
                 pystray.MenuItem('Manage Networks…', self.on_manage_networks),
                 pystray.MenuItem('Rescan Now', self.on_rescan),
                 pystray.MenuItem('Re-enable Wi-Fi (Disable Auto Ethernet)', self.on_reenable_wifi),
@@ -434,8 +408,10 @@ class TrayApplication:
         user can locate the icon when it appears in the system tray overflow area.
         On the very first tray launch a native message box is also shown so the
         user can find the hidden-icons area before they know where to look.
-        If a post-icon-ready callback was registered (e.g. deferred task setup),
-        it is fired on a background thread so the icon loop is not blocked.
+        When an admin notification is pending, a toast is also shown to inform
+        the user that Ethernet control requires administrator privileges.
+        If a post-icon-ready callback was registered, it is fired on a background
+        thread so the icon loop is not blocked.
         """
         # Signal the watchdog that icon registration succeeded.
         if self._icon_ready_event is not None:
@@ -446,6 +422,16 @@ class TrayApplication:
             icon.notify(f'{APP_NAME} is now running in your system tray.', APP_NAME)
         except Exception:  # noqa: BLE001
             pass
+
+        if self._needs_admin_notification:
+            try:
+                icon.notify(
+                    'The "disable Wi-Fi when Ethernet is connected" feature requires '
+                    'administrator privileges. Restart PolyFi as administrator to use it.',
+                    title='Administrator Required',
+                )
+            except Exception:  # noqa: BLE001
+                pass
 
         if self._startup_marker_path is not None and not self._startup_marker_path.exists():
             show_native_message_box(
@@ -461,8 +447,6 @@ class TrayApplication:
             except OSError:
                 pass
 
-        # Deferred one-time setup (e.g. scheduled task installation) runs here
-        # so the icon is already visible when the UAC prompt appears.
         if self._post_icon_ready_callback is not None:
             self._append_startup_trace('starting post-icon callback')
             threading.Thread(
