@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 from datetime import datetime
+import logging
 import os
 from pathlib import Path
 import subprocess
@@ -48,17 +49,20 @@ from wifi_pref_manager.console_output import ConsoleOutputManager
 from wifi_pref_manager.config import ConfigError, ConfigLoader, save_config
 from wifi_pref_manager.logging_utils import configure_logging
 from wifi_pref_manager.managed_interface_state import ManagedInterfaceStateStore
+from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
 from wifi_pref_manager.paths import APP_NAME, APP_USER_MODEL_ID, AppPaths
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
 from wifi_pref_manager.ui.dialogs import show_custom_dialog, show_dialog, show_native_message_box
+from wifi_pref_manager.ui.splash import resolve_splash_image_path, show_startup_splash
 from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
 from wifi_pref_manager.windows_shell import StartMenuShortcutManager, resolve_runtime_launch_target
 
 
 BACKGROUND_TRAY_ENV_VAR = 'POLYFI_BACKGROUND_TRAY'
+SPLASH_SHOWN_ENV_VAR = 'POLYFI_SPLASH_ALREADY_SHOWN'
 
 
 class Application:
@@ -76,10 +80,12 @@ class Application:
         self.log_level_override: str | None = None
         self.save_speed_test_history_override: bool | None = None
         self.speed_test_history_file_override: str | None = None
+        self.show_startup_splash_override: bool | None = None
         self.original_argv: list[str] = list(sys.argv)
         self.single_instance_guard = SingleInstanceGuard(f'Local\\{APP_USER_MODEL_ID}')
         self.console_output_manager: ConsoleOutputManager | None = None
         self._run_in_tray_context = False
+        self._startup_splash_shown = False
         self.startup_trace_file = self.paths.local_data_dir / 'startup_trace.log'
         # Populated by handle_startup_admin_requirements when tasks need to be
         # installed but we are in tray mode and must not block startup.
@@ -97,9 +103,8 @@ class Application:
         try:
             self.paths.local_data_dir.mkdir(parents=True, exist_ok=True)
             timestamp = datetime.now().isoformat(timespec='seconds')
-            self.startup_trace_file.open('a', encoding='utf-8').write(
-                f'[{timestamp}] pid={Path(sys.executable).name}:{message}\n'
-            )
+            with self.startup_trace_file.open('a', encoding='utf-8') as handle:
+                handle.write(f'[{timestamp}] pid={Path(sys.executable).name}:{message}\n')
         except OSError:
             return
 
@@ -147,6 +152,18 @@ class Application:
             '--speed-test-history-file',
             default=argparse.SUPPRESS,
             help='Override the speed-test history file path for this run.',
+        )
+        parser.add_argument(
+            '--show-splash',
+            action='store_true',
+            default=argparse.SUPPRESS,
+            help='Force-enable the startup splash for this run.',
+        )
+        parser.add_argument(
+            '--no-splash',
+            action='store_true',
+            default=argparse.SUPPRESS,
+            help='Disable the startup splash for this run.',
         )
 
     def build_argument_parser(self) -> argparse.ArgumentParser:
@@ -278,6 +295,17 @@ class Application:
         else:
             self.save_speed_test_history_override = None
         self.speed_test_history_file_override = getattr(args, 'speed_test_history_file', None)
+        show_splash = bool(getattr(args, 'show_splash', False))
+        no_splash = bool(getattr(args, 'no_splash', False))
+        if show_splash and no_splash:
+            print('Cannot use --show-splash and --no-splash together.', file=sys.stderr)
+            return 1
+        if show_splash:
+            self.show_startup_splash_override = True
+        elif no_splash:
+            self.show_startup_splash_override = False
+        else:
+            self.show_startup_splash_override = None
         return 0
 
     def resolve_log_level(self, configured_log_level: str) -> str:
@@ -323,6 +351,8 @@ class Application:
             config.save_speed_test_history = self.save_speed_test_history_override
         if self.speed_test_history_file_override:
             config.speed_test_history_file = self.speed_test_history_file_override
+        if self.show_startup_splash_override is not None:
+            config.show_startup_splash = self.show_startup_splash_override
 
     def print_paths(self) -> int:
         """
@@ -340,7 +370,13 @@ class Application:
         print(f'Start Menu icon: {self.paths.start_menu_icon_file}')
         return 0
 
-    def build_runtime_argument_list(self, args: argparse.Namespace, *, force_tray: bool = False) -> list[str]:
+    def build_runtime_argument_list(
+        self,
+        args: argparse.Namespace,
+        *,
+        force_tray: bool = False,
+        force_show_splash: bool = False,
+    ) -> list[str]:
         """
         Build runtime CLI arguments from parsed values.
 
@@ -349,6 +385,8 @@ class Application:
                 Parsed argument namespace.
             force_tray:
                 Whether to force tray mode on.
+            force_show_splash:
+                Whether to force the startup splash on unless explicitly disabled.
 
         Returns:
             Runtime argument list.
@@ -369,7 +407,60 @@ class Application:
         speed_test_history_file = getattr(args, 'speed_test_history_file', None)
         if speed_test_history_file:
             runtime_args.extend(['--speed-test-history-file', speed_test_history_file])
+        show_splash = bool(getattr(args, 'show_splash', False))
+        no_splash = bool(getattr(args, 'no_splash', False))
+        if force_show_splash and not no_splash:
+            runtime_args.append('--show-splash')
+        elif show_splash:
+            runtime_args.append('--show-splash')
+        if no_splash:
+            runtime_args.append('--no-splash')
         return runtime_args
+
+    def maybe_show_startup_splash(self, config, logger) -> bool:
+        """
+        Show the configured startup splash if enabled and available.
+
+        Parameters:
+            config:
+                Runtime configuration object.
+            logger:
+                Application logger.
+
+        Returns:
+            True when the splash was shown, otherwise False.
+        """
+        if os.environ.get(SPLASH_SHOWN_ENV_VAR) == '1' or self._startup_splash_shown:
+            return False
+
+        if not getattr(config, 'show_startup_splash', True):
+            return False
+
+        splash_path = resolve_splash_image_path(
+            getattr(config, 'splash_image_path', ''),
+            self.paths,
+        )
+        if splash_path is None:
+            logger.debug(
+                'Startup splash is enabled, but no splash image was found. '
+                'Looked for config path, app-data splash, and Pictures defaults.'
+            )
+            return False
+
+        try:
+            logger.info('Showing startup splash from: %s', splash_path)
+            show_startup_splash(
+                splash_path,
+                fade_in_ms=max(0, int(getattr(config, 'splash_fade_in_ms', 280))),
+                hold_ms=max(0, int(getattr(config, 'splash_hold_ms', 1100))),
+                fade_out_ms=max(0, int(getattr(config, 'splash_fade_out_ms', 280))),
+            )
+            self._startup_splash_shown = True
+            logger.debug('Startup splash completed.')
+            return True
+        except Exception as exc:  # noqa: BLE001
+            logger.warning('Startup splash failed and will be skipped for this launch: %s', exc)
+            return False
 
     def write_default_config_file(self, config_path: str | None, overwrite: bool) -> int:
         """
@@ -437,7 +528,7 @@ class Application:
             raise OSError(f'Windows elevation request failed with ShellExecuteW code {result}.')
         return True
 
-    def launch_detached_tray_process(self, args: argparse.Namespace) -> int:
+    def launch_detached_tray_process(self, args: argparse.Namespace, *, suppress_splash: bool = False) -> int:
         """
         Launch the tray runtime in a detached background process.
 
@@ -464,6 +555,8 @@ class Application:
         ]
         environment = os.environ.copy()
         environment[BACKGROUND_TRAY_ENV_VAR] = '1'
+        if suppress_splash:
+            environment[SPLASH_SHOWN_ENV_VAR] = '1'
         process = subprocess.Popen(  # noqa: S603
             command,
             close_fds=True,
@@ -520,6 +613,16 @@ class Application:
         except (AttributeError, OSError):
             return False
 
+    @staticmethod
+    def _ethernet_action_requires_admin(config) -> bool:
+        """
+        Return whether the selected Ethernet Wi-Fi mode needs adapter control.
+        """
+        if not getattr(config, 'auto_disable_wifi_on_ethernet', False):
+            return False
+        mode = getattr(config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
+        return mode == ETHERNET_WIFI_MODE_DISABLE_ADAPTER
+
     def _permanently_disable_ethernet_feature(self, config, loader, logger) -> None:
         """
         Permanently disable auto_disable_wifi_on_ethernet in config and save to disk.
@@ -563,8 +666,9 @@ class Application:
         Proactively resolve admin-only startup requirements before the service begins.
 
         When the process is not elevated and ``auto_disable_wifi_on_ethernet`` is
-        enabled, the method attempts to satisfy the privilege requirement without
-        requiring the Python interpreter to restart elevated:
+        enabled with ``ethernet_wifi_mode = "disable_adapter"``, the method
+        attempts to satisfy the privilege requirement without requiring the Python
+        interpreter to restart elevated:
 
         1. If scheduled tasks are already installed for ``interface_name``, no
            elevation is needed — the tasks run ``netsh`` as SYSTEM.
@@ -590,14 +694,14 @@ class Application:
             ``None`` when startup should continue, or a process exit code when the
             current instance should stop after launching a replacement.
         """
-        if not config.auto_disable_wifi_on_ethernet or self.is_running_as_administrator():
+        if not self._ethernet_action_requires_admin(config) or self.is_running_as_administrator():
             return None
 
         self.append_startup_trace(
             f'admin-requirements run_in_tray={self._run_in_tray_context} admin={self.is_running_as_administrator()}'
         )
         logger.warning(
-            'auto_disable_wifi_on_ethernet is enabled, but this process is not running as administrator. '
+            'Ethernet mode "disable_adapter" is enabled, but this process is not running as administrator. '
             'Checking whether scheduled tasks can satisfy the requirement.'
         )
 
@@ -992,7 +1096,7 @@ class Application:
         manager = StartMenuShortcutManager(paths=self.paths)
         try:
             shortcut_path = manager.install(
-                self.build_runtime_argument_list(args, force_tray=True),
+                self.build_runtime_argument_list(args, force_tray=True, force_show_splash=True),
                 overwrite=args.force,
             )
         except (FileExistsError, OSError) as exc:
@@ -1143,9 +1247,21 @@ class Application:
             and os.environ.get(BACKGROUND_TRAY_ENV_VAR) != '1'
         )
         if should_background_tray:
-            self.append_startup_trace('launching detached tray background process')
             try:
-                child_pid = self.launch_detached_tray_process(args)
+                can_launch = self.acquire_single_instance_guard(show_dialog_on_duplicate=True)
+            except OSError as exc:
+                self.append_startup_trace(f'single instance preflight failure: {exc}')
+                print(str(exc), file=sys.stderr)
+                return 1
+            if not can_launch:
+                self.append_startup_trace('duplicate instance detected before detached tray launch')
+                return 0
+            self.release_single_instance_guard()
+            self.append_startup_trace('launching detached tray background process')
+            bootstrap_logger = logging.getLogger('polyfi_ranked.bootstrap')
+            showed_splash = self.maybe_show_startup_splash(config, bootstrap_logger)
+            try:
+                child_pid = self.launch_detached_tray_process(args, suppress_splash=showed_splash)
             except OSError as exc:
                 self.append_startup_trace(f'detached tray launch failed: {exc}')
                 print(
@@ -1162,7 +1278,8 @@ class Application:
         self._run_in_tray_context = run_in_tray
         self.append_startup_trace(
             f'config loaded run_in_tray={run_in_tray} admin={self.is_running_as_administrator()} '
-            f'auto_disable_wifi_on_ethernet={config.auto_disable_wifi_on_ethernet}'
+            f'auto_disable_wifi_on_ethernet={config.auto_disable_wifi_on_ethernet} '
+            f'ethernet_wifi_mode={getattr(config, "ethernet_wifi_mode", ETHERNET_WIFI_MODE_DISCONNECT)}'
         )
         if run_in_tray:
             self.console_output_manager = ConsoleOutputManager(
@@ -1186,7 +1303,11 @@ class Application:
         # the correct interface name.  The service will re-detect (and persist)
         # the name during its own initialisation; this is a best-effort preview.
         early_wifi_interface: str | None = config.interface_name.strip() if config.interface_name else None
-        if not early_wifi_interface and config.auto_disable_wifi_on_ethernet and not self.is_running_as_administrator():
+        if (
+            not early_wifi_interface
+            and self._ethernet_action_requires_admin(config)
+            and not self.is_running_as_administrator()
+        ):
             try:
                 early_wifi_interface = NetshWiFiApi(logger=logger).detect_wifi_interface()
             except Exception:
@@ -1217,13 +1338,15 @@ class Application:
             logger.info('Another PolyFi instance is already running. Exiting duplicate launch.')
             return 0
 
+        self.maybe_show_startup_splash(config, logger)
+
         # ── Build task manager if tasks are installed ──────────────────────
         # When scheduled tasks are present for the detected interface, wire the
         # task manager into NetshWiFiApi so disable/enable calls go through
         # schtasks /run (no elevation needed).
         task_manager: WifiAdapterTaskManager | None = None
         if (
-            config.auto_disable_wifi_on_ethernet
+            self._ethernet_action_requires_admin(config)
             and not self.is_running_as_administrator()
             and early_wifi_interface is not None
         ):

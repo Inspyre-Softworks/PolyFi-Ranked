@@ -42,6 +42,7 @@ import pystray
 
 from wifi_pref_manager.config import save_config
 from wifi_pref_manager.icon_assets import create_app_icon_image
+from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.paths import APP_NAME
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.ui.dialogs import show_custom_dialog_async, show_dialog_async, show_native_message_box
@@ -162,7 +163,7 @@ class TrayApplication:
 
     def disable_auto_ethernet_feature(self) -> bool:
         """
-        Turn off automatic Ethernet Wi-Fi disable and persist the change.
+        Turn off automatic Ethernet Wi-Fi action and persist the change.
 
         Returns:
             True when the runtime/config update succeeded.
@@ -171,7 +172,7 @@ class TrayApplication:
         if not self._save_and_reload_config(new_config):
             return False
         self.service.set_auto_disable_wifi_on_ethernet(False)
-        self.logger.info('Disabled automatic Wi-Fi disable on Ethernet from the tray UI.')
+        self.logger.info('Disabled automatic Wi-Fi Ethernet action from the tray UI.')
         return True
 
     def suppress_wifi_disabled_dialog(self) -> None:
@@ -186,18 +187,20 @@ class TrayApplication:
 
     def reenable_wifi_adapter_and_disable_auto_ethernet(self) -> None:
         """
-        Disable Ethernet auto-detection, re-enable Wi-Fi, and rescan.
+        Disable Ethernet auto-detection, then restore Wi-Fi behavior and rescan.
         """
-        self.logger.warning('Tray recovery requested: disabling Ethernet auto-detection and re-enabling Wi-Fi.')
+        self.logger.warning('Tray recovery requested: disabling Ethernet auto-detection and restoring Wi-Fi.')
         if not self.disable_auto_ethernet_feature():
             return
 
-        try:
-            self.service.enable_wifi_adapter()
-            self.logger.info('Wi-Fi adapter re-enabled from tray action.')
-        except Exception as exc:  # noqa: BLE001
-            self.logger.exception('Failed to re-enable Wi-Fi adapter from tray action: %s', exc)
-            return
+        mode = getattr(self.service.config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
+        if mode == ETHERNET_WIFI_MODE_DISABLE_ADAPTER:
+            try:
+                self.service.enable_wifi_adapter()
+                self.logger.info('Wi-Fi adapter re-enabled from tray action.')
+            except Exception as exc:  # noqa: BLE001
+                self.logger.exception('Failed to re-enable Wi-Fi adapter from tray action: %s', exc)
+                return
 
         self.service.evaluate_and_switch()
 
@@ -214,10 +217,7 @@ class TrayApplication:
                 config_loader=self.config_loader,
                 logger=self.logger,
             )
-
-        # Run the settings window in its own thread so the tray stays responsive.
-        thread = threading.Thread(target=self._settings_window.open, daemon=True)
-        thread.start()
+        self._settings_window.open()
 
     def on_show_output_console(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         """
@@ -263,7 +263,7 @@ class TrayApplication:
 
     def show_wifi_adapter_disabled_dialog(self, active_ethernet_interfaces: list[str]) -> None:
         """
-        Show a dialog after PolyFi disables the Wi-Fi adapter.
+        Show a dialog after PolyFi applies the Ethernet Wi-Fi action.
 
         Parameters:
             active_ethernet_interfaces:
@@ -273,23 +273,43 @@ class TrayApplication:
             return
 
         interface_text = ', '.join(active_ethernet_interfaces) if active_ethernet_interfaces else 'Ethernet'
-        show_custom_dialog_async(
-            title='Wi-Fi Adapter Disabled',
-            message=(
+        mode = getattr(self.service.config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
+        if mode == ETHERNET_WIFI_MODE_DISABLE_ADAPTER:
+            title = 'Wi-Fi Adapter Disabled'
+            message = (
                 'PolyFi disabled the Wi-Fi adapter because an active Ethernet connection was detected on '
                 f'{interface_text}.\n\n'
                 'You can acknowledge this, re-enable the Wi-Fi adapter now, or turn the automatic feature off.'
-            ),
+            )
+            recover_label = 'Re-enable WiFi adapter'
+        else:
+            title = 'Wi-Fi Auto-Connect Paused'
+            message = (
+                'PolyFi detected active Ethernet on '
+                f'{interface_text} and temporarily disconnected Wi-Fi while setting saved Wi-Fi profiles to '
+                'manual connect.\n\n'
+                'PolyFi restores your previous Wi-Fi state when Ethernet disconnects or when the app exits.'
+            )
+            recover_label = 'Restore WiFi now'
+
+        show_custom_dialog_async(
+            title=title,
+            message=message,
             buttons=(
                 ('OK', None),
-                ('Re-enable WiFi adapter', self.reenable_wifi_adapter_and_disable_auto_ethernet),
+                (recover_label, self.reenable_wifi_adapter_and_disable_auto_ethernet),
                 ('Turn Feature Off', self.disable_auto_ethernet_feature),
             ),
             checkbox_label='Do not show this dialog again',
             on_checkbox_checked=self.suppress_wifi_disabled_dialog,
         )
 
-    def show_wifi_network_changed_notification(self, previous_ssid: str | None, new_ssid: str) -> None:
+    def show_wifi_network_changed_notification(
+        self,
+        previous_ssid: str | None,
+        new_ssid: str,
+        reason: str | None = None,
+    ) -> None:
         """
         Send a toast notification when the active Wi-Fi SSID changes.
 
@@ -298,6 +318,8 @@ class TrayApplication:
                 Previously active SSID, if any.
             new_ssid:
                 Newly active SSID.
+            reason:
+                Optional human-readable explanation for the switch.
         """
         if self.icon is None or not hasattr(self.icon, 'notify'):
             return
@@ -307,6 +329,8 @@ class TrayApplication:
             message = f'Switched from {previous_ssid} to {new_ssid}.'
         else:
             message = f'Connected to {new_ssid}.'
+        if reason:
+            message = f'{message} {reason}'
 
         try:
             self.icon.notify(message, title=title)
@@ -367,7 +391,7 @@ class TrayApplication:
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem('Manage Networks…', self.on_manage_networks),
                 pystray.MenuItem('Rescan Now', self.on_rescan),
-                pystray.MenuItem('Re-enable Wi-Fi (Disable Auto Ethernet)', self.on_reenable_wifi),
+                pystray.MenuItem('Restore Wi-Fi (Disable Auto Ethernet)', self.on_reenable_wifi),
                 pystray.MenuItem(
                     'Show Output Console',
                     self.on_show_output_console,

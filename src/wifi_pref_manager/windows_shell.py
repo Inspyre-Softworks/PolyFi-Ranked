@@ -15,6 +15,7 @@ Description:
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -34,15 +35,30 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
     Returns:
         ``(executable, arguments, working_directory)``.
     """
-    executable = Path(sys.executable).resolve()
+    executable = Path(sys.executable)
+    packaged_launcher = executable.parent / 'polyfi-ranked.exe'
+
     if prefer_windowless:
         pythonw = executable.with_name('pythonw.exe')
         if pythonw.exists():
             return pythonw, ['-m', 'wifi_pref_manager.app'], pythonw.parent
+        if packaged_launcher.exists():
+            return packaged_launcher, [], packaged_launcher.parent
 
-    packaged_launcher = executable.parent / 'polyfi-ranked.exe'
-    if packaged_launcher.exists():
-        return packaged_launcher, [], packaged_launcher.parent
+    else:
+        if packaged_launcher.exists():
+            return packaged_launcher, [], packaged_launcher.parent
+
+    virtual_env = os.environ.get('VIRTUAL_ENV', '').strip()
+    if virtual_env:
+        scripts_dir = Path(virtual_env) / 'Scripts'
+        venv_python = scripts_dir / 'python.exe'
+        if prefer_windowless:
+            venv_pythonw = scripts_dir / 'pythonw.exe'
+            if venv_pythonw.exists():
+                return venv_pythonw, ['-m', 'wifi_pref_manager.app'], scripts_dir
+        if venv_python.exists():
+            return venv_python, ['-m', 'wifi_pref_manager.app'], scripts_dir
 
     return executable, ['-m', 'wifi_pref_manager.app'], executable.parent
 
