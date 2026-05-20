@@ -30,6 +30,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
+ETHERNET_WIFI_MODE_DISCONNECT = 'disconnect_and_disable_autoconnect'
+ETHERNET_WIFI_MODE_DISABLE_ADAPTER = 'disable_adapter'
+ETHERNET_WIFI_MODE_VALUES = {
+    ETHERNET_WIFI_MODE_DISCONNECT,
+    ETHERNET_WIFI_MODE_DISABLE_ADAPTER,
+}
+
 
 @dataclass(frozen=True)
 class WiFiProfilePreference:
@@ -75,8 +82,23 @@ class AppConfig:
             Whether the tray app should start minimized.
         auto_disable_wifi_on_ethernet:
             Automatically disconnect Wi-Fi when an Ethernet connection is detected.
+        ethernet_wifi_mode:
+            Action taken when Ethernet is active and auto-disable is enabled.
+            ``disconnect_and_disable_autoconnect`` disconnects Wi-Fi and sets all
+            saved profiles to manual connect until Ethernet disconnects (or app exit).
+            ``disable_adapter`` turns the Wi-Fi adapter fully off.
         show_wifi_disabled_dialog:
             Whether to show a dialog when PolyFi disables the Wi-Fi adapter.
+        show_startup_splash:
+            Whether to show the startup splash screen.
+        splash_image_path:
+            Optional splash image path. Blank uses built-in default lookup paths.
+        splash_fade_in_ms:
+            Legacy splash fade-in duration in milliseconds. Retained for config compatibility.
+        splash_hold_ms:
+            Splash display duration in milliseconds.
+        splash_fade_out_ms:
+            Legacy splash fade-out duration in milliseconds. Retained for config compatibility.
         enable_speed_tests:
             Whether automatic speed tests are enabled.
         speed_test_on_new_connection:
@@ -98,7 +120,13 @@ class AppConfig:
     log_file: str = ''
     start_minimized_to_tray: bool = False
     auto_disable_wifi_on_ethernet: bool = True
+    ethernet_wifi_mode: str = ETHERNET_WIFI_MODE_DISCONNECT
     show_wifi_disabled_dialog: bool = True
+    show_startup_splash: bool = True
+    splash_image_path: str = ''
+    splash_fade_in_ms: int = 280
+    splash_hold_ms: int = 1100
+    splash_fade_out_ms: int = 280
     enable_speed_tests: bool = False
     speed_test_on_new_connection: bool = True
     speed_test_interval: int = 1800

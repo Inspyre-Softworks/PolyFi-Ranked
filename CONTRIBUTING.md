@@ -1,0 +1,80 @@
+# Contributing to PolyFi: Ranked
+
+Thanks for helping improve PolyFi: Ranked. This document describes the
+recommended setup and the project conventions we follow.
+
+## Getting Started
+
+1. Fork the repository on GitHub.
+2. Clone your fork locally.
+3. Create a branch for your work.
+
+## Development Setup
+
+This project uses [Poetry](https://python-poetry.org/) for dependency
+management and test execution.
+
+```powershell
+poetry install --with dev --no-interaction
+```
+
+Run the application locally with:
+
+```powershell
+poetry run polyfi-ranked
+```
+
+Run the tray entry point with:
+
+```powershell
+poetry run polyfi-ranked --tray
+```
+
+## Running Tests
+
+Run the full test suite with:
+
+```powershell
+poetry run pytest
+```
+
+For coverage while working on a change:
+
+```powershell
+poetry run pytest --cov=src/wifi_pref_manager --cov-report=term-missing
+```
+
+When fixing a regression, add or update targeted tests in `tests/` so the
+exact issue stays covered.
+
+## Building Documentation
+
+Install the docs toolchain with:
+
+```powershell
+poetry install --with docs --no-interaction
+```
+
+Build the Sphinx site locally with:
+
+```powershell
+poetry run sphinx-build -W -b html docs docs/_build/local-html
+```
+
+Read the Docs is configured to install the Poetry `docs` group and build from
+`docs/conf.py`, so local Sphinx changes should be verified before pushing.
+
+## GUI and Windows Notes
+
+- Keep Tkinter UI work on the shared UI thread in
+  `src/wifi_pref_manager/ui/dialogs.py`.
+- Avoid spawning background threads that create their own `tk.Tk()` roots.
+- Launcher, splash, and tray-startup changes should include regression tests,
+  especially when the behavior depends on Windows shell or startup state.
+
+## Submitting Changes
+
+1. Ensure `poetry run pytest` passes before opening a PR.
+2. Update documentation when user-visible behavior changes.
+3. Fill in the pull request template with your testing notes.
+4. Keep changes focused and include regression coverage for bug fixes.

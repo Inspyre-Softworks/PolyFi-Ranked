@@ -15,6 +15,15 @@ easy-exit-calls = {version = "^1.0.0.dev1", python = ">=3.12,<4.0"}
 inspy-logger = "^3.2.3"
 platformdirs = "^4.9.4"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+pytest-cov = "^7.0.0"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = ">=7.4,<9.0"
+sphinx-rtd-theme = ">=2,<4"
+myst-parser = ">=3.0,<5.0"
+
 [tool.poetry.scripts]
 polyfi-ranked = "wifi_pref_manager.app:main"
 polyfi-ranked-install-task = "wifi_pref_manager.scheduler:main"

@@ -28,7 +28,13 @@ class ConfigRoundTripTests(unittest.TestCase):
                 log_file=str(Path(tmp_dir) / 'logs' / 'polyfi.log'),
                 start_minimized_to_tray=True,
                 auto_disable_wifi_on_ethernet=False,
+                ethernet_wifi_mode='disable_adapter',
                 show_wifi_disabled_dialog=False,
+                show_startup_splash=False,
+                splash_image_path=str(Path(tmp_dir) / 'polyfi_ranked_splash.png'),
+                splash_fade_in_ms=123,
+                splash_hold_ms=456,
+                splash_fade_out_ms=789,
                 enable_speed_tests=True,
                 speed_test_on_new_connection=False,
                 speed_test_interval=12,
@@ -48,7 +54,13 @@ class ConfigRoundTripTests(unittest.TestCase):
             self.assertEqual(loaded.log_file, config.log_file)
             self.assertEqual(loaded.start_minimized_to_tray, config.start_minimized_to_tray)
             self.assertEqual(loaded.auto_disable_wifi_on_ethernet, config.auto_disable_wifi_on_ethernet)
+            self.assertEqual(loaded.ethernet_wifi_mode, config.ethernet_wifi_mode)
             self.assertEqual(loaded.show_wifi_disabled_dialog, config.show_wifi_disabled_dialog)
+            self.assertEqual(loaded.show_startup_splash, config.show_startup_splash)
+            self.assertEqual(loaded.splash_image_path, config.splash_image_path)
+            self.assertEqual(loaded.splash_fade_in_ms, config.splash_fade_in_ms)
+            self.assertEqual(loaded.splash_hold_ms, config.splash_hold_ms)
+            self.assertEqual(loaded.splash_fade_out_ms, config.splash_fade_out_ms)
             self.assertEqual(loaded.enable_speed_tests, config.enable_speed_tests)
             self.assertEqual(loaded.speed_test_on_new_connection, config.speed_test_on_new_connection)
             self.assertEqual(loaded.speed_test_interval, config.speed_test_interval)
@@ -85,6 +97,47 @@ class ConfigRoundTripTests(unittest.TestCase):
 
             self.assertFalse(loaded.auto_disable_wifi_on_ethernet)
             self.assertTrue(loaded.preferred_networks[0].auto_switch)
+
+    def test_ethernet_wifi_mode_defaults_when_missing(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / 'config.toml'
+            config_path.write_text(
+                "\n".join(
+                    [
+                        "[general]",
+                        "",
+                        "[[networks]]",
+                        'ssid = "Example"',
+                        'auto_switch = true',
+                        "",
+                    ]
+                ),
+                encoding='utf-8',
+            )
+
+            loaded = ConfigLoader(config_path).load()
+            self.assertEqual(loaded.ethernet_wifi_mode, 'disconnect_and_disable_autoconnect')
+
+    def test_invalid_ethernet_wifi_mode_raises_config_error(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / 'config.toml'
+            config_path.write_text(
+                "\n".join(
+                    [
+                        "[general]",
+                        'ethernet_wifi_mode = "invalid-mode"',
+                        "",
+                        "[[networks]]",
+                        'ssid = "Example"',
+                        'auto_switch = true',
+                        "",
+                    ]
+                ),
+                encoding='utf-8',
+            )
+
+            with self.assertRaises(ConfigError):
+                ConfigLoader(config_path).load()
 
 
 if __name__ == '__main__':

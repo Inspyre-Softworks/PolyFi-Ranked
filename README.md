@@ -16,6 +16,10 @@ A Windows-focused Python application that lets you define an ordered list of Wi-
 - Live config reload while the service is running
 - Optional automatic speed tests on connect and at a fixed interval
 - Exit-time Wi-Fi state restoration when running on Python 3.12+
+- Ethernet-aware Wi-Fi action mode:
+  - `disconnect_and_disable_autoconnect` (default, no admin required)
+  - `disable_adapter` (optional, requires admin or task helper)
+- Optional startup splash screen with transparent PNG support
 
 ## Default paths on Windows
 
@@ -64,6 +68,26 @@ poetry run polyfi-ranked windows start-menu install
 poetry run polyfi-ranked --tray
 ```
 
+## Development
+
+Use Poetry for contributor and AI-helper workflows:
+
+```powershell
+poetry install --with dev --no-interaction
+poetry run pytest
+```
+
+When changing the tray or Tk GUI, keep all Tk work on the shared UI thread and prefer targeted regression tests for splash, launcher, and tray-fallback behavior.
+
+## Documentation
+
+Sphinx and Read the Docs dependencies live in the Poetry `docs` group:
+
+```powershell
+poetry install --with docs --no-interaction
+poetry run sphinx-build -W -b html docs docs/_build/local-html
+```
+
 ## Task Scheduler Autostart
 
 ```powershell
@@ -84,6 +108,13 @@ Edit the config file while PolyFi: Ranked is running. On the next scan cycle, it
 - `log_level`
 - `log_file`
 - `show_wifi_disabled_dialog`
+- `auto_disable_wifi_on_ethernet`
+- `ethernet_wifi_mode`
+- `show_startup_splash`
+- `splash_image_path`
+- `splash_fade_in_ms`
+- `splash_hold_ms`
+- `splash_fade_out_ms`
 - `enable_speed_tests`
 - `speed_test_on_new_connection`
 - `speed_test_interval`
@@ -103,6 +134,44 @@ These `general` settings control automatic speed tests:
 `speed_test_interval` is measured in seconds.
 When `speed_test_history_file` is blank, PolyFi uses the default local app-data history path.
 
+## Ethernet Wi-Fi Mode
+
+These `general` settings control Ethernet-aware Wi-Fi behavior:
+
+- `auto_disable_wifi_on_ethernet = true`
+- `ethernet_wifi_mode = 'disconnect_and_disable_autoconnect'`
+
+Mode behavior:
+
+- `disconnect_and_disable_autoconnect`:
+  - Captures the current Wi-Fi SSID and profile auto-connect states.
+  - Disconnects Wi-Fi and sets saved Wi-Fi profiles to manual connect while Ethernet is active.
+  - Restores the captured Wi-Fi state when Ethernet disconnects and again on app exit.
+  - Designed to work without administrator privileges.
+- `disable_adapter`:
+  - Disables the Wi-Fi adapter while Ethernet is active.
+  - Requires administrator rights, or the PolyFi Wi-Fi task helper workflow.
+
+## Startup Splash
+
+These `general` settings control the startup splash:
+
+- `show_startup_splash = true`
+- `splash_image_path = ''`
+- `splash_fade_in_ms = 280`
+- `splash_hold_ms = 1100`
+- `splash_fade_out_ms = 280`
+
+PolyFi now shows the splash briefly and closes it without fade effects. `splash_hold_ms`
+controls how long it stays visible. The fade timing fields are still accepted so existing
+configs keep working, but they are currently ignored.
+
+When `splash_image_path` is blank, PolyFi looks for `polyfi_ranked_splash.png` in:
+
+- `%LOCALAPPDATA%\Inspyre-Softworks\PolyFi-Ranked\`
+- `%USERPROFILE%\OneDrive\Pictures\`
+- `%USERPROFILE%\Pictures\`
+
 ## CLI Overrides
 
 You can override these settings for a single run:
@@ -111,10 +180,12 @@ You can override these settings for a single run:
 - `--save-speed-test-history`
 - `--no-save-speed-test-history`
 - `--speed-test-history-file C:\path\to\speedtests.jsonl`
+- `--show-splash`
+- `--no-splash`
 
 For compatibility, the older `--print-paths` flag still works, but `paths` and `config init` are the preferred command-style entry points going forward.
 
 ## Notes
 
 This app uses `netsh wlan` under the hood. Your SSIDs must already exist as saved Windows Wi-Fi profiles.
-If you set `min_db` on a `[[networks]]` block, PolyFi treats that network as unavailable when the best observed scan result is weaker than that approximate dBm threshold.
+If you set `min_db` on a `[[networks]]` block, PolyFi treats that network as unavailable when the best observed scan result is weaker than that approximate dBm threshold. If the currently connected preferred network drops below its own threshold, PolyFi will move to the next preferred network whose signal also meets its configured threshold.

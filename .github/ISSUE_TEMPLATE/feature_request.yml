@@ -1,0 +1,36 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for PolyFi: Ranked
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please describe the problem and the behavior you want as clearly as possible.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What use case or pain point is this request trying to solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe what you would like PolyFi to do.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or other solutions have you considered?
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add screenshots, examples, or links that help explain the request.

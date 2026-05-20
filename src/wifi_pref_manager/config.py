@@ -36,7 +36,12 @@ import json
 from pathlib import Path
 import tomllib
 
-from wifi_pref_manager.models import AppConfig, WiFiProfilePreference
+from wifi_pref_manager.models import (
+    ETHERNET_WIFI_MODE_DISCONNECT,
+    ETHERNET_WIFI_MODE_VALUES,
+    AppConfig,
+    WiFiProfilePreference,
+)
 from wifi_pref_manager.paths import AppPaths
 
 
@@ -49,7 +54,13 @@ log_file = ''
 interface_name = ''
 start_minimized_to_tray = false
 auto_disable_wifi_on_ethernet = true
+ethernet_wifi_mode = 'disconnect_and_disable_autoconnect'
 show_wifi_disabled_dialog = true
+show_startup_splash = true
+splash_image_path = ''
+splash_fade_in_ms = 280
+splash_hold_ms = 1100
+splash_fade_out_ms = 280
 enable_speed_tests = false
 speed_test_on_new_connection = true
 speed_test_interval = 1800
@@ -132,6 +143,38 @@ class ConfigLoader:
             if normalized in {'0', 'false', 'no', 'off'}:
                 return False
         raise ConfigError(f'Configuration field {field_name!r} must be a boolean.')
+
+    @staticmethod
+    def _coerce_ethernet_wifi_mode(value: object) -> str:
+        """
+        Parse the Ethernet Wi-Fi action mode.
+
+        Parameters:
+            value:
+                Raw value loaded from TOML.
+
+        Returns:
+            Normalized action mode string.
+
+        Raises:
+            ConfigError:
+                If the mode is not recognized.
+        """
+        if value is None:
+            return ETHERNET_WIFI_MODE_DISCONNECT
+        normalized = str(value).strip().lower()
+        aliases = {
+            'disconnect': ETHERNET_WIFI_MODE_DISCONNECT,
+            'disconnect_and_disable_autoconnect': ETHERNET_WIFI_MODE_DISCONNECT,
+            'disable_adapter': 'disable_adapter',
+        }
+        selected = aliases.get(normalized)
+        if selected is None or selected not in ETHERNET_WIFI_MODE_VALUES:
+            allowed = ', '.join(sorted(ETHERNET_WIFI_MODE_VALUES))
+            raise ConfigError(
+                f'Configuration field "general.ethernet_wifi_mode" must be one of: {allowed}.'
+            )
+        return selected
 
     @staticmethod
     def _coerce_int(value: object, *, field_name: str, default: int, minimum: int | None = None) -> int:
@@ -358,10 +401,35 @@ class ConfigLoader:
                 field_name='general.auto_disable_wifi_on_ethernet',
                 default=True,
             ),
+            ethernet_wifi_mode=self._coerce_ethernet_wifi_mode(general.get('ethernet_wifi_mode')),
             show_wifi_disabled_dialog=self._coerce_bool(
                 general.get('show_wifi_disabled_dialog'),
                 field_name='general.show_wifi_disabled_dialog',
                 default=True,
+            ),
+            show_startup_splash=self._coerce_bool(
+                general.get('show_startup_splash'),
+                field_name='general.show_startup_splash',
+                default=True,
+            ),
+            splash_image_path=self._coerce_optional_string(general.get('splash_image_path')),
+            splash_fade_in_ms=self._coerce_int(
+                general.get('splash_fade_in_ms'),
+                field_name='general.splash_fade_in_ms',
+                default=280,
+                minimum=0,
+            ),
+            splash_hold_ms=self._coerce_int(
+                general.get('splash_hold_ms'),
+                field_name='general.splash_hold_ms',
+                default=1100,
+                minimum=0,
+            ),
+            splash_fade_out_ms=self._coerce_int(
+                general.get('splash_fade_out_ms'),
+                field_name='general.splash_fade_out_ms',
+                default=280,
+                minimum=0,
             ),
             enable_speed_tests=self._coerce_bool(
                 general.get('enable_speed_tests'),
@@ -417,7 +485,13 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         f'interface_name = {_str(config.interface_name or "")}\n',
         f'start_minimized_to_tray = {_bool(config.start_minimized_to_tray)}\n',
         f'auto_disable_wifi_on_ethernet = {_bool(config.auto_disable_wifi_on_ethernet)}\n',
+        f'ethernet_wifi_mode = {_str(config.ethernet_wifi_mode)}\n',
         f'show_wifi_disabled_dialog = {_bool(config.show_wifi_disabled_dialog)}\n',
+        f'show_startup_splash = {_bool(config.show_startup_splash)}\n',
+        f'splash_image_path = {_str(config.splash_image_path)}\n',
+        f'splash_fade_in_ms = {config.splash_fade_in_ms}\n',
+        f'splash_hold_ms = {config.splash_hold_ms}\n',
+        f'splash_fade_out_ms = {config.splash_fade_out_ms}\n',
         f'enable_speed_tests = {_bool(config.enable_speed_tests)}\n',
         f'speed_test_on_new_connection = {_bool(config.speed_test_on_new_connection)}\n',
         f'speed_test_interval = {config.speed_test_interval}\n',

@@ -2,7 +2,8 @@ PolyFi: Ranked Documentation
 ============================
 
 This documentation set currently focuses on the PolyFi configuration file:
-what it does, where it lives, and what each setting controls.
+what it does, where it lives, what each setting controls, and the main
+importable modules in the package.
 
 .. toctree::
    :maxdepth: 2
@@ -10,3 +11,4 @@ what it does, where it lives, and what each setting controls.
 
    configuration
    config-reference
+   api-reference
