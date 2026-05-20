@@ -43,7 +43,12 @@ except ImportError:  # pragma: no cover - optional dependency on Python 3.12+
 
 from wifi_pref_manager.config import ConfigError, ConfigLoader
 from wifi_pref_manager.managed_interface_state import ManagedInterfaceStateStore
-from wifi_pref_manager.models import AppConfig, SpeedTestResult
+from wifi_pref_manager.models import (
+    ETHERNET_WIFI_MODE_DISABLE_ADAPTER,
+    ETHERNET_WIFI_MODE_DISCONNECT,
+    AppConfig,
+    SpeedTestResult,
+)
 from wifi_pref_manager.netsh_wifi import NetshError, NetshWiFiApi
 from wifi_pref_manager.paths import AppPaths
 from wifi_pref_manager.speedtest_history import SpeedTestHistoryWriter
@@ -104,7 +109,7 @@ class WiFiPreferenceService:
         self._status_changed_callback: Callable[[], None] | None = None
         self._runtime_warning_callback: Callable[[str, str], None] | None = None
         self._wifi_adapter_disabled_callback: Callable[[list[str]], None] | None = None
-        self._wifi_network_changed_callback: Callable[[str | None, str], None] | None = None
+        self._wifi_network_changed_callback: Callable[[str | None, str, str | None], None] | None = None
         self._speed_test_lock = threading.Lock()
         self._speed_test_thread: threading.Thread | None = None
         self._latest_speed_test_result = SpeedTestResult(
@@ -119,6 +124,9 @@ class WiFiPreferenceService:
         self._startup_ssid: str | None = None
         self._last_known_wifi_ssid: str | None = None
         self._ethernet_disable_permission_warning_shown = False
+        self._wifi_manually_disconnected_by_ethernet: bool = False
+        self._wifi_profiles_autoconnect_before_ethernet: dict[str, bool] | None = None
+        self._wifi_ssid_before_ethernet: str | None = None
 
         self.config.interface_name = self._resolve_managed_interface_name()
         if not self.config.speed_test_history_file:
@@ -180,6 +188,104 @@ class WiFiPreferenceService:
                 return index
 
         return 10**9
+
+    def _get_preference(self, ssid: str | None):
+        """
+        Return the configured preference entry for an SSID, if any.
+
+        Parameters:
+            ssid:
+                SSID to look up.
+
+        Returns:
+            Matching preference entry, or None when the SSID is not configured.
+        """
+        if ssid is None:
+            return None
+
+        for preference in self.config.preferred_networks:
+            if preference.ssid == ssid:
+                return preference
+        return None
+
+    def _network_meets_signal_requirement(
+        self,
+        ssid: str | None,
+        visible_networks: dict[str, int],
+    ) -> bool:
+        """
+        Return whether the SSID meets its configured minimum signal threshold.
+
+        Parameters:
+            ssid:
+                SSID to evaluate.
+            visible_networks:
+                Currently visible SSIDs mapped to dBm.
+
+        Returns:
+            True when no threshold is configured, the SSID is unconfigured, the
+            signal is unavailable, or the observed signal meets the minimum.
+        """
+        preference = self._get_preference(ssid)
+        if preference is None or preference.min_db is None:
+            return True
+
+        signal_dbm = visible_networks.get(preference.ssid)
+        if signal_dbm is None:
+            self.logger.debug(
+                'Could not verify minimum signal for %r because it was not present in the visible scan.',
+                preference.ssid,
+            )
+            return True
+
+        if signal_dbm < preference.min_db:
+            self.logger.debug(
+                '%r is below its configured minimum signal: observed=%s dBm minimum=%s dBm.',
+                preference.ssid,
+                signal_dbm,
+                preference.min_db,
+            )
+            return False
+
+        return True
+
+    def _build_signal_switch_reason(
+        self,
+        current_ssid: str | None,
+        target_ssid: str | None,
+        visible_networks: dict[str, int],
+    ) -> str | None:
+        """
+        Build a toast-friendly reason when a network is below its minimum signal.
+
+        Parameters:
+            current_ssid:
+                Current SSID being evaluated.
+            target_ssid:
+                SSID PolyFi plans to move to.
+            visible_networks:
+                Currently visible SSIDs mapped to dBm.
+
+        Returns:
+            Human-readable reason, or None when no threshold breach is available.
+        """
+        preference = self._get_preference(current_ssid)
+        if preference is None or preference.min_db is None:
+            return None
+
+        signal_dbm = visible_networks.get(preference.ssid)
+        if signal_dbm is None or signal_dbm >= preference.min_db:
+            return None
+
+        reason = (
+            f'{preference.ssid} fell below its minimum signal '
+            f'({signal_dbm} dBm observed, {preference.min_db} dBm required).'
+        )
+        target_signal_dbm = visible_networks.get(target_ssid) if target_ssid is not None else None
+        if target_signal_dbm is not None:
+            reason = f'{reason} {target_ssid} is available at {target_signal_dbm} dBm.'
+
+        return reason
 
     def best_available_ssid(self, visible_networks: dict[str, int]) -> str | None:
         """
@@ -276,13 +382,17 @@ class WiFiPreferenceService:
         """
         self._wifi_adapter_disabled_callback = callback
 
-    def set_wifi_network_changed_callback(self, callback: Callable[[str | None, str], None] | None) -> None:
+    def set_wifi_network_changed_callback(
+        self,
+        callback: Callable[[str | None, str, str | None], None] | None,
+    ) -> None:
         """
         Register a callback invoked when the active Wi-Fi SSID changes.
 
         Parameters:
             callback:
-                Callback invoked with the previous and new SSID.
+                Callback invoked with the previous SSID, new SSID, and an
+                optional reason string.
         """
         self._wifi_network_changed_callback = callback
 
@@ -386,7 +496,7 @@ class WiFiPreferenceService:
 
     def _notify_wifi_adapter_disabled(self, active_ethernet_interfaces: list[str]) -> None:
         """
-        Notify observers that Wi-Fi was disabled because Ethernet became active.
+        Notify observers that Wi-Fi behavior was changed because Ethernet became active.
 
         Parameters:
             active_ethernet_interfaces:
@@ -399,7 +509,129 @@ class WiFiPreferenceService:
         except Exception:  # noqa: BLE001
             self.logger.debug('Wi-Fi-adapter-disabled callback failed.', exc_info=True)
 
-    def _notify_wifi_network_changed(self, previous_ssid: str | None, new_ssid: str) -> None:
+    def _requires_adapter_control_for_ethernet(self) -> bool:
+        """
+        Return whether Ethernet handling is configured to disable the Wi-Fi adapter.
+        """
+        mode = getattr(self.config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
+        return mode == ETHERNET_WIFI_MODE_DISABLE_ADAPTER
+
+    def _apply_soft_ethernet_wifi_action(self, active_ethernet_interfaces: list[str]) -> None:
+        """
+        Disconnect Wi-Fi and disable profile auto-connect until Ethernet is gone.
+
+        Parameters:
+            active_ethernet_interfaces:
+                Active Ethernet interface names.
+
+        Raises:
+            NetshError:
+                If profile or disconnect operations fail.
+        """
+        if self._wifi_manually_disconnected_by_ethernet:
+            return
+
+        self._wifi_ssid_before_ethernet = self.wifi_api.get_current_ssid()
+        saved_profiles = self.wifi_api.get_saved_profiles()
+        self._wifi_profiles_autoconnect_before_ethernet = self.wifi_api.get_profiles_autoconnect_modes(
+            interface_name=self.interface_name,
+            profiles=saved_profiles,
+        )
+
+        if self._wifi_ssid_before_ethernet is not None:
+            self.wifi_api.disconnect(self.interface_name)
+
+        self.wifi_api.set_profiles_autoconnect(
+            enabled=False,
+            interface_name=self.interface_name,
+            profiles=saved_profiles,
+        )
+        self._wifi_manually_disconnected_by_ethernet = True
+        self.logger.info(
+            'Ethernet detected on %s. Disconnected Wi-Fi and set %d saved profiles to manual connect.',
+            ', '.join(active_ethernet_interfaces) if active_ethernet_interfaces else 'Ethernet',
+            len(saved_profiles),
+        )
+        if self.config.show_wifi_disabled_dialog:
+            self._notify_wifi_adapter_disabled(active_ethernet_interfaces)
+
+    def _restore_wifi_state_after_ethernet(self, *, reason: str) -> None:
+        """
+        Restore Wi-Fi profile auto-connect and SSID state captured before Ethernet action.
+
+        Parameters:
+            reason:
+                Human-readable reason used in log messages.
+        """
+        if not self._wifi_manually_disconnected_by_ethernet:
+            return
+
+        previous_modes = self._wifi_profiles_autoconnect_before_ethernet or {}
+        for profile_name, auto_connect_enabled in previous_modes.items():
+            try:
+                self.wifi_api.set_profile_autoconnect(
+                    profile_name,
+                    enabled=auto_connect_enabled,
+                    interface_name=self.interface_name,
+                )
+            except NetshError as exc:
+                self.logger.warning(
+                    'Failed to restore auto-connect mode for %r during %s: %s',
+                    profile_name,
+                    reason,
+                    exc,
+                )
+
+        try:
+            current_ssid = self.wifi_api.get_current_ssid()
+        except NetshError as exc:
+            self.logger.warning('Could not read current SSID while restoring Wi-Fi state (%s): %s', reason, exc)
+            current_ssid = None
+
+        if self._wifi_ssid_before_ethernet:
+            if current_ssid != self._wifi_ssid_before_ethernet:
+                if current_ssid is not None:
+                    try:
+                        self.wifi_api.disconnect(self.interface_name)
+                    except NetshError as exc:
+                        self.logger.warning(
+                            'Failed to disconnect Wi-Fi before reconnect restore during %s: %s',
+                            reason,
+                            exc,
+                        )
+                try:
+                    self.wifi_api.connect(
+                        interface_name=self.interface_name,
+                        ssid=self._wifi_ssid_before_ethernet,
+                        timeout=self.config.connect_timeout,
+                    )
+                except NetshError as exc:
+                    self.logger.warning(
+                        'Failed to reconnect to pre-Ethernet SSID %r during %s: %s',
+                        self._wifi_ssid_before_ethernet,
+                        reason,
+                        exc,
+                    )
+        elif current_ssid is not None:
+            try:
+                self.wifi_api.disconnect(self.interface_name)
+            except NetshError as exc:
+                self.logger.warning(
+                    'Failed to restore pre-Ethernet disconnected Wi-Fi state during %s: %s',
+                    reason,
+                    exc,
+                )
+
+        self._wifi_manually_disconnected_by_ethernet = False
+        self._wifi_profiles_autoconnect_before_ethernet = None
+        self._wifi_ssid_before_ethernet = None
+
+    def _notify_wifi_network_changed(
+        self,
+        previous_ssid: str | None,
+        new_ssid: str,
+        reason: str | None = None,
+    ) -> None:
         """
         Notify observers that the active Wi-Fi SSID changed.
 
@@ -408,15 +640,23 @@ class WiFiPreferenceService:
                 Previously active SSID, if any.
             new_ssid:
                 Newly active SSID.
+            reason:
+                Optional human-readable explanation for the change.
         """
         if self._wifi_network_changed_callback is None:
             return
         try:
-            self._wifi_network_changed_callback(previous_ssid, new_ssid)
+            self._wifi_network_changed_callback(previous_ssid, new_ssid, reason)
         except Exception:  # noqa: BLE001
             self.logger.debug('Wi-Fi-network-changed callback failed.', exc_info=True)
 
-    def _track_current_wifi_network(self, current_ssid: str | None, *, notify: bool = True) -> None:
+    def _track_current_wifi_network(
+        self,
+        current_ssid: str | None,
+        *,
+        notify: bool = True,
+        reason: str | None = None,
+    ) -> None:
         """
         Track the current Wi-Fi SSID and optionally notify when it changes.
 
@@ -425,13 +665,15 @@ class WiFiPreferenceService:
                 Currently active Wi-Fi SSID.
             notify:
                 Whether to emit a network-changed notification.
+            reason:
+                Optional human-readable explanation for the change.
         """
         previous_ssid = self._last_known_wifi_ssid
         if current_ssid == previous_ssid:
             return
         self._last_known_wifi_ssid = current_ssid
         if notify and current_ssid is not None:
-            self._notify_wifi_network_changed(previous_ssid, current_ssid)
+            self._notify_wifi_network_changed(previous_ssid, current_ssid, reason)
 
     def _set_speed_test_result(self, result: SpeedTestResult) -> None:
         """
@@ -473,6 +715,8 @@ class WiFiPreferenceService:
         """
         Restore the Wi-Fi adapter and SSID state captured at startup.
         """
+        self._restore_wifi_state_after_ethernet(reason='application exit')
+
         if self._startup_wifi_adapter_enabled is None:
             return
 
@@ -563,6 +807,7 @@ class WiFiPreferenceService:
         """
         self.config.auto_disable_wifi_on_ethernet = enabled
         if not enabled:
+            self._restore_wifi_state_after_ethernet(reason='runtime feature disable')
             self._wifi_disabled_by_ethernet = False
             self.logger.warning('Ethernet detection disabled at runtime.')
         else:
@@ -585,7 +830,7 @@ class WiFiPreferenceService:
         """
         interfaces = ', '.join(active_ethernet_interfaces) if active_ethernet_interfaces else 'Ethernet'
         self.logger.warning(
-            'Ethernet auto-disable requires administrator rights on %s. '
+            'Ethernet adapter-disable mode requires administrator rights on %s. '
             'Disabling that feature for this running instance: %s',
             interfaces,
             exc,
@@ -600,9 +845,8 @@ class WiFiPreferenceService:
             'Administrator Required',
             'PolyFi detected an active Ethernet connection, but Windows denied the Wi-Fi disable step because '
             'this app is not running as administrator.\n\n'
-            'Automatic "disable Wi-Fi on Ethernet" has been turned off for this session so the app can keep '
-            'running normally. Restart PolyFi as administrator or re-enable that option later if you want '
-            'the feature back.',
+            'Automatic "disable Wi-Fi on Ethernet" has been turned off for this session. '
+            'Restart PolyFi as administrator if you want this feature.',
         )
 
     def enable_wifi_adapter(self) -> None:
@@ -808,53 +1052,70 @@ class WiFiPreferenceService:
         if self.config.auto_disable_wifi_on_ethernet:
             active_ethernet_interfaces = self.wifi_api.get_active_ethernet_interfaces(self.interface_name)
             ethernet_active = bool(active_ethernet_interfaces)
+            adapter_control_mode = self._requires_adapter_control_for_ethernet()
             self.logger.debug(
-                'Ethernet connection check: active=%s, interfaces=%s',
+                'Ethernet connection check: active=%s, mode=%s, interfaces=%s',
                 ethernet_active,
+                'disable_adapter' if adapter_control_mode else 'disconnect_and_disable_autoconnect',
                 ', '.join(active_ethernet_interfaces) if active_ethernet_interfaces else '[none]',
             )
             self.logger.debug(
-                'Ethernet connection check state: _wifi_disabled_by_ethernet=%s',
+                'Ethernet connection check state: _wifi_disabled_by_ethernet=%s _wifi_manually_disconnected_by_ethernet=%s',
                 self._wifi_disabled_by_ethernet,
+                self._wifi_manually_disconnected_by_ethernet,
             )
             
             if ethernet_active:
-                # Ethernet is connected - disable WiFi adapter completely
-                if not self._wifi_disabled_by_ethernet:
-                    self.logger.info(
-                        'Ethernet connection detected on %s. Disabling Wi-Fi adapter completely.',
-                        ', '.join(active_ethernet_interfaces),
-                    )
+                if adapter_control_mode:
+                    # Ethernet is connected - disable Wi-Fi adapter completely
+                    if not self._wifi_disabled_by_ethernet:
+                        self.logger.info(
+                            'Ethernet connection detected on %s. Disabling Wi-Fi adapter completely.',
+                            ', '.join(active_ethernet_interfaces),
+                        )
+                        try:
+                            self.wifi_api.disable_wifi_adapter(self.interface_name)
+                            self._wifi_disabled_by_ethernet = True
+                            if self.config.show_wifi_disabled_dialog:
+                                self._notify_wifi_adapter_disabled(active_ethernet_interfaces)
+                        except NetshError as exc:
+                            if NetshWiFiApi.is_elevation_required_error(exc):
+                                self._handle_non_admin_ethernet_disable(active_ethernet_interfaces, exc)
+                            else:
+                                self.logger.error('Failed to disable Wi-Fi adapter: %s', exc)
+                else:
                     try:
-                        self.wifi_api.disable_wifi_adapter(self.interface_name)
-                        self._wifi_disabled_by_ethernet = True
-                        if self.config.show_wifi_disabled_dialog:
-                            self._notify_wifi_adapter_disabled(active_ethernet_interfaces)
+                        self._apply_soft_ethernet_wifi_action(active_ethernet_interfaces)
                     except NetshError as exc:
-                        if NetshWiFiApi.is_elevation_required_error(exc):
-                            self._handle_non_admin_ethernet_disable(active_ethernet_interfaces, exc)
-                        else:
-                            self.logger.error('Failed to disable Wi-Fi adapter: %s', exc)
+                        self.logger.error(
+                            'Failed to apply Ethernet Wi-Fi soft-disable action on %s: %s',
+                            ', '.join(active_ethernet_interfaces),
+                            exc,
+                        )
                 if self.config.auto_disable_wifi_on_ethernet:
                     self._maybe_schedule_speed_test(
                         self._format_ethernet_connection_label(active_ethernet_interfaces)
                     )
                     return
             else:
-                # Ethernet is not connected - re-enable WiFi if it was disabled
-                if self._wifi_disabled_by_ethernet:
-                    self.logger.info('Ethernet disconnected. Re-enabling Wi-Fi adapter.')
-                    try:
-                        self.enable_wifi_adapter()
-                    except NetshError as exc:
-                        self.logger.error('Failed to re-enable Wi-Fi adapter: %s', exc)
-                        # Clear the flag anyway to avoid getting stuck
-                        self._wifi_disabled_by_ethernet = False
+                if adapter_control_mode:
+                    # Ethernet is not connected - re-enable Wi-Fi if it was disabled
+                    if self._wifi_disabled_by_ethernet:
+                        self.logger.info('Ethernet disconnected. Re-enabling Wi-Fi adapter.')
+                        try:
+                            self.enable_wifi_adapter()
+                        except NetshError as exc:
+                            self.logger.error('Failed to re-enable Wi-Fi adapter: %s', exc)
+                            # Clear the flag anyway to avoid getting stuck
+                            self._wifi_disabled_by_ethernet = False
+                else:
+                    self._restore_wifi_state_after_ethernet(reason='ethernet disconnect')
 
         current_ssid = self.wifi_api.get_current_ssid()
         self._track_current_wifi_network(current_ssid)
         visible_networks = self.wifi_api.get_visible_network_signals()
         best_available = self.best_available_ssid(visible_networks)
+        current_meets_min_signal = self._network_meets_signal_requirement(current_ssid, visible_networks)
 
         self.logger.debug('Current SSID: %r', current_ssid)
         self.logger.debug(
@@ -866,6 +1127,12 @@ class WiFiPreferenceService:
         self.logger.debug('Best available preferred SSID: %r', best_available)
 
         if best_available is None:
+            if current_ssid is not None and not current_meets_min_signal:
+                self.logger.info(
+                    'Current network %r is below its configured minimum signal, '
+                    'but no other preferred network currently meets its own threshold.',
+                    current_ssid,
+                )
             self.logger.debug('No preferred network currently visible.')
             self._maybe_schedule_speed_test(current_ssid)
             return
@@ -877,14 +1144,27 @@ class WiFiPreferenceService:
 
         current_rank = self.preference_index(current_ssid)
         best_rank = self.preference_index(best_available)
+        should_switch_for_signal = current_ssid is not None and not current_meets_min_signal
+        switch_reason = (
+            self._build_signal_switch_reason(current_ssid, best_available, visible_networks)
+            if should_switch_for_signal
+            else None
+        )
 
-        if current_ssid is None or best_rank < current_rank:
+        if current_ssid is None or best_rank < current_rank or should_switch_for_signal:
             if current_ssid is not None:
-                self.logger.info(
-                    'Switching from %r to more preferred network %r',
-                    current_ssid,
-                    best_available,
-                )
+                if should_switch_for_signal and best_rank >= current_rank:
+                    self.logger.info(
+                        'Switching from %r to %r because the current network is below its configured minimum signal.',
+                        current_ssid,
+                        best_available,
+                    )
+                else:
+                    self.logger.info(
+                        'Switching from %r to more preferred network %r',
+                        current_ssid,
+                        best_available,
+                    )
                 self.wifi_api.disconnect(self.interface_name)
             else:
                 self.logger.info('No active Wi-Fi connection. Connecting to %r', best_available)
@@ -896,7 +1176,7 @@ class WiFiPreferenceService:
             )
             if success:
                 self.logger.info('Connected to %r', best_available)
-                self._track_current_wifi_network(best_available)
+                self._track_current_wifi_network(best_available, reason=switch_reason)
                 self._maybe_schedule_speed_test(best_available, connection_changed=True)
             else:
                 self.logger.warning('Connection attempt to %r could not be confirmed.', best_available)
@@ -921,8 +1201,10 @@ class WiFiPreferenceService:
         self.logger.info('Wi-Fi preference service started.')
         if self.config.auto_disable_wifi_on_ethernet:
             active_ethernet_interfaces = self.wifi_api.get_active_ethernet_interfaces(self.interface_name)
+            ethernet_mode = getattr(self.config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
             self.logger.info(
-                'Ethernet detection: ENABLED. Active Ethernet interfaces right now: %s',
+                'Ethernet detection: ENABLED (mode=%s). Active Ethernet interfaces right now: %s',
+                ethernet_mode,
                 ', '.join(active_ethernet_interfaces) if active_ethernet_interfaces else '[none]',
             )
         else:

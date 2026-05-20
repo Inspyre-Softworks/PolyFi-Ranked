@@ -29,13 +29,18 @@ Example Usage:
 from __future__ import annotations
 
 import logging
-import threading
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from wifi_pref_manager.config import save_config
-from wifi_pref_manager.models import AppConfig, WiFiProfilePreference
+from wifi_pref_manager.models import (
+    ETHERNET_WIFI_MODE_DISABLE_ADAPTER,
+    ETHERNET_WIFI_MODE_DISCONNECT,
+    AppConfig,
+    WiFiProfilePreference,
+)
 from wifi_pref_manager.service import WiFiPreferenceService
+from wifi_pref_manager.ui.dialogs import run_on_ui_thread
 
 
 class SettingsWindow:
@@ -67,7 +72,6 @@ class SettingsWindow:
         self.config_loader = config_loader
         self.logger = logger
         self._window: tk.Toplevel | None = None
-        self._open_lock = threading.Lock()
 
     # ------------------------------------------------------------------
     # Public API
@@ -75,32 +79,26 @@ class SettingsWindow:
 
     def open(self) -> None:
         """Open the settings window, or bring it to the foreground if already open."""
-        if not self._open_lock.acquire(blocking=False):
-            # Another thread is already opening the window
-            return
-        try:
+        def _open_window(root: tk.Tk) -> None:
             if self._window is not None and self._window.winfo_exists():
                 self._window.lift()
                 self._window.focus_force()
                 return
 
-            self._build_window()
-        finally:
-            self._open_lock.release()
+            self._build_window(root)
+
+        run_on_ui_thread(_open_window, wait=False)
 
     # ------------------------------------------------------------------
     # Window construction
     # ------------------------------------------------------------------
 
-    def _build_window(self) -> None:
+    def _build_window(self, root: tk.Tk) -> None:
         """Create and show the settings Toplevel window."""
-        root = tk.Tk()
-        root.withdraw()  # Hide the invisible root window
-
         win = tk.Toplevel(root)
         win.title('PolyFi: Ranked – Network Settings')
         win.resizable(False, False)
-        win.protocol('WM_DELETE_WINDOW', lambda: self._on_cancel(win, root))
+        win.protocol('WM_DELETE_WINDOW', lambda: self._on_cancel(win))
         self._window = win
 
         config = self.service.config
@@ -293,9 +291,51 @@ class SettingsWindow:
         auto_eth_var = tk.BooleanVar(value=config.auto_disable_wifi_on_ethernet)
         ttk.Checkbutton(
             frame_opts,
-            text='Automatically disconnect Wi-Fi when Ethernet is connected',
+            text='Automatically turn off Wi-Fi behavior when Ethernet is connected',
             variable=auto_eth_var,
         ).grid(row=0, column=0, sticky='w')
+
+        ttk.Label(frame_opts, text='Ethernet action:').grid(row=1, column=0, pady=(6, 0), sticky='w')
+        ethernet_mode_choices = [
+            ('Disconnect + disable auto-connect (recommended)', ETHERNET_WIFI_MODE_DISCONNECT),
+            ('Disable Wi-Fi adapter', ETHERNET_WIFI_MODE_DISABLE_ADAPTER),
+        ]
+        ethernet_mode_var = tk.StringVar(
+            value=getattr(config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
+        )
+        ethernet_mode_combo = ttk.Combobox(
+            frame_opts,
+            state='readonly',
+            width=48,
+            values=[label for label, _ in ethernet_mode_choices],
+        )
+        selected_mode = next(
+            (label for label, value in ethernet_mode_choices if value == ethernet_mode_var.get()),
+            ethernet_mode_choices[0][0],
+        )
+        ethernet_mode_combo.set(selected_mode)
+        ethernet_mode_combo.grid(row=2, column=0, sticky='w')
+
+        def _sync_mode_control_state(*_args) -> None:
+            ethernet_mode_combo.configure(state='readonly' if auto_eth_var.get() else 'disabled')
+
+        def _on_mode_selected(_event=None) -> None:
+            selected_label = ethernet_mode_combo.get()
+            for label, value in ethernet_mode_choices:
+                if label == selected_label:
+                    ethernet_mode_var.set(value)
+                    break
+
+        auto_eth_var.trace_add('write', _sync_mode_control_state)
+        ethernet_mode_combo.bind('<<ComboboxSelected>>', _on_mode_selected)
+        _sync_mode_control_state()
+
+        splash_var = tk.BooleanVar(value=getattr(config, 'show_startup_splash', True))
+        ttk.Checkbutton(
+            frame_opts,
+            text='Show startup splash',
+            variable=splash_var,
+        ).grid(row=3, column=0, pady=(8, 0), sticky='w')
 
         # ---- Action buttons --------------------------------------------
         frame_btns = ttk.Frame(win)
@@ -320,7 +360,13 @@ class SettingsWindow:
                 log_file=config.log_file,
                 start_minimized_to_tray=config.start_minimized_to_tray,
                 auto_disable_wifi_on_ethernet=auto_eth_var.get(),
+                ethernet_wifi_mode=ethernet_mode_var.get(),
                 show_wifi_disabled_dialog=getattr(config, 'show_wifi_disabled_dialog', True),
+                show_startup_splash=splash_var.get(),
+                splash_image_path=getattr(config, 'splash_image_path', ''),
+                splash_fade_in_ms=getattr(config, 'splash_fade_in_ms', 280),
+                splash_hold_ms=getattr(config, 'splash_hold_ms', 1100),
+                splash_fade_out_ms=getattr(config, 'splash_fade_out_ms', 280),
                 enable_speed_tests=enable_speed_tests,
                 speed_test_on_new_connection=speed_test_on_new_connection,
                 speed_test_interval=speed_test_interval,
@@ -345,21 +391,17 @@ class SettingsWindow:
 
             messagebox.showinfo('Saved', 'Settings have been saved and applied.', parent=win)
             win.destroy()
-            root.destroy()
             self._window = None
 
         ttk.Button(frame_btns, text='Save', command=_on_save, width=10).pack(side='right', padx=(4, 0))
         ttk.Button(
             frame_btns,
             text='Cancel',
-            command=lambda: self._on_cancel(win, root),
+            command=lambda: self._on_cancel(win),
             width=10,
         ).pack(side='right')
 
-        win.mainloop()
-
-    def _on_cancel(self, win: tk.Toplevel, root: tk.Tk) -> None:
+    def _on_cancel(self, win: tk.Toplevel) -> None:
         """Close the window without saving."""
         win.destroy()
-        root.destroy()
         self._window = None

@@ -15,12 +15,52 @@ Description:
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import subprocess
 import sys
 
 from wifi_pref_manager.icon_assets import write_app_icon_file
 from wifi_pref_manager.paths import APP_NAME, AppPaths
+
+
+def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, list[str], Path]:
+    """
+    Resolve the preferred executable and base arguments for launching PolyFi.
+
+    Parameters:
+        prefer_windowless:
+            Whether to prefer ``pythonw.exe`` when available.
+
+    Returns:
+        ``(executable, arguments, working_directory)``.
+    """
+    executable = Path(sys.executable)
+    packaged_launcher = executable.parent / 'polyfi-ranked.exe'
+
+    if prefer_windowless:
+        pythonw = executable.with_name('pythonw.exe')
+        if pythonw.exists():
+            return pythonw, ['-m', 'wifi_pref_manager.app'], pythonw.parent
+        if packaged_launcher.exists():
+            return packaged_launcher, [], packaged_launcher.parent
+
+    else:
+        if packaged_launcher.exists():
+            return packaged_launcher, [], packaged_launcher.parent
+
+    virtual_env = os.environ.get('VIRTUAL_ENV', '').strip()
+    if virtual_env:
+        scripts_dir = Path(virtual_env) / 'Scripts'
+        venv_python = scripts_dir / 'python.exe'
+        if prefer_windowless:
+            venv_pythonw = scripts_dir / 'pythonw.exe'
+            if venv_pythonw.exists():
+                return venv_pythonw, ['-m', 'wifi_pref_manager.app'], scripts_dir
+        if venv_python.exists():
+            return venv_python, ['-m', 'wifi_pref_manager.app'], scripts_dir
+
+    return executable, ['-m', 'wifi_pref_manager.app'], executable.parent
 
 
 @dataclass(frozen=True)
@@ -90,57 +130,21 @@ class StartMenuShortcutManager:
         return True
 
     def _build_shortcut_spec(self, launch_arguments: list[str]) -> ShortcutSpec:
-        launcher = self._resolve_powershell_executable()
+        executable, base_args, working_directory = self._resolve_runtime_launch_target()
         return ShortcutSpec(
             shortcut_path=self.get_shortcut_path(),
-            target_path=launcher,
-            arguments=self._build_elevated_launch_arguments(launch_arguments),
-            working_directory=Path(__file__).resolve().parents[2],
+            target_path=executable,
+            arguments=[*base_args, *launch_arguments],
+            working_directory=working_directory,
             icon_path=self.paths.start_menu_icon_file,
-            description=f'Launch {APP_NAME} in the system tray as administrator.',
+            description=f'Launch {APP_NAME} in the system tray.',
         )
 
-    def _resolve_launcher_executable(self) -> Path:
+    def _resolve_runtime_launch_target(self) -> tuple[Path, list[str], Path]:
         """
-        Resolve the preferred Python launcher for a Start Menu launch.
+        Resolve the preferred executable and base arguments for a Start Menu launch.
         """
-        executable = Path(sys.executable).resolve()
-        pythonw = executable.with_name('pythonw.exe')
-        return pythonw if pythonw.exists() else executable
-
-    def _resolve_powershell_executable(self) -> Path:
-        """
-        Resolve the PowerShell executable used by the shortcut wrapper.
-        """
-        return Path(r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe')
-
-    def _build_elevated_launch_arguments(self, launch_arguments: list[str]) -> list[str]:
-        """
-        Build the PowerShell wrapper arguments that elevate the real tray launch.
-        """
-
-        def ps_quote(value: str) -> str:
-            return "'" + value.replace("'", "''") + "'"
-
-        launcher = self._resolve_launcher_executable()
-        runtime_args = ['-m', 'wifi_pref_manager.app', *launch_arguments]
-        argument_list = ', '.join(ps_quote(arg) for arg in runtime_args)
-        command = (
-            f"Start-Process -FilePath {ps_quote(str(launcher))} "
-            f"-ArgumentList @({argument_list}) "
-            f"-WorkingDirectory {ps_quote(str(Path(__file__).resolve().parents[2]))} "
-            "-Verb RunAs"
-        )
-        return [
-            '-NoProfile',
-            '-NonInteractive',
-            '-WindowStyle',
-            'Hidden',
-            '-ExecutionPolicy',
-            'Bypass',
-            '-Command',
-            command,
-        ]
+        return resolve_runtime_launch_target(prefer_windowless=True)
 
     def _create_shortcut(self, spec: ShortcutSpec) -> None:
         """

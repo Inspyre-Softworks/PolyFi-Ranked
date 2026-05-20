@@ -38,19 +38,30 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+from datetime import datetime
+import logging
+import os
 from pathlib import Path
 import subprocess
 import sys
 
+from wifi_pref_manager.console_output import ConsoleOutputManager
 from wifi_pref_manager.config import ConfigError, ConfigLoader
 from wifi_pref_manager.logging_utils import configure_logging
+from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
-from wifi_pref_manager.paths import APP_USER_MODEL_ID, AppPaths
+from wifi_pref_manager.paths import APP_NAME, APP_USER_MODEL_ID, AppPaths
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
-from wifi_pref_manager.ui.dialogs import show_dialog
+from wifi_pref_manager.ui.dialogs import show_dialog, show_native_message_box
+from wifi_pref_manager.ui.splash import resolve_splash_image_path, show_startup_splash
 from wifi_pref_manager.ui.tray import TrayApplication
-from wifi_pref_manager.windows_shell import StartMenuShortcutManager
+from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
+from wifi_pref_manager.windows_shell import StartMenuShortcutManager, resolve_runtime_launch_target
+
+
+BACKGROUND_TRAY_ENV_VAR = 'POLYFI_BACKGROUND_TRAY'
+SPLASH_SHOWN_ENV_VAR = 'POLYFI_SPLASH_ALREADY_SHOWN'
 
 
 class Application:
@@ -68,8 +79,29 @@ class Application:
         self.log_level_override: str | None = None
         self.save_speed_test_history_override: bool | None = None
         self.speed_test_history_file_override: str | None = None
+        self.show_startup_splash_override: bool | None = None
         self.original_argv: list[str] = list(sys.argv)
         self.single_instance_guard = SingleInstanceGuard(f'Local\\{APP_USER_MODEL_ID}')
+        self.console_output_manager: ConsoleOutputManager | None = None
+        self._run_in_tray_context = False
+        self._startup_splash_shown = False
+        self.startup_trace_file = self.paths.local_data_dir / 'startup_trace.log'
+
+    def append_startup_trace(self, message: str) -> None:
+        """
+        Append an early-startup trace line that survives windowless launches.
+
+        Parameters:
+            message:
+                Trace message to append.
+        """
+        try:
+            self.paths.local_data_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().isoformat(timespec='seconds')
+            with self.startup_trace_file.open('a', encoding='utf-8') as handle:
+                handle.write(f'[{timestamp}] pid={Path(sys.executable).name}:{message}\n')
+        except OSError:
+            return
 
     def add_runtime_arguments(self, parser: argparse.ArgumentParser, *, include_tray: bool = True) -> None:
         """
@@ -83,35 +115,50 @@ class Application:
         """
         parser.add_argument(
             '--config',
-            default=None,
+            default=argparse.SUPPRESS,
             help='Optional path to the TOML configuration file. Defaults to the platform app-data config path.',
         )
         if include_tray:
             parser.add_argument(
                 '--tray',
                 action='store_true',
+                default=argparse.SUPPRESS,
                 help='Run as a system tray application.',
             )
         parser.add_argument(
             '-l',
             '--log-level',
-            default=None,
+            default=argparse.SUPPRESS,
             help='Override the configured log level for this run, for example DEBUG or INFO.',
         )
         parser.add_argument(
             '--save-speed-test-history',
             action='store_true',
+            default=argparse.SUPPRESS,
             help='Enable saving completed speed-test results for this run.',
         )
         parser.add_argument(
             '--no-save-speed-test-history',
             action='store_true',
+            default=argparse.SUPPRESS,
             help='Disable saving completed speed-test results for this run.',
         )
         parser.add_argument(
             '--speed-test-history-file',
-            default=None,
+            default=argparse.SUPPRESS,
             help='Override the speed-test history file path for this run.',
+        )
+        parser.add_argument(
+            '--show-splash',
+            action='store_true',
+            default=argparse.SUPPRESS,
+            help='Force-enable the startup splash for this run.',
+        )
+        parser.add_argument(
+            '--no-splash',
+            action='store_true',
+            default=argparse.SUPPRESS,
+            help='Disable the startup splash for this run.',
         )
 
     def build_argument_parser(self) -> argparse.ArgumentParser:
@@ -171,6 +218,34 @@ class Application:
         )
         start_menu_path_parser.set_defaults(handler=self.handle_start_menu_path_command)
 
+        wifi_tasks_parser = windows_subparsers.add_parser(
+            'wifi-tasks',
+            help='Manage scheduled tasks for Wi-Fi adapter control.',
+        )
+        wifi_tasks_subparsers = wifi_tasks_parser.add_subparsers(dest='wifi_tasks_command')
+        wifi_tasks_subparsers.required = True
+
+        wifi_tasks_install_parser = wifi_tasks_subparsers.add_parser(
+            'install',
+            help=(
+                'Create SYSTEM scheduled tasks that let PolyFi disable/enable the '
+                'Wi-Fi adapter without requiring the Python interpreter to run elevated.'
+            ),
+        )
+        wifi_tasks_install_parser.add_argument(
+            '--interface',
+            default=None,
+            metavar='NAME',
+            help='Wi-Fi interface name to embed in the tasks.  Auto-detected if omitted.',
+        )
+        wifi_tasks_install_parser.set_defaults(handler=self.handle_wifi_tasks_install_command)
+
+        wifi_tasks_uninstall_parser = wifi_tasks_subparsers.add_parser(
+            'uninstall',
+            help='Remove the PolyFi Wi-Fi adapter control scheduled tasks.',
+        )
+        wifi_tasks_uninstall_parser.set_defaults(handler=self.handle_wifi_tasks_uninstall_command)
+
         config_parser = subparsers.add_parser('config', help='Work with configuration files.')
         config_subparsers = config_parser.add_subparsers(dest='config_command')
         config_subparsers.required = True
@@ -215,6 +290,17 @@ class Application:
         else:
             self.save_speed_test_history_override = None
         self.speed_test_history_file_override = getattr(args, 'speed_test_history_file', None)
+        show_splash = bool(getattr(args, 'show_splash', False))
+        no_splash = bool(getattr(args, 'no_splash', False))
+        if show_splash and no_splash:
+            print('Cannot use --show-splash and --no-splash together.', file=sys.stderr)
+            return 1
+        if show_splash:
+            self.show_startup_splash_override = True
+        elif no_splash:
+            self.show_startup_splash_override = False
+        else:
+            self.show_startup_splash_override = None
         return 0
 
     def resolve_log_level(self, configured_log_level: str) -> str:
@@ -242,7 +328,10 @@ class Application:
             Refreshed logger instance.
         """
         self.apply_runtime_overrides(config)
-        return configure_logging(self.resolve_log_level(config.log_level), config.log_file)
+        logger = configure_logging(self.resolve_log_level(config.log_level), config.log_file)
+        if self.console_output_manager is not None:
+            self.console_output_manager.attach_logger(logger)
+        return logger
 
     def apply_runtime_overrides(self, config) -> None:
         """
@@ -257,6 +346,8 @@ class Application:
             config.save_speed_test_history = self.save_speed_test_history_override
         if self.speed_test_history_file_override:
             config.speed_test_history_file = self.speed_test_history_file_override
+        if self.show_startup_splash_override is not None:
+            config.show_startup_splash = self.show_startup_splash_override
 
     def print_paths(self) -> int:
         """
@@ -274,7 +365,13 @@ class Application:
         print(f'Start Menu icon: {self.paths.start_menu_icon_file}')
         return 0
 
-    def build_runtime_argument_list(self, args: argparse.Namespace, *, force_tray: bool = False) -> list[str]:
+    def build_runtime_argument_list(
+        self,
+        args: argparse.Namespace,
+        *,
+        force_tray: bool = False,
+        force_show_splash: bool = False,
+    ) -> list[str]:
         """
         Build runtime CLI arguments from parsed values.
 
@@ -283,6 +380,8 @@ class Application:
                 Parsed argument namespace.
             force_tray:
                 Whether to force tray mode on.
+            force_show_splash:
+                Whether to force the startup splash on unless explicitly disabled.
 
         Returns:
             Runtime argument list.
@@ -303,7 +402,60 @@ class Application:
         speed_test_history_file = getattr(args, 'speed_test_history_file', None)
         if speed_test_history_file:
             runtime_args.extend(['--speed-test-history-file', speed_test_history_file])
+        show_splash = bool(getattr(args, 'show_splash', False))
+        no_splash = bool(getattr(args, 'no_splash', False))
+        if force_show_splash and not no_splash:
+            runtime_args.append('--show-splash')
+        elif show_splash:
+            runtime_args.append('--show-splash')
+        if no_splash:
+            runtime_args.append('--no-splash')
         return runtime_args
+
+    def maybe_show_startup_splash(self, config, logger) -> bool:
+        """
+        Show the configured startup splash if enabled and available.
+
+        Parameters:
+            config:
+                Runtime configuration object.
+            logger:
+                Application logger.
+
+        Returns:
+            True when the splash was shown, otherwise False.
+        """
+        if os.environ.get(SPLASH_SHOWN_ENV_VAR) == '1' or self._startup_splash_shown:
+            return False
+
+        if not getattr(config, 'show_startup_splash', True):
+            return False
+
+        splash_path = resolve_splash_image_path(
+            getattr(config, 'splash_image_path', ''),
+            self.paths,
+        )
+        if splash_path is None:
+            logger.debug(
+                'Startup splash is enabled, but no splash image was found. '
+                'Looked for config path, app-data splash, and Pictures defaults.'
+            )
+            return False
+
+        try:
+            logger.info('Showing startup splash from: %s', splash_path)
+            show_startup_splash(
+                splash_path,
+                fade_in_ms=max(0, int(getattr(config, 'splash_fade_in_ms', 280))),
+                hold_ms=max(0, int(getattr(config, 'splash_hold_ms', 1100))),
+                fade_out_ms=max(0, int(getattr(config, 'splash_fade_out_ms', 280))),
+            )
+            self._startup_splash_shown = True
+            logger.debug('Startup splash completed.')
+            return True
+        except Exception as exc:  # noqa: BLE001
+            logger.warning('Startup splash failed and will be skipped for this launch: %s', exc)
+            return False
 
     def write_default_config_file(self, config_path: str | None, overwrite: bool) -> int:
         """
@@ -328,66 +480,41 @@ class Application:
         print(f'Wrote default config file: {written_path}')
         return 0
 
-    def restart_as_administrator(self) -> bool:
+    def launch_detached_tray_process(self, args: argparse.Namespace, *, suppress_splash: bool = False) -> int:
         """
-        Relaunch the current process with Windows administrator privileges.
+        Launch the tray runtime in a detached background process.
+
+        Parameters:
+            args:
+                Parsed runtime arguments to preserve.
 
         Returns:
-            True when the elevation request was launched successfully.
+            Background child process identifier.
 
         Raises:
             OSError:
-                If Windows could not start the elevated process.
+                If the tray process could not be started.
         """
-        executable = self._resolve_relaunch_executable(windowed=False)
-        parameters = subprocess.list2cmdline(self._build_relaunch_arguments())
-        released_guard = self.release_single_instance_guard()
-        try:
-            result = ctypes.windll.shell32.ShellExecuteW(
-                None,
-                'runas',
-                str(executable),
-                parameters,
-                None,
-                1,
-            )
-        except Exception:
-            if released_guard:
-                self.acquire_single_instance_guard(show_dialog_on_duplicate=False)
-            raise
-        if result <= 32:
-            if released_guard:
-                self.acquire_single_instance_guard(show_dialog_on_duplicate=False)
-            if result == 1223:
-                return False
-            raise OSError(f'Windows elevation request failed with ShellExecuteW code {result}.')
-        return True
-
-    def _resolve_relaunch_executable(self, *, windowed: bool) -> Path:
-        """
-        Resolve the Python executable used to relaunch the current app.
-
-        Parameters:
-            windowed:
-                Whether to prefer ``pythonw.exe`` over ``python.exe``.
-
-        Returns:
-            Executable path.
-        """
-        executable = Path(sys.executable).resolve()
-        if not windowed:
-            return executable
-        pythonw = executable.with_name('pythonw.exe')
-        return pythonw if pythonw.exists() else executable
-
-    def _build_relaunch_arguments(self) -> list[str]:
-        """
-        Build arguments that relaunch this application with the current runtime parameters.
-
-        Returns:
-            Relaunch argument list.
-        """
-        return ['-m', 'wifi_pref_manager.app', *self.original_argv[1:]]
+        # Use the standard runtime here instead of ``pythonw.exe`` because the
+        # background child still detaches its own console once tray startup
+        # begins, and the regular interpreter is more reliable for inheriting
+        # the active Poetry environment than a direct ``pythonw.exe`` launch.
+        executable, base_args, _working_directory = resolve_runtime_launch_target(prefer_windowless=False)
+        command = [
+            str(executable),
+            *base_args,
+            *self.build_runtime_argument_list(args, force_tray=True),
+        ]
+        environment = os.environ.copy()
+        environment[BACKGROUND_TRAY_ENV_VAR] = '1'
+        if suppress_splash:
+            environment[SPLASH_SHOWN_ENV_VAR] = '1'
+        process = subprocess.Popen(  # noqa: S603
+            command,
+            close_fds=True,
+            env=environment,
+        )
+        return process.pid
 
     def set_windows_app_user_model_id(self) -> None:
         """
@@ -412,9 +539,24 @@ class Application:
         except (AttributeError, OSError):
             return False
 
+    @staticmethod
+    def _ethernet_action_requires_admin(config) -> bool:
+        """
+        Return whether the selected Ethernet Wi-Fi mode needs adapter control.
+        """
+        if not getattr(config, 'auto_disable_wifi_on_ethernet', False):
+            return False
+        mode = getattr(config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
+        return mode == ETHERNET_WIFI_MODE_DISABLE_ADAPTER
+
     def handle_startup_admin_requirements(self, config, logger) -> int | None:
         """
-        Proactively resolve admin-only startup requirements before the service begins.
+        Warn when the Ethernet auto-disable feature needs administrator rights.
+
+        When the process is not elevated and ``auto_disable_wifi_on_ethernet`` is
+        enabled with ``ethernet_wifi_mode = "disable_adapter"``, the feature is
+        disabled for the session and a warning is logged telling the user to
+        restart as administrator if they want it.
 
         Parameters:
             config:
@@ -423,49 +565,17 @@ class Application:
                 Application logger.
 
         Returns:
-            ``None`` when startup should continue, or a process exit code when the
-            current instance should stop after launching a replacement.
+            Always ``None``; startup continues after showing the warning.
         """
-        if not config.auto_disable_wifi_on_ethernet or self.is_running_as_administrator():
+        if not self._ethernet_action_requires_admin(config) or self.is_running_as_administrator():
             return None
 
+        self.append_startup_trace('admin-requirements: not admin, disabling ethernet feature for session')
         logger.warning(
-            'auto_disable_wifi_on_ethernet is enabled, but this process is not running as administrator. '
-            'Prompting for startup recovery before the service starts.'
+            'Ethernet mode "disable_adapter" is enabled but this process is not running as administrator. '
+            'The feature will be disabled for this session. Restart PolyFi as administrator to use it.'
         )
-
-        restart_requested = show_dialog(
-            'warning',
-            'Administrator Required',
-            'The "disable Wi-Fi when Ethernet is connected" feature needs administrator privileges.\n\n'
-            'PolyFi detected that this setting is enabled, but the app was not started as administrator. '
-            'You can restart it elevated now, or continue with that feature disabled for this session.',
-            action_label='Restart as Administrator',
-            action_callback=lambda: None,
-            continue_label='Continue Without Auto Ethernet',
-        )
-
-        if restart_requested:
-            try:
-                launched = self.restart_as_administrator()
-            except OSError as exc:
-                logger.error('Failed to restart with administrator privileges during startup: %s', exc)
-                show_dialog(
-                    'error',
-                    'Restart Failed',
-                    f'PolyFi could not restart as administrator:\n\n{exc}\n\n'
-                    'Continuing with automatic Ethernet Wi-Fi disable turned off for this session.',
-                )
-            else:
-                if launched:
-                    logger.info('Administrator restart launched during startup. Exiting current instance.')
-                    return 0
-                logger.warning('Administrator restart was cancelled during startup.')
-
         config.auto_disable_wifi_on_ethernet = False
-        logger.warning(
-            'Disabled automatic Wi-Fi disable on Ethernet for this running instance because the process is not elevated.'
-        )
         return None
 
     def handle_paths_command(self, args: argparse.Namespace) -> int:
@@ -502,10 +612,13 @@ class Application:
             return True
 
         if show_dialog_on_duplicate:
-            show_dialog(
+            show_native_message_box(
                 'info',
                 'PolyFi Already Running',
-                'PolyFi is already running. Close the existing instance before starting another one.',
+                'PolyFi is already running in the background.\n\n'
+                'Look for the PolyFi icon in the notification area near the clock on your '
+                'taskbar. You may need to click the \u25b2 (chevron) arrow to expand '
+                'hidden system tray icons.',
             )
         return False
 
@@ -551,7 +664,7 @@ class Application:
         manager = StartMenuShortcutManager(paths=self.paths)
         try:
             shortcut_path = manager.install(
-                self.build_runtime_argument_list(args, force_tray=True),
+                self.build_runtime_argument_list(args, force_tray=True, force_show_splash=True),
                 overwrite=args.force,
             )
         except (FileExistsError, OSError) as exc:
@@ -595,6 +708,67 @@ class Application:
         print(self.paths.start_menu_shortcut_file)
         return 0
 
+    def handle_wifi_tasks_install_command(self, args: argparse.Namespace) -> int:
+        """
+        Install the SYSTEM scheduled tasks for Wi-Fi adapter control.
+
+        Parameters:
+            args:
+                Parsed argument namespace.
+
+        Returns:
+            Process exit code.
+        """
+        interface_name: str | None = getattr(args, 'interface', None)
+        if not interface_name:
+            try:
+                interface_name = NetshWiFiApi().detect_wifi_interface()
+            except Exception as exc:
+                print(f'Could not auto-detect Wi-Fi interface: {exc}', file=sys.stderr)
+                print('Use --interface NAME to specify the interface manually.', file=sys.stderr)
+                return 1
+
+        task_manager = WifiAdapterTaskManager()
+        print(f'Installing Wi-Fi adapter control tasks for interface {interface_name!r}...')
+        print('A UAC prompt for Windows PowerShell will appear. Accept it to continue.')
+        try:
+            installed = task_manager.install_and_wait(interface_name)
+        except OSError as exc:
+            print(f'Task installation failed: {exc}', file=sys.stderr)
+            return 1
+
+        if installed:
+            print(
+                f'Successfully installed tasks:\n'
+                f'  PolyFi-DisableWiFi\n'
+                f'  PolyFi-EnableWiFi\n'
+                f'PolyFi can now control {interface_name!r} without running as administrator.'
+            )
+            return 0
+        print(
+            'Task installation could not be confirmed within the timeout.\n'
+            'The UAC prompt may have been cancelled, or PowerShell is also blocked on this machine.',
+            file=sys.stderr,
+        )
+        return 1
+
+    def handle_wifi_tasks_uninstall_command(self, args: argparse.Namespace) -> int:
+        """
+        Remove the SYSTEM scheduled tasks for Wi-Fi adapter control.
+
+        Parameters:
+            args:
+                Parsed argument namespace.
+
+        Returns:
+            Process exit code.
+        """
+        del args
+        task_manager = WifiAdapterTaskManager()
+        task_manager.uninstall()
+        print('Removed PolyFi Wi-Fi adapter control tasks (if they existed).')
+        return 0
+
     def handle_run_command(self, args: argparse.Namespace) -> int:
         """
         Handle normal application execution.
@@ -606,43 +780,120 @@ class Application:
         Returns:
             Process exit code.
         """
-        if args.print_paths:
+        if getattr(args, 'print_paths', False):
             return self.print_paths()
 
+        self.append_startup_trace(f'handle_run_command argv={argv if (argv := list(sys.argv[1:])) else []}')
         override_result = self.apply_cli_overrides_from_args(args)
         if override_result != 0:
+            self.append_startup_trace(f'cli override validation failed code={override_result}')
             return override_result
 
-        loader = ConfigLoader(config_path=args.config)
+        loader = ConfigLoader(config_path=getattr(args, 'config', None))
         config_path = loader.ensure_default_config()
 
         try:
             config = loader.load()
         except ConfigError as exc:
+            self.append_startup_trace(f'config load failed: {exc}')
             print(f'Configuration error: {exc}', file=sys.stderr)
             print(f'Config path: {config_path}', file=sys.stderr)
             return 1
 
         self.apply_runtime_overrides(config)
+        # pythonw.exe (and other consoleless launchers) redirect stdout to None
+        # because there is no console window attached.  Use this as the canonical
+        # indicator rather than inspecting the executable name, which may not always
+        # end in 'pythonw.exe' (e.g. packaged launchers, pyenv shims).
+        # Named `running_consoleless` to reflect that stdout=None is the specific
+        # condition we care about (tray mode needs to hide console / redirect I/O).
+        running_consoleless = sys.stdout is None
+        run_in_tray = getattr(args, 'tray', False) or config.start_minimized_to_tray or running_consoleless
+        should_background_tray = (
+            run_in_tray
+            and not running_consoleless
+            and os.environ.get(BACKGROUND_TRAY_ENV_VAR) != '1'
+        )
+        if should_background_tray:
+            try:
+                can_launch = self.acquire_single_instance_guard(show_dialog_on_duplicate=True)
+            except OSError as exc:
+                self.append_startup_trace(f'single instance preflight failure: {exc}')
+                print(str(exc), file=sys.stderr)
+                return 1
+            if not can_launch:
+                self.append_startup_trace('duplicate instance detected before detached tray launch')
+                return 0
+            self.release_single_instance_guard()
+            self.append_startup_trace('launching detached tray background process')
+            bootstrap_logger = logging.getLogger('polyfi_ranked.bootstrap')
+            showed_splash = self.maybe_show_startup_splash(config, bootstrap_logger)
+            try:
+                child_pid = self.launch_detached_tray_process(args, suppress_splash=showed_splash)
+            except OSError as exc:
+                self.append_startup_trace(f'detached tray launch failed: {exc}')
+                print(
+                    f'Could not launch PolyFi in background tray mode automatically: {exc}',
+                    file=sys.stderr,
+                )
+                print('Continuing in attached tray mode instead.', file=sys.stderr)
+            else:
+                self.append_startup_trace(f'detached tray background process started pid={child_pid}')
+                print(
+                    'PolyFi is starting in tray mode. Look for the icon in the notification area near the clock.',
+                )
+                return 0
+        self._run_in_tray_context = run_in_tray
+        self.append_startup_trace(
+            f'config loaded run_in_tray={run_in_tray} admin={self.is_running_as_administrator()} '
+            f'auto_disable_wifi_on_ethernet={config.auto_disable_wifi_on_ethernet} '
+            f'ethernet_wifi_mode={getattr(config, "ethernet_wifi_mode", ETHERNET_WIFI_MODE_DISCONNECT)}'
+        )
+        if run_in_tray:
+            self.console_output_manager = ConsoleOutputManager(
+                self.paths.local_data_dir / 'polyfi_ranked_output_console.log'
+            )
+            self.console_output_manager.install_stream_proxies()
+            self.console_output_manager.hide_console()
+        else:
+            self.console_output_manager = None
         effective_log_level = self.resolve_log_level(config.log_level)
         logger = configure_logging(effective_log_level, config.log_file)
+        if self.console_output_manager is not None:
+            self.console_output_manager.attach_logger(logger)
         self.set_windows_app_user_model_id()
         logger.info('Using config file: %s', config_path)
         logger.info('Effective log level: %s', effective_log_level)
 
-        startup_admin_result = self.handle_startup_admin_requirements(config, logger)
-        if startup_admin_result is not None:
-            return startup_admin_result
+        # Check whether admin is needed before handle_startup_admin_requirements
+        # modifies the config, so we can show a persistent warning afterwards.
+        needs_admin_notification = (
+            self._ethernet_action_requires_admin(config) and not self.is_running_as_administrator()
+        )
+
+        self.handle_startup_admin_requirements(config, logger)
+
+        if needs_admin_notification and not run_in_tray:
+            print(
+                'Warning: The "disable Wi-Fi when Ethernet is connected" feature requires '
+                'administrator privileges. Restart PolyFi as administrator to use this feature. '
+                'The feature is disabled for this session.',
+                file=sys.stderr,
+            )
 
         try:
             acquired = self.acquire_single_instance_guard(show_dialog_on_duplicate=True)
         except OSError as exc:
+            self.append_startup_trace(f'single instance guard failure: {exc}')
             logger.error('%s', exc)
             show_dialog('error', 'Startup Failed', str(exc))
             return 1
         if not acquired:
+            self.append_startup_trace('duplicate instance detected')
             logger.info('Another PolyFi instance is already running. Exiting duplicate launch.')
             return 0
+
+        self.maybe_show_startup_splash(config, logger)
 
         wifi_api = NetshWiFiApi(logger=logger)
         service = WiFiPreferenceService(
@@ -652,25 +903,50 @@ class Application:
             config_loader=loader,
             on_config_reloaded=self.on_config_reloaded,
         )
+
         try:
-            if args.tray or config.start_minimized_to_tray:
+            if run_in_tray:
+                self.append_startup_trace('starting tray application')
                 tray_app = TrayApplication(
                     service=service,
                     logger=logger,
                     config_loader=loader,
-                    restart_as_admin_callback=self.restart_as_administrator,
+                    needs_admin_notification=needs_admin_notification,
+                    show_output_console_callback=(
+                        self.console_output_manager.show_console_with_history
+                        if self.console_output_manager is not None
+                        else None
+                    ),
+                    startup_marker_path=self.paths.first_tray_start_marker_file,
+                    startup_trace_path=self.startup_trace_file,
                 )
-                tray_app.run()
+                try:
+                    tray_app.run()
+                except Exception as exc:  # noqa: BLE001
+                    self.append_startup_trace(f'tray application crashed: {exc!r}')
+                    logger.exception('Tray application crashed: %s', exc)
+                    show_native_message_box(
+                        'error',
+                        'PolyFi Startup Failed',
+                        f'PolyFi encountered an unexpected error while starting '
+                        f'the system tray icon:\n\n{exc}\n\n'
+                        f'Diagnostic log:\n{self.startup_trace_file}',
+                    )
+                    return 1
+                self.append_startup_trace('tray application exited normally')
                 return 0
 
             try:
+                self.append_startup_trace('starting foreground service loop')
                 service.run_forever()
             except KeyboardInterrupt:
+                self.append_startup_trace('foreground service loop interrupted')
                 logger.info('Keyboard interrupt received. Stopping service.')
                 service.stop()
 
             return 0
         finally:
+            self.append_startup_trace('releasing single instance guard')
             self.release_single_instance_guard()
 
     def run(self, argv: list[str] | None = None) -> int:
@@ -697,7 +973,12 @@ def main() -> int:
     Returns:
         Process exit code.
     """
-    return Application().run()
+    app = Application()
+    try:
+        return app.run()
+    except Exception as exc:  # noqa: BLE001
+        app.append_startup_trace(f'unhandled exception: {exc!r}')
+        raise
 
 
 if __name__ == '__main__':

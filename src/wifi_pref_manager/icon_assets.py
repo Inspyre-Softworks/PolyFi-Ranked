@@ -30,17 +30,28 @@ def create_app_icon_image(size: int = 64) -> Image.Image:
     Returns:
         Pillow image instance.
     """
-    canvas = Image.new('RGBA', (size, size), 'black')
+    canvas = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(canvas)
     scale = size / 64
-    line_width = max(1, int(round(4 * scale)))
+    line_width = max(2, int(round(5 * scale)))
 
     def scaled(bounds: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
         return tuple(int(round(value * scale)) for value in bounds)
 
-    draw.arc(scaled((10, 22, 54, 58)), start=200, end=340, fill='white', width=line_width)
-    draw.arc(scaled((18, 30, 46, 54)), start=210, end=330, fill='white', width=line_width)
-    draw.ellipse(scaled((28, 44, 36, 52)), fill='white')
+    draw.rounded_rectangle(
+        scaled((6, 6, 58, 58)),
+        radius=max(6, int(round(14 * scale))),
+        fill='#0f766e',
+    )
+    draw.rounded_rectangle(
+        scaled((10, 10, 54, 54)),
+        radius=max(5, int(round(11 * scale))),
+        outline='#5eead4',
+        width=max(1, int(round(2 * scale))),
+    )
+    draw.arc(scaled((11, 20, 53, 57)), start=204, end=336, fill='white', width=line_width)
+    draw.arc(scaled((20, 29, 44, 50)), start=210, end=330, fill='white', width=line_width)
+    draw.ellipse(scaled((27, 41, 37, 51)), fill='#f8fafc')
     return canvas
 
 

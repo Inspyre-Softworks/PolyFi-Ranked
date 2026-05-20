@@ -35,8 +35,11 @@ from pathlib import Path
 import re
 import subprocess
 import time
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 import xml.etree.ElementTree as ET
+
+if TYPE_CHECKING:
+    from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
 
 
 class NetshError(RuntimeError):
@@ -62,6 +65,10 @@ class NetshWiFiApi:
             Connect to a saved Wi-Fi profile.
         disconnect:
             Disconnect current Wi-Fi.
+        get_profiles_autoconnect_modes:
+            Get auto/manual connect state for saved profiles.
+        set_profiles_autoconnect:
+            Set auto/manual connect state for saved profiles.
         disable_wifi_adapter:
             Disable the Wi-Fi adapter (turn off the radio).
         enable_wifi_adapter:
@@ -82,8 +89,13 @@ class NetshWiFiApi:
             Netsh-based fallback for Ethernet detection.
     """
 
-    def __init__(self, logger: logging.Logger) -> None:
-        self.logger = logger
+    def __init__(
+        self,
+        logger: logging.Logger | None = None,
+        task_manager: WifiAdapterTaskManager | None = None,
+    ) -> None:
+        self.logger = logger or logging.getLogger(__name__)
+        self.task_manager = task_manager
         self._ethernet_exclusion_terms = (
             'bluetooth',
             'loopback',
@@ -96,6 +108,29 @@ class NetshWiFiApi:
             'wifi',
             'wlan',
         )
+
+    @staticmethod
+    def _hidden_subprocess_kwargs() -> dict[str, object]:
+        """
+        Return Windows-specific subprocess flags that suppress console windows.
+
+        Returns:
+            Keyword arguments safe to splat into ``subprocess.run``.
+        """
+        kwargs: dict[str, object] = {}
+        create_no_window = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+        if create_no_window:
+            kwargs['creationflags'] = create_no_window
+
+        startupinfo_type = getattr(subprocess, 'STARTUPINFO', None)
+        startf_use_showwindow = getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
+        if startupinfo_type is not None and startf_use_showwindow:
+            startupinfo = startupinfo_type()
+            startupinfo.dwFlags |= startf_use_showwindow
+            startupinfo.wShowWindow = 0
+            kwargs['startupinfo'] = startupinfo
+
+        return kwargs
 
     @staticmethod
     def is_elevation_required_error(exc: BaseException) -> bool:
@@ -139,6 +174,7 @@ class NetshWiFiApi:
             encoding='utf-8',
             errors='replace',
             shell=False,
+            **self._hidden_subprocess_kwargs(),
         )
 
         if result.returncode != 0:
@@ -175,6 +211,7 @@ class NetshWiFiApi:
             encoding='utf-8',
             errors='replace',
             shell=False,
+            **self._hidden_subprocess_kwargs(),
         )
         if result.returncode != 0:
             raise subprocess.SubprocessError(
@@ -368,6 +405,99 @@ class NetshWiFiApi:
         """
         self.run_netsh(['wlan', 'disconnect', f'interface={interface_name}'])
 
+    def set_profile_autoconnect(
+        self,
+        profile_name: str,
+        *,
+        enabled: bool,
+        interface_name: str | None = None,
+    ) -> None:
+        """
+        Set whether a profile should auto-connect.
+
+        Parameters:
+            profile_name:
+                Saved Wi-Fi profile name.
+            enabled:
+                True for automatic connect, False for manual connect.
+            interface_name:
+                Optional interface name to scope the update.
+        """
+        mode = 'auto' if enabled else 'manual'
+        args = ['wlan', 'set', 'profileparameter', f'name={profile_name}', f'connectionmode={mode}']
+        if interface_name:
+            args.append(f'interface={interface_name}')
+        self.run_netsh(args)
+
+    def get_profiles_autoconnect_modes(
+        self,
+        *,
+        interface_name: str | None = None,
+        profiles: Sequence[str] | None = None,
+    ) -> dict[str, bool]:
+        """
+        Get auto/manual connect state for Wi-Fi profiles.
+
+        Parameters:
+            interface_name:
+                Optional interface name used when querying profiles.
+            profiles:
+                Optional explicit profile list. Defaults to all saved profiles.
+
+        Returns:
+            Mapping of profile name to True (auto-connect) or False (manual).
+        """
+        profile_names = list(profiles) if profiles is not None else self.get_saved_profiles()
+        modes: dict[str, bool] = {}
+
+        for profile_name in profile_names:
+            args = ['wlan', 'show', 'profile', f'name={profile_name}']
+            if interface_name:
+                args.append(f'interface={interface_name}')
+            output = self.run_netsh(args)
+            match = re.search(r'^\s*Connection mode\s*:\s*(.+?)\s*$', output, re.IGNORECASE | re.MULTILINE)
+            if match is None:
+                raise NetshError(
+                    f'Could not determine connection mode for profile {profile_name!r}.'
+                )
+            mode_text = match.group(1).strip().lower()
+            if 'manual' in mode_text:
+                modes[profile_name] = False
+            elif 'auto' in mode_text or 'automatically' in mode_text:
+                modes[profile_name] = True
+            else:
+                raise NetshError(
+                    f'Unrecognized connection mode for profile {profile_name!r}: {match.group(1)!r}'
+                )
+
+        return modes
+
+    def set_profiles_autoconnect(
+        self,
+        *,
+        enabled: bool,
+        interface_name: str | None = None,
+        profiles: Sequence[str] | None = None,
+    ) -> None:
+        """
+        Set auto/manual connect behavior for multiple profiles.
+
+        Parameters:
+            enabled:
+                True to enable auto-connect, False to require manual connect.
+            interface_name:
+                Optional interface name used when applying profile updates.
+            profiles:
+                Optional explicit profile list. Defaults to all saved profiles.
+        """
+        profile_names = list(profiles) if profiles is not None else self.get_saved_profiles()
+        for profile_name in profile_names:
+            self.set_profile_autoconnect(
+                profile_name,
+                enabled=enabled,
+                interface_name=interface_name,
+            )
+
     def is_interface_enabled(self, interface_name: str) -> bool:
         """
         Check whether an interface is administratively enabled.
@@ -401,6 +531,11 @@ class NetshWiFiApi:
         This is equivalent to pressing the WiFi button in Windows Quick Settings,
         completely disabling the wireless radio while leaving Ethernet active.
 
+        When a task manager is configured and the corresponding scheduled task
+        is installed, the command is executed via ``schtasks /run`` so no
+        process elevation is needed.  The adapter state is verified afterwards;
+        if still enabled the method falls back to a direct ``netsh`` call.
+
         Parameters:
             interface_name:
                 Wireless interface name to disable.
@@ -410,6 +545,26 @@ class NetshWiFiApi:
                 If the command fails.
         """
         self.logger.debug('Disabling Wi-Fi adapter: %s', interface_name)
+        if self.task_manager is not None:
+            from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskError
+            try:
+                self.task_manager.disable_wifi()
+                try:
+                    if not self.is_interface_enabled(interface_name):
+                        return
+                    self.logger.warning(
+                        'Wi-Fi adapter %r still enabled after task trigger; '
+                        'falling back to direct netsh.',
+                        interface_name,
+                    )
+                except NetshError:
+                    pass  # Cannot verify — fall through to direct netsh.
+            except WifiAdapterTaskError as exc:
+                self.logger.warning(
+                    'Scheduled-task Wi-Fi disable failed (%s); '
+                    'falling back to direct netsh.',
+                    exc,
+                )
         self.run_netsh(['interface', 'set', 'interface', interface_name, 'admin=disabled'])
 
     def enable_wifi_adapter(self, interface_name: str) -> None:
@@ -418,6 +573,11 @@ class NetshWiFiApi:
 
         This re-enables a previously disabled wireless adapter, allowing it to
         scan for and connect to networks.
+
+        When a task manager is configured and the corresponding scheduled task
+        is installed, the command is executed via ``schtasks /run`` so no
+        process elevation is needed.  The adapter state is verified afterwards;
+        if still disabled the method falls back to a direct ``netsh`` call.
 
         Parameters:
             interface_name:
@@ -428,6 +588,26 @@ class NetshWiFiApi:
                 If the command fails.
         """
         self.logger.debug('Enabling Wi-Fi adapter: %s', interface_name)
+        if self.task_manager is not None:
+            from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskError
+            try:
+                self.task_manager.enable_wifi()
+                try:
+                    if self.is_interface_enabled(interface_name):
+                        return
+                    self.logger.warning(
+                        'Wi-Fi adapter %r still disabled after task trigger; '
+                        'falling back to direct netsh.',
+                        interface_name,
+                    )
+                except NetshError:
+                    pass  # Cannot verify — fall through to direct netsh.
+            except WifiAdapterTaskError as exc:
+                self.logger.warning(
+                    'Scheduled-task Wi-Fi enable failed (%s); '
+                    'falling back to direct netsh.',
+                    exc,
+                )
         self.run_netsh(['interface', 'set', 'interface', interface_name, 'admin=enabled'])
 
     def _get_all_wireless_interface_names(self) -> set[str]:

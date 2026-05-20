@@ -6,6 +6,14 @@ log_level = 'INFO'
 log_file = ''
 interface_name = ''
 start_minimized_to_tray = false
+auto_disable_wifi_on_ethernet = true
+ethernet_wifi_mode = 'disconnect_and_disable_autoconnect' # or 'disable_adapter'
+show_wifi_disabled_dialog = true
+show_startup_splash = true
+splash_image_path = '' # blank = auto-detect polyfi_ranked_splash.png in app-data or Pictures
+splash_fade_in_ms = 280 # legacy compatibility field, currently ignored
+splash_hold_ms = 1100 # controls how long the splash stays visible
+splash_fade_out_ms = 280 # legacy compatibility field, currently ignored
 
 [[networks]]
 ssid = 'MyBestWiFi'

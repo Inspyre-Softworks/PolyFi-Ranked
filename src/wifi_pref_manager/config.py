@@ -32,10 +32,16 @@ Example Usage:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import tomllib
 
-from wifi_pref_manager.models import AppConfig, WiFiProfilePreference
+from wifi_pref_manager.models import (
+    ETHERNET_WIFI_MODE_DISCONNECT,
+    ETHERNET_WIFI_MODE_VALUES,
+    AppConfig,
+    WiFiProfilePreference,
+)
 from wifi_pref_manager.paths import AppPaths
 
 
@@ -48,7 +54,13 @@ log_file = ''
 interface_name = ''
 start_minimized_to_tray = false
 auto_disable_wifi_on_ethernet = true
+ethernet_wifi_mode = 'disconnect_and_disable_autoconnect'
 show_wifi_disabled_dialog = true
+show_startup_splash = true
+splash_image_path = ''
+splash_fade_in_ms = 280
+splash_hold_ms = 1100
+splash_fade_out_ms = 280
 enable_speed_tests = false
 speed_test_on_new_connection = true
 speed_test_interval = 1800
@@ -99,6 +111,121 @@ class ConfigLoader:
         self.paths.ensure_directories()
         self.config_path = Path(config_path).expanduser() if config_path else self.paths.config_file
         self._last_mtime_ns: int | None = None
+
+    @staticmethod
+    def _coerce_bool(value: object, *, field_name: str, default: bool) -> bool:
+        """
+        Parse a boolean config value without silently treating arbitrary strings as truthy.
+
+        Parameters:
+            value:
+                Raw value loaded from TOML.
+            field_name:
+                Human-readable config key name for error messages.
+            default:
+                Default value to use when the key is missing.
+
+        Returns:
+            Parsed boolean value.
+
+        Raises:
+            ConfigError:
+                If the value cannot be interpreted as a boolean.
+        """
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {'1', 'true', 'yes', 'on'}:
+                return True
+            if normalized in {'0', 'false', 'no', 'off'}:
+                return False
+        raise ConfigError(f'Configuration field {field_name!r} must be a boolean.')
+
+    @staticmethod
+    def _coerce_ethernet_wifi_mode(value: object) -> str:
+        """
+        Parse the Ethernet Wi-Fi action mode.
+
+        Parameters:
+            value:
+                Raw value loaded from TOML.
+
+        Returns:
+            Normalized action mode string.
+
+        Raises:
+            ConfigError:
+                If the mode is not recognized.
+        """
+        if value is None:
+            return ETHERNET_WIFI_MODE_DISCONNECT
+        normalized = str(value).strip().lower()
+        aliases = {
+            'disconnect': ETHERNET_WIFI_MODE_DISCONNECT,
+            'disconnect_and_disable_autoconnect': ETHERNET_WIFI_MODE_DISCONNECT,
+            'disable_adapter': 'disable_adapter',
+        }
+        selected = aliases.get(normalized)
+        if selected is None or selected not in ETHERNET_WIFI_MODE_VALUES:
+            allowed = ', '.join(sorted(ETHERNET_WIFI_MODE_VALUES))
+            raise ConfigError(
+                f'Configuration field "general.ethernet_wifi_mode" must be one of: {allowed}.'
+            )
+        return selected
+
+    @staticmethod
+    def _coerce_int(value: object, *, field_name: str, default: int, minimum: int | None = None) -> int:
+        """
+        Parse an integer config value.
+
+        Parameters:
+            value:
+                Raw value loaded from TOML.
+            field_name:
+                Human-readable config key name for error messages.
+            default:
+                Default value to use when the key is missing.
+            minimum:
+                Optional minimum allowed value.
+
+        Returns:
+            Parsed integer value.
+
+        Raises:
+            ConfigError:
+                If the value cannot be interpreted as an integer.
+        """
+        if value is None:
+            parsed = default
+        elif isinstance(value, bool):
+            raise ConfigError(f'Configuration field {field_name!r} must be an integer.')
+        else:
+            try:
+                parsed = int(value)
+            except (TypeError, ValueError) as exc:
+                raise ConfigError(f'Configuration field {field_name!r} must be an integer.') from exc
+        if minimum is not None:
+            parsed = max(minimum, parsed)
+        return parsed
+
+    @staticmethod
+    def _coerce_optional_string(value: object) -> str:
+        """
+        Normalize a raw config value to a stripped string.
+
+        Parameters:
+            value:
+                Raw value loaded from TOML.
+
+        Returns:
+            Stripped string value, or an empty string when missing.
+        """
+        if value is None:
+            return ''
+        return str(value).strip()
 
     def ensure_default_config(self) -> Path:
         """
@@ -193,52 +320,138 @@ class ConfigLoader:
                 'A default config should have been created on first run.'
             )
 
-        with self.config_path.open('rb') as handle:
-            raw = tomllib.load(handle)
+        try:
+            with self.config_path.open('rb') as handle:
+                raw = tomllib.load(handle)
+        except tomllib.TOMLDecodeError as exc:
+            raise ConfigError(f'Could not parse config file {self.config_path}: {exc}') from exc
 
         general = raw.get('general', {})
         networks = raw.get('networks', [])
+        if not isinstance(general, dict):
+            raise ConfigError('The [general] section must be a TOML table.')
+        if not isinstance(networks, list):
+            raise ConfigError('The [[networks]] section must be an array of tables.')
 
-        preferred_networks = [
-            WiFiProfilePreference(
-                ssid=str(entry['ssid']).strip(),
-                auto_switch=bool(entry.get('auto_switch', True)),
-                min_db=(
-                    int(entry.get('min_db', entry.get('minimum_signal_dbm')))
-                    if entry.get('min_db', entry.get('minimum_signal_dbm')) not in (None, '')
-                    else None
-                ),
+        preferred_networks: list[WiFiProfilePreference] = []
+        for index, entry in enumerate(networks, start=1):
+            if not isinstance(entry, dict):
+                raise ConfigError(f'Network entry #{index} must be a TOML table.')
+            ssid = self._coerce_optional_string(entry.get('ssid'))
+            if not ssid:
+                continue
+            min_db_value = entry.get('min_db', entry.get('minimum_signal_dbm'))
+            min_db = (
+                self._coerce_int(min_db_value, field_name=f'networks[{index}].min_db', default=0)
+                if min_db_value not in (None, '')
+                else None
             )
-            for entry in networks
-            if str(entry.get('ssid', '')).strip()
-        ]
+            preferred_networks.append(
+                WiFiProfilePreference(
+                    ssid=ssid,
+                    auto_switch=self._coerce_bool(
+                        entry.get('auto_switch'),
+                        field_name=f'networks[{index}].auto_switch',
+                        default=True,
+                    ),
+                    min_db=min_db,
+                )
+            )
 
         if not preferred_networks:
             raise ConfigError('At least one [[networks]] entry with an ssid is required.')
 
-        interface_name = str(general.get('interface_name', '')).strip() or None
-        log_file = str(general.get('log_file', '')).strip()
+        interface_name = self._coerce_optional_string(general.get('interface_name')) or None
+        log_file = self._coerce_optional_string(general.get('log_file'))
         if not log_file:
             log_file = str(self.paths.log_file)
-        speed_test_history_file = str(general.get('speed_test_history_file', '')).strip()
+        speed_test_history_file = self._coerce_optional_string(general.get('speed_test_history_file'))
         if not speed_test_history_file:
             speed_test_history_file = str(self.paths.speed_test_history_file)
 
         config = AppConfig(
             preferred_networks=preferred_networks,
             interface_name=interface_name,
-            scan_interval=max(1, int(general.get('scan_interval', 10))),
-            connect_timeout=max(1, int(general.get('connect_timeout', 8))),
-            sync_profile_order_on_start=bool(general.get('sync_profile_order_on_start', True)),
-            log_level=str(general.get('log_level', 'INFO')).upper(),
+            scan_interval=self._coerce_int(
+                general.get('scan_interval'),
+                field_name='general.scan_interval',
+                default=10,
+                minimum=1,
+            ),
+            connect_timeout=self._coerce_int(
+                general.get('connect_timeout'),
+                field_name='general.connect_timeout',
+                default=8,
+                minimum=1,
+            ),
+            sync_profile_order_on_start=self._coerce_bool(
+                general.get('sync_profile_order_on_start'),
+                field_name='general.sync_profile_order_on_start',
+                default=True,
+            ),
+            log_level=self._coerce_optional_string(general.get('log_level') or 'INFO').upper(),
             log_file=log_file,
-            start_minimized_to_tray=bool(general.get('start_minimized_to_tray', False)),
-            auto_disable_wifi_on_ethernet=bool(general.get('auto_disable_wifi_on_ethernet', True)),
-            show_wifi_disabled_dialog=bool(general.get('show_wifi_disabled_dialog', True)),
-            enable_speed_tests=bool(general.get('enable_speed_tests', False)),
-            speed_test_on_new_connection=bool(general.get('speed_test_on_new_connection', True)),
-            speed_test_interval=max(0, int(general.get('speed_test_interval', 1800))),
-            save_speed_test_history=bool(general.get('save_speed_test_history', False)),
+            start_minimized_to_tray=self._coerce_bool(
+                general.get('start_minimized_to_tray'),
+                field_name='general.start_minimized_to_tray',
+                default=False,
+            ),
+            auto_disable_wifi_on_ethernet=self._coerce_bool(
+                general.get('auto_disable_wifi_on_ethernet'),
+                field_name='general.auto_disable_wifi_on_ethernet',
+                default=True,
+            ),
+            ethernet_wifi_mode=self._coerce_ethernet_wifi_mode(general.get('ethernet_wifi_mode')),
+            show_wifi_disabled_dialog=self._coerce_bool(
+                general.get('show_wifi_disabled_dialog'),
+                field_name='general.show_wifi_disabled_dialog',
+                default=True,
+            ),
+            show_startup_splash=self._coerce_bool(
+                general.get('show_startup_splash'),
+                field_name='general.show_startup_splash',
+                default=True,
+            ),
+            splash_image_path=self._coerce_optional_string(general.get('splash_image_path')),
+            splash_fade_in_ms=self._coerce_int(
+                general.get('splash_fade_in_ms'),
+                field_name='general.splash_fade_in_ms',
+                default=280,
+                minimum=0,
+            ),
+            splash_hold_ms=self._coerce_int(
+                general.get('splash_hold_ms'),
+                field_name='general.splash_hold_ms',
+                default=1100,
+                minimum=0,
+            ),
+            splash_fade_out_ms=self._coerce_int(
+                general.get('splash_fade_out_ms'),
+                field_name='general.splash_fade_out_ms',
+                default=280,
+                minimum=0,
+            ),
+            enable_speed_tests=self._coerce_bool(
+                general.get('enable_speed_tests'),
+                field_name='general.enable_speed_tests',
+                default=False,
+            ),
+            speed_test_on_new_connection=self._coerce_bool(
+                general.get('speed_test_on_new_connection'),
+                field_name='general.speed_test_on_new_connection',
+                default=True,
+            ),
+            speed_test_interval=self._coerce_int(
+                general.get('speed_test_interval'),
+                field_name='general.speed_test_interval',
+                default=1800,
+                minimum=0,
+            ),
+            save_speed_test_history=self._coerce_bool(
+                general.get('save_speed_test_history'),
+                field_name='general.save_speed_test_history',
+                default=False,
+            ),
             speed_test_history_file=speed_test_history_file,
         )
         self.mark_loaded()
@@ -260,8 +473,7 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         return 'true' if value else 'false'
 
     def _str(value: str) -> str:
-        escaped = value.replace('\\', '\\\\').replace("'", "\\'")
-        return f"'{escaped}'"
+        return json.dumps(value, ensure_ascii=False)
 
     lines: list[str] = [
         '[general]\n',
@@ -273,7 +485,13 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         f'interface_name = {_str(config.interface_name or "")}\n',
         f'start_minimized_to_tray = {_bool(config.start_minimized_to_tray)}\n',
         f'auto_disable_wifi_on_ethernet = {_bool(config.auto_disable_wifi_on_ethernet)}\n',
+        f'ethernet_wifi_mode = {_str(config.ethernet_wifi_mode)}\n',
         f'show_wifi_disabled_dialog = {_bool(config.show_wifi_disabled_dialog)}\n',
+        f'show_startup_splash = {_bool(config.show_startup_splash)}\n',
+        f'splash_image_path = {_str(config.splash_image_path)}\n',
+        f'splash_fade_in_ms = {config.splash_fade_in_ms}\n',
+        f'splash_hold_ms = {config.splash_hold_ms}\n',
+        f'splash_fade_out_ms = {config.splash_fade_out_ms}\n',
         f'enable_speed_tests = {_bool(config.enable_speed_tests)}\n',
         f'speed_test_on_new_connection = {_bool(config.speed_test_on_new_connection)}\n',
         f'speed_test_interval = {config.speed_test_interval}\n',
@@ -283,8 +501,7 @@ def save_config(config: AppConfig, config_path: Path) -> None:
 
     for network in config.preferred_networks:
         lines.append('\n[[networks]]\n')
-        escaped_ssid = network.ssid.replace('\\', '\\\\').replace("'", "\\'")
-        lines.append(f"ssid = '{escaped_ssid}'\n")
+        lines.append(f'ssid = {_str(network.ssid)}\n')
         lines.append(f'auto_switch = {_bool(network.auto_switch)}\n')
         if network.min_db is not None:
             lines.append(f'min_db = {network.min_db}\n')
