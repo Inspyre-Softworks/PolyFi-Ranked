@@ -56,6 +56,7 @@ start_minimized_to_tray = false
 auto_disable_wifi_on_ethernet = true
 ethernet_wifi_mode = 'disconnect_and_disable_autoconnect'
 show_wifi_disabled_dialog = true
+add_to_startup_programs = false
 show_startup_splash = true
 splash_image_path = ''
 splash_fade_in_ms = 280
@@ -407,6 +408,11 @@ class ConfigLoader:
                 field_name='general.show_wifi_disabled_dialog',
                 default=True,
             ),
+            add_to_startup_programs=self._coerce_bool(
+                general.get('add_to_startup_programs'),
+                field_name='general.add_to_startup_programs',
+                default=False,
+            ),
             show_startup_splash=self._coerce_bool(
                 general.get('show_startup_splash'),
                 field_name='general.show_startup_splash',
@@ -487,6 +493,7 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         f'auto_disable_wifi_on_ethernet = {_bool(config.auto_disable_wifi_on_ethernet)}\n',
         f'ethernet_wifi_mode = {_str(config.ethernet_wifi_mode)}\n',
         f'show_wifi_disabled_dialog = {_bool(config.show_wifi_disabled_dialog)}\n',
+        f'add_to_startup_programs = {_bool(config.add_to_startup_programs)}\n',
         f'show_startup_splash = {_bool(config.show_startup_splash)}\n',
         f'splash_image_path = {_str(config.splash_image_path)}\n',
         f'splash_fade_in_ms = {config.splash_fade_in_ms}\n',

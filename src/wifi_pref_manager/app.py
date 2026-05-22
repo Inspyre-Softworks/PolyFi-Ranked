@@ -42,22 +42,29 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 
 from wifi_pref_manager.console_output import ConsoleOutputManager
-from wifi_pref_manager.config import ConfigError, ConfigLoader
+from wifi_pref_manager.config import ConfigError, ConfigLoader, save_config
+from wifi_pref_manager import __version__
 from wifi_pref_manager.logging_utils import configure_logging
 from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
-from wifi_pref_manager.paths import APP_NAME, APP_USER_MODEL_ID, AppPaths
+from wifi_pref_manager.paths import APPDATA_ROOT_ENV_VAR, APP_NAME, APP_SLUG, APP_USER_MODEL_ID, AppPaths
+from wifi_pref_manager.scheduler import TASK_NAME, TaskSchedulerInstaller
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
 from wifi_pref_manager.ui.dialogs import show_dialog, show_native_message_box
 from wifi_pref_manager.ui.splash import resolve_splash_image_path, show_startup_splash
 from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
-from wifi_pref_manager.windows_shell import StartMenuShortcutManager, resolve_runtime_launch_target
+from wifi_pref_manager.windows_shell import (
+    StartMenuShortcutManager,
+    StartupProgramsShortcutManager,
+    resolve_runtime_launch_target,
+)
 
 
 BACKGROUND_TRAY_ENV_VAR = 'POLYFI_BACKGROUND_TRAY'
@@ -86,6 +93,7 @@ class Application:
         self._run_in_tray_context = False
         self._startup_splash_shown = False
         self.startup_trace_file = self.paths.local_data_dir / 'startup_trace.log'
+        self.active_config_path: Path | None = None
 
     def append_startup_trace(self, message: str) -> None:
         """
@@ -160,6 +168,12 @@ class Application:
             default=argparse.SUPPRESS,
             help='Disable the startup splash for this run.',
         )
+        parser.add_argument(
+            '--direct-tray',
+            action='store_true',
+            default=argparse.SUPPRESS,
+            help=argparse.SUPPRESS,
+        )
 
     def build_argument_parser(self) -> argparse.ArgumentParser:
         """
@@ -168,7 +182,16 @@ class Application:
         Returns:
             Configured ArgumentParser.
         """
-        parser = argparse.ArgumentParser(description='PolyFi: Ranked for Windows.')
+        parser = argparse.ArgumentParser(
+            prog=APP_NAME.lower(),
+            description='PolyFi: Ranked for Windows.',
+        )
+        parser.add_argument(
+            '-V',
+            '--version',
+            action='version',
+            version=f'%(prog)s {__version__}',
+        )
         self.add_runtime_arguments(parser)
         parser.add_argument(
             '--print-paths',
@@ -217,6 +240,67 @@ class Application:
             help='Print the Start Menu shortcut path.',
         )
         start_menu_path_parser.set_defaults(handler=self.handle_start_menu_path_command)
+
+        startup_parser = windows_subparsers.add_parser(
+            'startup',
+            help='Manage the Windows Startup Programs shortcut.',
+        )
+        startup_subparsers = startup_parser.add_subparsers(dest='startup_command')
+        startup_subparsers.required = True
+
+        startup_install_parser = startup_subparsers.add_parser(
+            'install',
+            help='Install a Startup Programs shortcut that launches PolyFi in tray mode at logon.',
+        )
+        startup_install_parser.add_argument(
+            '--config',
+            default=None,
+            help='Optional path to the TOML configuration file used by the startup shortcut.',
+        )
+        startup_install_parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Overwrite the existing Startup Programs shortcut if present.',
+        )
+        startup_install_parser.set_defaults(handler=self.handle_startup_install_command)
+
+        startup_remove_parser = startup_subparsers.add_parser(
+            'remove',
+            help='Remove the PolyFi Startup Programs shortcut.',
+        )
+        startup_remove_parser.add_argument(
+            '--config',
+            default=None,
+            help='Optional path to the TOML configuration file whose startup preference should be disabled.',
+        )
+        startup_remove_parser.set_defaults(handler=self.handle_startup_remove_command)
+
+        startup_path_parser = startup_subparsers.add_parser(
+            'path',
+            help='Print the Startup Programs shortcut path.',
+        )
+        startup_path_parser.set_defaults(handler=self.handle_startup_path_command)
+
+        windows_uninstall_parser = windows_subparsers.add_parser(
+            'uninstall',
+            help='Remove PolyFi Windows shortcuts and scheduled tasks.',
+        )
+        windows_uninstall_parser.add_argument(
+            '--config',
+            default=None,
+            help='Optional path to the TOML configuration file whose startup preference should be cleared.',
+        )
+        windows_uninstall_parser.add_argument(
+            '--task-name',
+            default=TASK_NAME,
+            help='Scheduled logon task name to remove. Defaults to "PolyFi Ranked".',
+        )
+        windows_uninstall_parser.add_argument(
+            '--purge-data',
+            action='store_true',
+            help='Also delete PolyFi settings, logs, and app-data directories when they belong only to this app.',
+        )
+        windows_uninstall_parser.set_defaults(handler=self.handle_windows_uninstall_command)
 
         wifi_tasks_parser = windows_subparsers.add_parser(
             'wifi-tasks',
@@ -331,6 +415,7 @@ class Application:
         logger = configure_logging(self.resolve_log_level(config.log_level), config.log_file)
         if self.console_output_manager is not None:
             self.console_output_manager.attach_logger(logger)
+        self.sync_startup_programs_preference(config, logger)
         return logger
 
     def apply_runtime_overrides(self, config) -> None:
@@ -356,14 +441,35 @@ class Application:
         Returns:
             Process exit code.
         """
+        print(f'App data root: {self.paths.app_data_root}')
+        print(f'App data root env var: {APPDATA_ROOT_ENV_VAR}')
         print(f'Config file: {self.paths.config_file}')
         print(f'Example config: {self.paths.example_config_file}')
         print(f'Log file: {self.paths.log_file}')
         print(f'Managed interface file: {self.paths.managed_interface_file}')
         print(f'Speed test history file: {self.paths.speed_test_history_file}')
         print(f'Start Menu shortcut: {self.paths.start_menu_shortcut_file}')
-        print(f'Start Menu icon: {self.paths.start_menu_icon_file}')
+        print(f'Startup Programs shortcut: {self.paths.startup_programs_shortcut_file}')
+        print(f'Shortcut icon: {self.paths.shortcut_icon_file}')
         return 0
+
+    @staticmethod
+    def build_startup_shortcut_argument_list(config_path: str | Path | None) -> list[str]:
+        """
+        Build the persistent runtime arguments used by startup-folder shortcuts.
+
+        Parameters:
+            config_path:
+                Optional config path the startup shortcut should load.
+
+        Returns:
+            Runtime argument list for the shortcut target.
+        """
+        runtime_args: list[str] = []
+        if config_path:
+            runtime_args.extend(['--config', str(config_path)])
+        runtime_args.extend(['--tray', '--direct-tray'])
+        return runtime_args
 
     def build_runtime_argument_list(
         self,
@@ -371,6 +477,7 @@ class Application:
         *,
         force_tray: bool = False,
         force_show_splash: bool = False,
+        force_direct_tray: bool = False,
     ) -> list[str]:
         """
         Build runtime CLI arguments from parsed values.
@@ -382,6 +489,9 @@ class Application:
                 Whether to force tray mode on.
             force_show_splash:
                 Whether to force the startup splash on unless explicitly disabled.
+            force_direct_tray:
+                Whether to force the runtime to stay in the current tray process
+                instead of relaunching itself in the background.
 
         Returns:
             Runtime argument list.
@@ -390,8 +500,11 @@ class Application:
         config_path = getattr(args, 'config', None)
         if config_path:
             runtime_args.extend(['--config', config_path])
-        if force_tray or getattr(args, 'tray', False):
+        direct_tray = force_direct_tray or bool(getattr(args, 'direct_tray', False))
+        if force_tray or getattr(args, 'tray', False) or direct_tray:
             runtime_args.append('--tray')
+        if direct_tray:
+            runtime_args.append('--direct-tray')
         log_level = getattr(args, 'log_level', None)
         if log_level:
             runtime_args.extend(['--log-level', log_level])
@@ -457,6 +570,167 @@ class Application:
             logger.warning('Startup splash failed and will be skipped for this launch: %s', exc)
             return False
 
+    def update_startup_programs_preference(
+        self,
+        config_path: str | None,
+        enabled: bool,
+        *,
+        create_if_missing: bool,
+    ) -> Path | None:
+        """
+        Persist the startup-programs preference when a config file is available.
+
+        Parameters:
+            config_path:
+                Optional explicit config path.
+            enabled:
+                Desired ``add_to_startup_programs`` value.
+            create_if_missing:
+                Whether a default config file may be created when absent.
+
+        Returns:
+            The updated config path, or ``None`` when no config file was present
+            and ``create_if_missing`` is false.
+        """
+        resolved_config_path = Path(config_path).expanduser() if config_path else self.paths.config_file
+        if not resolved_config_path.exists() and not create_if_missing:
+            return None
+
+        loader = ConfigLoader(config_path=resolved_config_path)
+        if create_if_missing:
+            loader.ensure_default_config()
+        elif not loader.config_path.exists():
+            return None
+
+        config = loader.load()
+        if config.add_to_startup_programs != enabled:
+            config.add_to_startup_programs = enabled
+            save_config(config, loader.config_path)
+            loader.mark_loaded()
+        return loader.config_path
+
+    def sync_startup_programs_preference(self, config, logger) -> None:
+        """
+        Install or remove the Startup Programs shortcut to match the config.
+
+        Parameters:
+            config:
+                Active application config.
+            logger:
+                Logger used for diagnostics.
+        """
+        manager = StartupProgramsShortcutManager(paths=self.paths)
+        shortcut_path = manager.get_shortcut_path()
+        try:
+            if getattr(config, 'add_to_startup_programs', False):
+                existed = shortcut_path.exists()
+                manager.install(
+                    self.build_startup_shortcut_argument_list(self.active_config_path),
+                    overwrite=existed,
+                )
+                logger.debug(
+                    '%s Startup Programs shortcut: %s',
+                    'Updated' if existed else 'Installed',
+                    shortcut_path,
+                )
+            elif manager.remove():
+                logger.info('Removed Startup Programs shortcut: %s', shortcut_path)
+        except (FileExistsError, OSError) as exc:
+            logger.warning('Could not synchronize the Windows Startup Programs shortcut: %s', exc)
+
+    @staticmethod
+    def _delete_file_if_exists(path: Path) -> bool:
+        """
+        Delete a file when present.
+        """
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            return False
+        return True
+
+    @staticmethod
+    def _remove_directory_if_empty(path: Path) -> bool:
+        """
+        Remove a directory when it exists and is empty.
+        """
+        try:
+            path.rmdir()
+        except (FileNotFoundError, OSError):
+            return False
+        return True
+
+    def _application_data_directories(self) -> list[Path]:
+        """
+        Return app-specific directories that are safe to purge recursively.
+        """
+        application_dir_names = {APP_NAME.casefold(), APP_SLUG.casefold()}
+        directories: list[Path] = []
+        for candidate in (
+            self.paths.local_data_dir,
+            self.paths.config_dir,
+            self.paths.legacy_local_dir,
+            self.paths.legacy_config_dir,
+        ):
+            if candidate.name.casefold() not in application_dir_names:
+                continue
+            if candidate not in directories:
+                directories.append(candidate)
+        directories.sort(key=lambda path: len(path.parts), reverse=True)
+        return directories
+
+    def purge_application_data(self, config_path: str | None) -> list[str]:
+        """
+        Delete PolyFi settings/log files and app-specific data directories.
+
+        Parameters:
+            config_path:
+                Optional explicit config path to include in the purge.
+
+        Returns:
+            Human-readable action messages.
+        """
+        messages: list[str] = []
+        purge_directories = self._application_data_directories()
+        file_targets = {
+            self.paths.config_file,
+            self.paths.example_config_file,
+            self.paths.log_file,
+            self.paths.speed_test_history_file,
+        }
+
+        if config_path:
+            file_targets.add(Path(config_path).expanduser())
+
+        candidate_config_path = Path(config_path).expanduser() if config_path else self.paths.config_file
+        if candidate_config_path.exists():
+            try:
+                loaded_config = ConfigLoader(config_path=candidate_config_path).load()
+            except ConfigError:
+                loaded_config = None
+            else:
+                if loaded_config.log_file:
+                    file_targets.add(Path(loaded_config.log_file).expanduser())
+                if loaded_config.speed_test_history_file:
+                    file_targets.add(Path(loaded_config.speed_test_history_file).expanduser())
+
+        for file_path in sorted(file_targets):
+            if any(file_path.is_relative_to(directory) for directory in purge_directories):
+                continue
+            if self._delete_file_if_exists(file_path):
+                messages.append(f'Deleted file: {file_path}')
+                parent = file_path.parent
+                if parent.name.casefold() in {APP_NAME.casefold(), APP_SLUG.casefold()}:
+                    if self._remove_directory_if_empty(parent):
+                        messages.append(f'Removed empty application directory: {parent}')
+
+        for directory in purge_directories:
+            if directory.exists():
+                shutil.rmtree(directory)
+                messages.append(f'Removed application data directory: {directory}')
+
+        return messages
+
     def write_default_config_file(self, config_path: str | None, overwrite: bool) -> int:
         """
         Write the default configuration template and exit.
@@ -495,11 +769,9 @@ class Application:
             OSError:
                 If the tray process could not be started.
         """
-        # Use the standard runtime here instead of ``pythonw.exe`` because the
-        # background child still detaches its own console once tray startup
-        # begins, and the regular interpreter is more reliable for inheriting
-        # the active Poetry environment than a direct ``pythonw.exe`` launch.
-        executable, base_args, _working_directory = resolve_runtime_launch_target(prefer_windowless=False)
+        # Prefer a windowless runtime when available, and also sever inherited
+        # stdio so the tray child is not tied to the launching terminal.
+        executable, base_args, _working_directory = resolve_runtime_launch_target(prefer_windowless=True)
         command = [
             str(executable),
             *base_args,
@@ -509,10 +781,18 @@ class Application:
         environment[BACKGROUND_TRAY_ENV_VAR] = '1'
         if suppress_splash:
             environment[SPLASH_SHOWN_ENV_VAR] = '1'
+        creationflags = (
+            getattr(subprocess, 'DETACHED_PROCESS', 0)
+            | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0)
+        )
         process = subprocess.Popen(  # noqa: S603
             command,
             close_fds=True,
             env=environment,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
         )
         return process.pid
 
@@ -664,7 +944,12 @@ class Application:
         manager = StartMenuShortcutManager(paths=self.paths)
         try:
             shortcut_path = manager.install(
-                self.build_runtime_argument_list(args, force_tray=True, force_show_splash=True),
+                self.build_runtime_argument_list(
+                    args,
+                    force_tray=True,
+                    force_show_splash=True,
+                    force_direct_tray=True,
+                ),
                 overwrite=args.force,
             )
         except (FileExistsError, OSError) as exc:
@@ -707,6 +992,188 @@ class Application:
         del args
         print(self.paths.start_menu_shortcut_file)
         return 0
+
+    def handle_startup_install_command(self, args: argparse.Namespace) -> int:
+        """
+        Install the user's PolyFi Startup Programs shortcut.
+
+        Parameters:
+            args:
+                Parsed argument namespace.
+
+        Returns:
+            Process exit code.
+        """
+        messages: list[str] = []
+        errors: list[str] = []
+        manager = StartupProgramsShortcutManager(paths=self.paths)
+
+        try:
+            shortcut_path = manager.install(
+                self.build_startup_shortcut_argument_list(getattr(args, 'config', None)),
+                overwrite=args.force,
+            )
+        except (FileExistsError, OSError) as exc:
+            shortcut_path = None
+            errors.append(f'Startup Programs shortcut error: {exc}')
+        else:
+            messages.append(f'Installed Startup Programs shortcut: {shortcut_path}')
+
+        try:
+            config_file = self.update_startup_programs_preference(
+                getattr(args, 'config', None),
+                True,
+                create_if_missing=True,
+            )
+        except (ConfigError, OSError) as exc:
+            errors.append(f'Could not enable add_to_startup_programs in config: {exc}')
+        else:
+            if config_file is not None:
+                messages.append(f'Enabled add_to_startup_programs in config: {config_file}')
+
+        for message in messages:
+            print(message)
+        for error in errors:
+            print(error, file=sys.stderr)
+        return 1 if errors else 0
+
+    def handle_startup_remove_command(self, args: argparse.Namespace) -> int:
+        """
+        Remove the user's PolyFi Startup Programs shortcut.
+
+        Parameters:
+            args:
+                Parsed argument namespace.
+
+        Returns:
+            Process exit code.
+        """
+        messages: list[str] = []
+        errors: list[str] = []
+        manager = StartupProgramsShortcutManager(paths=self.paths)
+
+        try:
+            config_file = self.update_startup_programs_preference(
+                getattr(args, 'config', None),
+                False,
+                create_if_missing=False,
+            )
+        except (ConfigError, OSError) as exc:
+            errors.append(f'Could not disable add_to_startup_programs in config: {exc}')
+        else:
+            if config_file is not None:
+                messages.append(f'Disabled add_to_startup_programs in config: {config_file}')
+
+        try:
+            removed = manager.remove()
+        except OSError as exc:
+            errors.append(f'Startup Programs shortcut error: {exc}')
+        else:
+            if removed:
+                messages.append(f'Removed Startup Programs shortcut: {manager.get_shortcut_path()}')
+            else:
+                messages.append(f'No Startup Programs shortcut found at: {manager.get_shortcut_path()}')
+
+        for message in messages:
+            print(message)
+        for error in errors:
+            print(error, file=sys.stderr)
+        return 1 if errors else 0
+
+    def handle_startup_path_command(self, args: argparse.Namespace) -> int:
+        """
+        Print the Startup Programs shortcut path.
+
+        Parameters:
+            args:
+                Parsed argument namespace.
+
+        Returns:
+            Process exit code.
+        """
+        del args
+        print(self.paths.startup_programs_shortcut_file)
+        return 0
+
+    def handle_windows_uninstall_command(self, args: argparse.Namespace) -> int:
+        """
+        Remove PolyFi Windows shell integrations and optional local data.
+
+        Parameters:
+            args:
+                Parsed argument namespace.
+
+        Returns:
+            Process exit code.
+        """
+        messages: list[str] = []
+        errors: list[str] = []
+
+        try:
+            config_file = self.update_startup_programs_preference(
+                getattr(args, 'config', None),
+                False,
+                create_if_missing=False,
+            )
+        except (ConfigError, OSError) as exc:
+            errors.append(f'Could not clear add_to_startup_programs in config: {exc}')
+        else:
+            if config_file is not None:
+                messages.append(f'Disabled add_to_startup_programs in config: {config_file}')
+
+        start_menu_manager = StartMenuShortcutManager(paths=self.paths)
+        startup_manager = StartupProgramsShortcutManager(paths=self.paths)
+        for label, manager in (
+            ('Start Menu shortcut', start_menu_manager),
+            ('Startup Programs shortcut', startup_manager),
+        ):
+            try:
+                removed = manager.remove()
+            except OSError as exc:
+                errors.append(f'Could not remove {label}: {exc}')
+            else:
+                if removed:
+                    messages.append(f'Removed {label}: {manager.get_shortcut_path()}')
+                else:
+                    messages.append(f'No {label} found at: {manager.get_shortcut_path()}')
+
+        scheduled_task = TaskSchedulerInstaller(
+            launch_executable=Path(sys.executable),
+            task_name=args.task_name,
+        )
+        try:
+            removed_task = scheduled_task.uninstall()
+        except OSError as exc:
+            errors.append(f'Could not remove scheduled task {args.task_name!r}: {exc}')
+        else:
+            if removed_task:
+                messages.append(f'Removed scheduled task: {args.task_name}')
+            else:
+                messages.append(f'No scheduled task found: {args.task_name}')
+
+        try:
+            WifiAdapterTaskManager().uninstall()
+        except OSError as exc:
+            errors.append(f'Could not remove Wi-Fi adapter control tasks: {exc}')
+        else:
+            messages.append('Removed PolyFi Wi-Fi adapter control tasks (if they existed).')
+
+        if self._delete_file_if_exists(self.paths.shortcut_icon_file):
+            messages.append(f'Removed shortcut icon: {self.paths.shortcut_icon_file}')
+        if self._remove_directory_if_empty(self.paths.start_menu_folder):
+            messages.append(f'Removed empty Start Menu folder: {self.paths.start_menu_folder}')
+
+        if args.purge_data:
+            try:
+                messages.extend(self.purge_application_data(getattr(args, 'config', None)))
+            except OSError as exc:
+                errors.append(f'Could not purge PolyFi settings/log files: {exc}')
+
+        for message in messages:
+            print(message)
+        for error in errors:
+            print(error, file=sys.stderr)
+        return 1 if errors else 0
 
     def handle_wifi_tasks_install_command(self, args: argparse.Namespace) -> int:
         """
@@ -791,6 +1258,7 @@ class Application:
 
         loader = ConfigLoader(config_path=getattr(args, 'config', None))
         config_path = loader.ensure_default_config()
+        self.active_config_path = Path(config_path)
 
         try:
             config = loader.load()
@@ -808,10 +1276,17 @@ class Application:
         # Named `running_consoleless` to reflect that stdout=None is the specific
         # condition we care about (tray mode needs to hide console / redirect I/O).
         running_consoleless = sys.stdout is None
-        run_in_tray = getattr(args, 'tray', False) or config.start_minimized_to_tray or running_consoleless
+        direct_tray = bool(getattr(args, 'direct_tray', False))
+        run_in_tray = (
+            direct_tray
+            or getattr(args, 'tray', False)
+            or config.start_minimized_to_tray
+            or running_consoleless
+        )
         should_background_tray = (
             run_in_tray
             and not running_consoleless
+            and not direct_tray
             and os.environ.get(BACKGROUND_TRAY_ENV_VAR) != '1'
         )
         if should_background_tray:
@@ -845,7 +1320,8 @@ class Application:
                 return 0
         self._run_in_tray_context = run_in_tray
         self.append_startup_trace(
-            f'config loaded run_in_tray={run_in_tray} admin={self.is_running_as_administrator()} '
+            f'config loaded run_in_tray={run_in_tray} direct_tray={direct_tray} '
+            f'admin={self.is_running_as_administrator()} '
             f'auto_disable_wifi_on_ethernet={config.auto_disable_wifi_on_ethernet} '
             f'ethernet_wifi_mode={getattr(config, "ethernet_wifi_mode", ETHERNET_WIFI_MODE_DISCONNECT)}'
         )
@@ -862,6 +1338,7 @@ class Application:
         if self.console_output_manager is not None:
             self.console_output_manager.attach_logger(logger)
         self.set_windows_app_user_model_id()
+        self.sync_startup_programs_preference(config, logger)
         logger.info('Using config file: %s', config_path)
         logger.info('Effective log level: %s', effective_log_level)
 

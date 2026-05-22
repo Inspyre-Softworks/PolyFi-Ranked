@@ -11,6 +11,7 @@ A Windows-focused Python application that lets you define an ordered list of Wi-
 - TOML configuration
 - Rotating log file support
 - Optional system tray app
+- Optional Windows Startup Programs shortcut with config-backed self-install
 - Optional Windows Task Scheduler startup registration
 - Default config and logs stored in platform app-data directories
 - Live config reload while the service is running
@@ -35,6 +36,11 @@ You can print the resolved paths with:
 poetry run polyfi-ranked paths
 ```
 
+PolyFi also honors the `POLYFI_APPDATA_ROOT` user environment variable. When it
+is set, PolyFi stores its config, logs, state files, and generated icons under
+that root instead of the default `%LOCALAPPDATA%` location. The installer script
+below sets or clears that override for you.
+
 ## Quick Start
 
 ```powershell
@@ -42,7 +48,76 @@ poetry install
 poetry run polyfi-ranked
 ```
 
+To print the installed PolyFi: Ranked version:
+
+```powershell
+poetry run polyfi-ranked --version
+poetry run polyfi-ranked -V
+```
+
 On first run, the default config file is created automatically in your local app-data folder.
+
+For a one-shot Windows setup workflow that can install the package, choose the
+PolyFi app-data root, and optionally add Wi-Fi helper tasks plus Start Menu and
+Startup Programs entries:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install_polyfi.ps1 -InstallAll
+```
+
+That script uses `python -m pip install .` by default. Use `-Dev` only when you
+want a contributor-style Poetry environment instead:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install_polyfi.ps1 -Dev -InstallAll
+```
+
+When you do not pass a flag for an installer choice, the script prompts for it
+interactively and uses the shown default if you press Enter. Pass
+`-NoInteraction` to skip prompts and accept the defaults instead. In
+non-interactive mode, the Start Menu entry defaults to installed,
+`-InstallStartup` and `-InstallWifiTasks` default to off, and `-InstallAll`
+enables everything.
+
+You can also point PolyFi at a custom app-data root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install_polyfi.ps1 `
+  -AppDataRoot D:\Apps\PolyFi-Ranked `
+  -InstallStartMenu `
+  -InstallStartup
+```
+
+For a matching Windows teardown workflow that can remove the package, prompts
+through the installed integrations, optionally purge PolyFi-owned data, and
+optionally clear `POLYFI_APPDATA_ROOT`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_polyfi.ps1
+```
+
+In non-interactive mode, the uninstall script defaults to removing the package,
+Start Menu shortcut, Startup shortcut, Wi-Fi helper tasks, and scheduled logon
+task, while leaving `-PurgeData` off. When a persistent `POLYFI_APPDATA_ROOT`
+override exists, the uninstall script uses that as its default selected root
+and offers to clear it:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_polyfi.ps1 `
+  -NoInteraction `
+  -UninstallAll `
+  -PurgeData
+```
+
+To target a Poetry contributor environment instead of the normal Python install:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_polyfi.ps1 `
+  -Dev `
+  -SkipPackageUninstall `
+  -RemoveStartup `
+  -ClearAppDataOverride
+```
 
 To generate a full config file with every supported setting and its defaults:
 
@@ -60,6 +135,19 @@ To install a Start Menu shortcut that launches PolyFi directly into the tray:
 
 ```powershell
 poetry run polyfi-ranked windows start-menu install
+```
+
+To install a Windows Startup Programs shortcut that launches PolyFi in tray mode at logon:
+
+```powershell
+poetry run polyfi-ranked windows startup install
+```
+
+To remove PolyFi shortcuts and scheduled tasks, with an optional full data purge:
+
+```powershell
+poetry run polyfi-ranked windows uninstall
+poetry run polyfi-ranked windows uninstall --purge-data
 ```
 
 ## Tray Mode
@@ -92,6 +180,7 @@ poetry run sphinx-build -W -b html docs docs/_build/local-html
 
 ```powershell
 poetry run polyfi-ranked-install-task
+poetry run polyfi-ranked-install-task --uninstall
 ```
 
 ## Live config reload
@@ -110,6 +199,7 @@ Edit the config file while PolyFi: Ranked is running. On the next scan cycle, it
 - `show_wifi_disabled_dialog`
 - `auto_disable_wifi_on_ethernet`
 - `ethernet_wifi_mode`
+- `add_to_startup_programs`
 - `show_startup_splash`
 - `splash_image_path`
 - `splash_fade_in_ms`
@@ -151,6 +241,16 @@ Mode behavior:
 - `disable_adapter`:
   - Disables the Wi-Fi adapter while Ethernet is active.
   - Requires administrator rights, or the PolyFi Wi-Fi task helper workflow.
+
+## Windows Startup
+
+These `general` settings control whether PolyFi keeps itself registered in the
+user's Windows Startup Programs folder:
+
+- `add_to_startup_programs = false`
+
+When enabled, PolyFi refreshes the Startup Programs shortcut on launch and when
+the config reloads. When disabled, PolyFi removes that shortcut if it exists.
 
 ## Startup Splash
 

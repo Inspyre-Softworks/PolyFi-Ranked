@@ -76,5 +76,11 @@ Read the Docs is configured to install the Poetry `docs` group and build from
 
 1. Ensure `poetry run pytest` passes before opening a PR.
 2. Update documentation when user-visible behavior changes.
-3. Fill in the pull request template with your testing notes.
-4. Keep changes focused and include regression coverage for bug fixes.
+3. If the change affects shipped behavior, packaging, dependencies, Windows
+   integration, or automation that supports releases, update `CHANGELOG.md`
+   and bump the version in `pyproject.toml` and
+   `src/wifi_pref_manager/__init__.py` in the same PR.
+4. Docs-only and template-only changes may skip the release bump, but note that
+   clearly in the PR checklist.
+5. Fill in the pull request template with your testing notes.
+6. Keep changes focused and include regression coverage for bug fixes.

@@ -24,5 +24,6 @@
 ## Checklist
 
 - [ ] I updated documentation where applicable
+- [ ] I updated `CHANGELOG.md` and bumped the version in `pyproject.toml` and `src/wifi_pref_manager/__init__.py`, or this PR is docs/process only
 - [ ] I kept Tk GUI changes on the shared UI thread
 - [ ] I verified launcher, splash, or tray changes with targeted tests when applicable

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "polyfi-ranked"
-version = "0.2.0"
+version = "1.0.0-dev.3"
 description = "Windows Wi-Fi preference manager that auto-switches to the highest-priority available network."
 authors = ["Inspyre Softworks"]
 readme = "README.md"

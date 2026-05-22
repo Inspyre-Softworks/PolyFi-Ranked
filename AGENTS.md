@@ -26,6 +26,11 @@ poetry install --with dev --no-interaction
 poetry run pytest
 ```
 
+- For changes headed to `main` or `master` that affect shipped behavior,
+  packaging, dependencies, Windows integration, or release automation, update
+  `CHANGELOG.md` and bump the version in both `pyproject.toml` and
+  `src/wifi_pref_manager/__init__.py` in the same change.
+
 - Build the Sphinx docs with:
 
 ```powershell

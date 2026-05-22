@@ -38,6 +38,10 @@ Config Reference
    If true, PolyFi shows a dialog after it disables the Wi-Fi adapter because
    Ethernet became active.
 
+``add_to_startup_programs``
+   If true, PolyFi keeps a tray-launch shortcut in the user's Windows Startup
+   Programs folder so it can start automatically at logon.
+
 ``enable_speed_tests``
    Enables or disables automatic speed tests entirely.
 

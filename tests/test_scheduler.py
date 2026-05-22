@@ -2,19 +2,22 @@ from __future__ import annotations
 
 from pathlib import Path
 import os
+import subprocess
 import sys
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / 'src'))
 
+import wifi_pref_manager.app as app_module
 from wifi_pref_manager.app import Application, BACKGROUND_TRAY_ENV_VAR, SPLASH_SHOWN_ENV_VAR
 from wifi_pref_manager.models import AppConfig, WiFiProfilePreference
-from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.scheduler import TaskSchedulerInstaller
-from wifi_pref_manager.windows_shell import resolve_runtime_launch_target
+from wifi_pref_manager.ui.tray import TrayApplication
+from wifi_pref_manager.windows_shell import StartupProgramsShortcutManager, resolve_runtime_launch_target
 
 
 class RuntimeLaunchTargetTests(unittest.TestCase):
@@ -91,6 +94,70 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             self.assertEqual(arguments, ['-m', 'wifi_pref_manager.app'])
             self.assertEqual(working_directory, sibling_pythonw.parent)
 
+    def test_non_windowless_launch_uses_sibling_python_when_running_under_pythonw(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            base_dir = Path(tmp_dir) / 'base-python'
+            base_dir.mkdir(parents=True)
+            pythonw_executable = base_dir / 'pythonw.exe'
+            pythonw_executable.write_text('', encoding='utf-8')
+            sibling_python = base_dir / 'python.exe'
+            sibling_python.write_text('', encoding='utf-8')
+
+            with patch.object(sys, 'executable', str(pythonw_executable)):
+                executable, arguments, working_directory = resolve_runtime_launch_target(
+                    prefer_windowless=False
+                )
+
+            self.assertEqual(executable, sibling_python)
+            self.assertEqual(arguments, ['-m', 'wifi_pref_manager.app'])
+            self.assertEqual(working_directory, sibling_python.parent)
+
+    @patch('wifi_pref_manager.windows_shell.resolve_runtime_launch_target')
+    def test_startup_programs_shortcut_avoids_windowless_launcher(
+        self,
+        mock_resolve_runtime_launch_target: Mock,
+    ) -> None:
+        manager = StartupProgramsShortcutManager(
+            paths=SimpleNamespace(
+                shortcut_icon_file=Path(r'C:\PolyFi\polyfi.ico'),
+                startup_programs_shortcut_file=Path(r'C:\PolyFi\Startup\PolyFi-Ranked.lnk'),
+            )
+        )
+        mock_resolve_runtime_launch_target.return_value = (
+            Path(r'C:\Python312\python.exe'),
+            ['-m', 'wifi_pref_manager.app'],
+            Path(r'C:\Python312'),
+        )
+
+        spec = manager._build_shortcut_spec(['--tray', '--direct-tray'])
+
+        mock_resolve_runtime_launch_target.assert_called_once_with(prefer_windowless=False)
+        self.assertEqual(spec.target_path, Path(r'C:\Python312\python.exe'))
+        self.assertEqual(
+            spec.arguments,
+            ['-m', 'wifi_pref_manager.app', '--tray', '--direct-tray'],
+        )
+
+    @patch('wifi_pref_manager.scheduler.resolve_runtime_launch_target')
+    def test_scheduler_current_runtime_uses_direct_tray_console_launch(
+        self,
+        mock_resolve_runtime_launch_target: Mock,
+    ) -> None:
+        mock_resolve_runtime_launch_target.return_value = (
+            Path(r'C:\Python312\python.exe'),
+            ['-m', 'wifi_pref_manager.app'],
+            Path(r'C:\Python312'),
+        )
+
+        installer = TaskSchedulerInstaller.for_current_runtime(task_name='PolyFi Ranked')
+
+        mock_resolve_runtime_launch_target.assert_called_once_with(prefer_windowless=False)
+        self.assertEqual(installer.launch_executable, Path(r'C:\Python312\python.exe'))
+        self.assertEqual(
+            installer.launch_arguments,
+            ['-m', 'wifi_pref_manager.app', '--tray', '--direct-tray'],
+        )
+
     def test_scheduler_build_command_uses_compact_launch_string(self) -> None:
         installer = TaskSchedulerInstaller(
             launch_executable=Path(r'C:\Python312\pythonw.exe'),
@@ -105,6 +172,32 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             command[10],
             'C:\\Python312\\pythonw.exe -m wifi_pref_manager.app --tray',
         )
+
+    def test_scheduler_build_uninstall_command_targets_named_task(self) -> None:
+        installer = TaskSchedulerInstaller(
+            launch_executable=Path(r'C:\Python312\pythonw.exe'),
+            task_name='PolyFi Custom Startup',
+        )
+
+        command = installer.build_uninstall_command()
+
+        self.assertEqual(
+            command,
+            ['schtasks', '/Delete', '/F', '/TN', 'PolyFi Custom Startup'],
+        )
+
+    @patch('wifi_pref_manager.scheduler.subprocess.run')
+    def test_scheduler_uninstall_returns_false_when_task_missing(self, mock_run: Mock) -> None:
+        installer = TaskSchedulerInstaller(
+            launch_executable=Path(r'C:\Python312\pythonw.exe'),
+        )
+        mock_run.return_value.returncode = 1
+        mock_run.return_value.stdout = ''
+        mock_run.return_value.stderr = 'ERROR: The system cannot find the file specified.'
+
+        removed = installer.uninstall()
+
+        self.assertFalse(removed)
 
     def test_root_runtime_options_survive_subcommand_parsing(self) -> None:
         app = Application()
@@ -128,10 +221,63 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             args,
             force_tray=True,
             force_show_splash=True,
+            force_direct_tray=True,
         )
 
         self.assertIn('--tray', runtime_args)
+        self.assertIn('--direct-tray', runtime_args)
         self.assertIn('--show-splash', runtime_args)
+
+    def test_startup_shortcut_arguments_include_config_and_tray(self) -> None:
+        app = Application()
+
+        runtime_args = app.build_startup_shortcut_argument_list('custom.toml')
+
+        self.assertEqual(runtime_args, ['--config', 'custom.toml', '--tray', '--direct-tray'])
+
+    @patch('wifi_pref_manager.app.StartupProgramsShortcutManager')
+    def test_sync_startup_programs_preference_installs_shortcut_when_enabled(
+        self,
+        mock_manager_type: Mock,
+    ) -> None:
+        app = Application()
+        app.active_config_path = Path('custom.toml')
+        logger = Mock()
+        shortcut_path = Mock()
+        shortcut_path.exists.return_value = False
+        manager = mock_manager_type.return_value
+        manager.get_shortcut_path.return_value = shortcut_path
+        config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_to_startup_programs=True,
+        )
+
+        app.sync_startup_programs_preference(config, logger)
+
+        manager.install.assert_called_once_with(
+            ['--config', 'custom.toml', '--tray', '--direct-tray'],
+            overwrite=False,
+        )
+
+    @patch('wifi_pref_manager.app.StartupProgramsShortcutManager')
+    def test_sync_startup_programs_preference_removes_shortcut_when_disabled(
+        self,
+        mock_manager_type: Mock,
+    ) -> None:
+        app = Application()
+        logger = Mock()
+        shortcut_path = Mock()
+        manager = mock_manager_type.return_value
+        manager.get_shortcut_path.return_value = shortcut_path
+        manager.remove.return_value = True
+        config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_to_startup_programs=False,
+        )
+
+        app.sync_startup_programs_preference(config, logger)
+
+        manager.remove.assert_called_once_with()
 
     @patch('wifi_pref_manager.app.subprocess.Popen')
     @patch('wifi_pref_manager.app.resolve_runtime_launch_target')
@@ -154,6 +300,7 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
         env = mock_popen.call_args.kwargs['env']
         self.assertEqual(env[BACKGROUND_TRAY_ENV_VAR], '1')
         self.assertEqual(env[SPLASH_SHOWN_ENV_VAR], '1')
+        mock_resolve_runtime_launch_target.assert_called_once_with(prefer_windowless=True)
 
     def test_cli_rejects_conflicting_splash_flags(self) -> None:
         app = Application()
@@ -216,6 +363,59 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
         mock_maybe_show_startup_splash.assert_not_called()
         mock_launch_detached_tray_process.assert_not_called()
 
+    @patch('wifi_pref_manager.app.TrayApplication')
+    @patch('wifi_pref_manager.app.WiFiPreferenceService')
+    @patch('wifi_pref_manager.app.configure_logging')
+    @patch('wifi_pref_manager.app.ConsoleOutputManager')
+    @patch.object(Application, 'launch_detached_tray_process')
+    @patch.object(Application, 'maybe_show_startup_splash')
+    @patch.object(Application, 'release_single_instance_guard')
+    @patch.object(Application, 'acquire_single_instance_guard', return_value=True)
+    @patch.object(Application, 'handle_startup_admin_requirements')
+    @patch.object(Application, 'sync_startup_programs_preference')
+    @patch.object(Application, 'set_windows_app_user_model_id')
+    @patch('wifi_pref_manager.app.ConfigLoader.load')
+    @patch('wifi_pref_manager.app.ConfigLoader.ensure_default_config')
+    def test_handle_run_command_direct_tray_skips_detached_relaunch(
+        self,
+        mock_ensure_default_config: Mock,
+        mock_load: Mock,
+        mock_set_windows_app_user_model_id: Mock,
+        mock_sync_startup_programs_preference: Mock,
+        mock_handle_startup_admin_requirements: Mock,
+        mock_acquire_single_instance_guard: Mock,
+        mock_release_single_instance_guard: Mock,
+        mock_maybe_show_startup_splash: Mock,
+        mock_launch_detached_tray_process: Mock,
+        mock_console_output_manager_type: Mock,
+        mock_configure_logging: Mock,
+        mock_wifi_preference_service_type: Mock,
+        mock_tray_application_type: Mock,
+    ) -> None:
+        del (
+            mock_set_windows_app_user_model_id,
+            mock_sync_startup_programs_preference,
+            mock_handle_startup_admin_requirements,
+            mock_maybe_show_startup_splash,
+            mock_wifi_preference_service_type,
+        )
+        app = Application()
+        args = app.argument_parser.parse_args(['run', '--direct-tray'])
+        mock_ensure_default_config.return_value = r'C:\config.toml'
+        mock_load.return_value = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+        )
+        mock_configure_logging.return_value = Mock()
+
+        result = app.handle_run_command(args)
+
+        self.assertEqual(result, 0)
+        mock_launch_detached_tray_process.assert_not_called()
+        mock_acquire_single_instance_guard.assert_called_once_with(show_dialog_on_duplicate=True)
+        mock_release_single_instance_guard.assert_called_once_with()
+        mock_console_output_manager_type.return_value.hide_console.assert_called_once_with()
+        mock_tray_application_type.return_value.run.assert_called_once_with()
+
     def test_ethernet_action_requires_admin_only_for_disable_adapter_mode(self) -> None:
         base = AppConfig(
             preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
@@ -270,6 +470,93 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             '1',
         )
         self.assertTrue(mock_popen.call_args.kwargs['close_fds'])
+        self.assertIs(mock_popen.call_args.kwargs['stdin'], subprocess.DEVNULL)
+        self.assertIs(mock_popen.call_args.kwargs['stdout'], subprocess.DEVNULL)
+        self.assertIs(mock_popen.call_args.kwargs['stderr'], subprocess.DEVNULL)
+        mock_resolve_runtime_launch_target.assert_called_once_with(prefer_windowless=True)
+
+    @patch('wifi_pref_manager.app.subprocess.Popen')
+    @patch('wifi_pref_manager.app.resolve_runtime_launch_target')
+    def test_launch_detached_tray_process_sets_windows_detach_flags(
+        self,
+        mock_resolve_runtime_launch_target: Mock,
+        mock_popen: Mock,
+    ) -> None:
+        app = Application()
+        args = app.argument_parser.parse_args(['run', '--tray'])
+        mock_resolve_runtime_launch_target.return_value = (
+            Path(r'C:\Python312\python.exe'),
+            ['-m', 'wifi_pref_manager.app'],
+            Path(r'C:\Python312'),
+        )
+        mock_popen.return_value.pid = 4321
+
+        with patch.object(app_module.subprocess, 'DETACHED_PROCESS', 0x00000008, create=True):
+            with patch.object(app_module.subprocess, 'CREATE_NEW_PROCESS_GROUP', 0x00000200, create=True):
+                app.launch_detached_tray_process(args)
+
+        self.assertEqual(
+            mock_popen.call_args.kwargs['creationflags'],
+            0x00000008 | 0x00000200,
+        )
+
+    @patch('wifi_pref_manager.app.ConfigLoader')
+    def test_purge_application_data_removes_custom_files_and_app_dirs(
+        self,
+        mock_config_loader_type: Mock,
+    ) -> None:
+        app = Application()
+
+        with TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            config_dir = root / 'ConfigRoot' / 'PolyFi-Ranked'
+            local_data_dir = root / 'DataRoot' / 'PolyFi-Ranked'
+            legacy_config_dir = root / 'LegacyConfigRoot' / 'polyfi_ranked'
+            legacy_local_dir = root / 'LegacyDataRoot' / 'polyfi_ranked'
+            for directory in (config_dir, local_data_dir, legacy_config_dir, legacy_local_dir):
+                directory.mkdir(parents=True)
+
+            (config_dir / 'config.toml').write_text('config', encoding='utf-8')
+            (config_dir / 'config.example.toml').write_text('example', encoding='utf-8')
+            (local_data_dir / 'polyfi.log').write_text('log', encoding='utf-8')
+            (local_data_dir / 'speedtest_history.jsonl').write_text('history', encoding='utf-8')
+            (legacy_config_dir / 'old.toml').write_text('legacy-config', encoding='utf-8')
+            (legacy_local_dir / 'old.log').write_text('legacy-log', encoding='utf-8')
+
+            custom_dir = root / 'CustomFiles'
+            custom_dir.mkdir()
+            custom_config = custom_dir / 'polyfi-config.toml'
+            custom_config.write_text('custom-config', encoding='utf-8')
+            custom_log = custom_dir / 'polyfi.log'
+            custom_log.write_text('custom-log', encoding='utf-8')
+            custom_history = custom_dir / 'history.jsonl'
+            custom_history.write_text('custom-history', encoding='utf-8')
+
+            app.paths = SimpleNamespace(
+                config_file=config_dir / 'config.toml',
+                example_config_file=config_dir / 'config.example.toml',
+                log_file=local_data_dir / 'polyfi.log',
+                speed_test_history_file=local_data_dir / 'speedtest_history.jsonl',
+                config_dir=config_dir,
+                local_data_dir=local_data_dir,
+                legacy_config_dir=legacy_config_dir,
+                legacy_local_dir=legacy_local_dir,
+            )
+
+            mock_config_loader_type.return_value.load.return_value = SimpleNamespace(
+                log_file=str(custom_log),
+                speed_test_history_file=str(custom_history),
+            )
+
+            app.purge_application_data(str(custom_config))
+
+            self.assertFalse(config_dir.exists())
+            self.assertFalse(local_data_dir.exists())
+            self.assertFalse(legacy_config_dir.exists())
+            self.assertFalse(legacy_local_dir.exists())
+            self.assertFalse(custom_config.exists())
+            self.assertFalse(custom_log.exists())
+            self.assertFalse(custom_history.exists())
 
     def test_tray_setup_callback_marks_icon_visible(self) -> None:
         service = Mock()

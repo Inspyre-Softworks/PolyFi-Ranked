@@ -60,6 +60,14 @@ poetry install --with docs --no-interaction
 poetry run sphinx-build -W -b html docs docs/_build/local-html
 ```
 
+## Release Hygiene
+
+For changes that affect shipped behavior, packaging, dependencies, Windows
+integration, or release automation, update `CHANGELOG.md` and bump the version
+in both `pyproject.toml` and `src/wifi_pref_manager/__init__.py` as part of the
+same change. Docs-only and template-only changes may skip that bump when the PR
+explicitly calls it out.
+
 ## Main Entry Points
 
 - `polyfi-ranked`

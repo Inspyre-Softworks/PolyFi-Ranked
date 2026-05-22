@@ -30,6 +30,7 @@ class ConfigRoundTripTests(unittest.TestCase):
                 auto_disable_wifi_on_ethernet=False,
                 ethernet_wifi_mode='disable_adapter',
                 show_wifi_disabled_dialog=False,
+                add_to_startup_programs=True,
                 show_startup_splash=False,
                 splash_image_path=str(Path(tmp_dir) / 'polyfi_ranked_splash.png'),
                 splash_fade_in_ms=123,
@@ -56,6 +57,7 @@ class ConfigRoundTripTests(unittest.TestCase):
             self.assertEqual(loaded.auto_disable_wifi_on_ethernet, config.auto_disable_wifi_on_ethernet)
             self.assertEqual(loaded.ethernet_wifi_mode, config.ethernet_wifi_mode)
             self.assertEqual(loaded.show_wifi_disabled_dialog, config.show_wifi_disabled_dialog)
+            self.assertEqual(loaded.add_to_startup_programs, config.add_to_startup_programs)
             self.assertEqual(loaded.show_startup_splash, config.show_startup_splash)
             self.assertEqual(loaded.splash_image_path, config.splash_image_path)
             self.assertEqual(loaded.splash_fade_in_ms, config.splash_fade_in_ms)

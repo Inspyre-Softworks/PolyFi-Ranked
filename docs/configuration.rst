@@ -11,6 +11,11 @@ The app also keeps an example file at:
 
 ``%LOCALAPPDATA%\Inspyre-Softworks\PolyFi-Ranked\config.example.toml``
 
+If the ``POLYFI_APPDATA_ROOT`` user environment variable is set, PolyFi uses
+that directory as its app-data root instead. The main config file becomes
+``<POLYFI_APPDATA_ROOT>\config.toml`` and the default log directory becomes
+``<POLYFI_APPDATA_ROOT>\Logs\``.
+
 Configuration Layout
 --------------------
 
@@ -37,6 +42,7 @@ Example
    interface_name = ''
    start_minimized_to_tray = false
    auto_disable_wifi_on_ethernet = true
+   add_to_startup_programs = false
    show_wifi_disabled_dialog = true
    enable_speed_tests = false
    speed_test_on_new_connection = true
@@ -68,6 +74,8 @@ Practical Notes
 
 - ``interface_name = ''`` means "auto-detect the Wi-Fi adapter."
 - ``log_file = ''`` means "use the default log path."
+- ``add_to_startup_programs = true`` means "keep a tray-launch shortcut in the
+  Windows Startup Programs folder."
 - ``speed_test_interval`` is measured in seconds.
 - Every ``[[networks]]`` entry must have a non-empty ``ssid``.
 - If a network has ``auto_switch = false``, it stays in the list but will not

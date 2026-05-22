@@ -93,10 +93,12 @@ class TaskSchedulerInstaller:
         Returns:
             Configured installer.
         """
-        executable, base_arguments, _working_directory = resolve_runtime_launch_target(prefer_windowless=True)
+        executable, base_arguments, _working_directory = resolve_runtime_launch_target(
+            prefer_windowless=False
+        )
         return cls(
             launch_executable=executable,
-            launch_arguments=[*base_arguments, '--tray'],
+            launch_arguments=[*base_arguments, '--tray', '--direct-tray'],
             task_name=task_name,
         )
 
@@ -122,6 +124,21 @@ class TaskSchedulerInstaller:
             task_command,
         ]
 
+    def build_uninstall_command(self) -> list[str]:
+        """
+        Build the ``schtasks`` command used to remove the logon task.
+
+        Returns:
+            Command list for ``subprocess.run``.
+        """
+        return [
+            'schtasks',
+            '/Delete',
+            '/F',
+            '/TN',
+            self.task_name,
+        ]
+
     def install(self) -> None:
         """
         Create or replace the logon startup task.
@@ -140,6 +157,32 @@ class TaskSchedulerInstaller:
             raise OSError(f'Could not create scheduled task {self.task_name!r}: {details}')
         print(f'Installed scheduled task: {self.task_name}')
 
+    def uninstall(self) -> bool:
+        """
+        Remove the logon startup task if it exists.
+
+        Returns:
+            ``True`` when the task was removed, otherwise ``False`` when it was
+            already absent.
+        """
+        result = subprocess.run(
+            self.build_uninstall_command(),
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            check=False,
+            **self._hidden_subprocess_kwargs(),
+        )
+        if result.returncode == 0:
+            return True
+
+        details = (result.stderr or result.stdout).strip() or 'Unknown error.'
+        normalized = details.casefold()
+        if 'cannot find' in normalized or 'does not exist' in normalized:
+            return False
+        raise OSError(f'Could not remove scheduled task {self.task_name!r}: {details}')
+
 
 def build_argument_parser() -> argparse.ArgumentParser:
     """
@@ -155,6 +198,11 @@ def build_argument_parser() -> argparse.ArgumentParser:
         '--task-name',
         default=TASK_NAME,
         help='Optional Windows scheduled task name. Defaults to "PolyFi Ranked".',
+    )
+    parser.add_argument(
+        '--uninstall',
+        action='store_true',
+        help='Remove the scheduled task instead of creating it.',
     )
     return parser
 
@@ -173,7 +221,14 @@ def main(argv: list[str] | None = None) -> int:
     args = build_argument_parser().parse_args(argv)
     installer = TaskSchedulerInstaller.for_current_runtime(task_name=args.task_name)
     try:
-        installer.install()
+        if args.uninstall:
+            removed = installer.uninstall()
+            if removed:
+                print(f'Removed scheduled task: {args.task_name}')
+            else:
+                print(f'No scheduled task found: {args.task_name}')
+        else:
+            installer.install()
     except OSError as exc:
         print(f'Scheduled task error: {exc}', file=sys.stderr)
         return 1

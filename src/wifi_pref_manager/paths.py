@@ -45,6 +45,7 @@ APP_AUTHOR = 'Inspyre-Softworks'
 APP_NAME = 'PolyFi-Ranked'
 APP_SLUG = 'polyfi_ranked'
 APP_USER_MODEL_ID = f'{APP_AUTHOR}.{APP_NAME}'
+APPDATA_ROOT_ENV_VAR = 'POLYFI_APPDATA_ROOT'
 
 
 class AppPaths:
@@ -58,20 +59,34 @@ class AppPaths:
 
     def __init__(self) -> None:
         self.platform_dirs = PlatformDirs(appname=APP_NAME, appauthor=APP_AUTHOR)
-        self.config_dir = Path(self.platform_dirs.user_config_dir)
-        self.local_data_dir = Path(self.platform_dirs.user_data_dir)
-        self.log_dir = Path(self.platform_dirs.user_log_dir)
+        configured_root = os.environ.get(APPDATA_ROOT_ENV_VAR, '').strip()
+        self.custom_appdata_root = Path(configured_root).expanduser() if configured_root else None
+        if self.custom_appdata_root is not None:
+            self.app_data_root = self.custom_appdata_root
+            self.config_dir = self.custom_appdata_root
+            self.local_data_dir = self.custom_appdata_root
+            self.log_dir = self.custom_appdata_root / 'Logs'
+        else:
+            self.config_dir = Path(self.platform_dirs.user_config_dir)
+            self.local_data_dir = Path(self.platform_dirs.user_data_dir)
+            self.log_dir = Path(self.platform_dirs.user_log_dir)
+            self.app_data_root = self.config_dir
         self.config_file = self.config_dir / 'config.toml'
         self.example_config_file = self.config_dir / 'config.example.toml'
         self.log_file = self.log_dir / 'polyfi_ranked.log'
         self.managed_interface_file = self.local_data_dir / 'managed_wifi_interface.json'
         self.speed_test_history_file = self.local_data_dir / 'speedtest_history.jsonl'
-        self.start_menu_icon_file = self.local_data_dir / 'polyfi_ranked.ico'
+        self.shortcut_icon_file = self.local_data_dir / 'polyfi_ranked.ico'
+        self.start_menu_icon_file = self.shortcut_icon_file
 
         roaming_root = Path(os.environ.get('APPDATA', self.config_dir.parent))
         self.start_menu_programs_dir = roaming_root / 'Microsoft' / 'Windows' / 'Start Menu' / 'Programs'
-        self.start_menu_folder = self.start_menu_programs_dir / APP_AUTHOR
+        self.legacy_start_menu_folder = self.start_menu_programs_dir / APP_AUTHOR
+        self.legacy_start_menu_shortcut_file = self.legacy_start_menu_folder / f'{APP_NAME}.lnk'
+        self.start_menu_folder = self.start_menu_programs_dir / APP_NAME
         self.start_menu_shortcut_file = self.start_menu_folder / f'{APP_NAME}.lnk'
+        self.startup_programs_dir = self.start_menu_programs_dir / 'Startup'
+        self.startup_programs_shortcut_file = self.startup_programs_dir / f'{APP_NAME}.lnk'
         self.first_tray_start_marker_file = self.local_data_dir / 'tray_started.flag'
 
         legacy_roaming_root = Path.home() / 'AppData' / 'Roaming'

@@ -9,6 +9,7 @@ start_minimized_to_tray = false
 auto_disable_wifi_on_ethernet = true
 ethernet_wifi_mode = 'disconnect_and_disable_autoconnect' # or 'disable_adapter'
 show_wifi_disabled_dialog = true
+add_to_startup_programs = false # install a tray-launch shortcut in Windows Startup Programs
 show_startup_splash = true
 splash_image_path = '' # blank = auto-detect polyfi_ranked_splash.png in app-data or Pictures
 splash_fade_in_ms = 280 # legacy compatibility field, currently ignored

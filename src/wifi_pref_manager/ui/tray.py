@@ -31,10 +31,11 @@ Example Usage:
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import datetime
 import logging
 from pathlib import Path
 import threading
-from datetime import datetime
+import time
 from typing import TYPE_CHECKING, Callable
 
 from PIL import Image
@@ -62,6 +63,9 @@ class TrayApplication:
 
     # Seconds to wait for the pystray setup callback before showing a diagnostic.
     _TRAY_SETUP_TIMEOUT: float = 30.0
+    _TRAY_UNEXPECTED_EXIT_THRESHOLD: float = 5.0
+    _TRAY_UNEXPECTED_EXIT_MAX_RETRIES: int = 2
+    _TRAY_UNEXPECTED_EXIT_RETRY_DELAY: float = 3.0
 
     def __init__(
         self,
@@ -86,6 +90,7 @@ class TrayApplication:
         self._settings_window: SettingsWindow | None = None
         self._icon_ready_event: threading.Event | None = None
         self._icon_run_done_event: threading.Event | None = None
+        self._quit_requested = False
         self.service.set_status_changed_callback(self.refresh_menu)
         self.service.set_runtime_warning_callback(self.show_runtime_warning)
         self.service.set_wifi_adapter_disabled_callback(self.show_wifi_adapter_disabled_dialog)
@@ -235,8 +240,43 @@ class TrayApplication:
         """
         del item
         self.logger.info('Tray app shutdown requested.')
+        self._quit_requested = True
         self.service.stop()
         icon.stop()
+
+    def _build_icon(self, icon_title: str) -> pystray.Icon:
+        """
+        Build the tray icon object for a run attempt.
+        """
+        return pystray.Icon(
+            'polyfi_ranked',
+            self.create_image(),
+            icon_title,
+            menu=pystray.Menu(
+                pystray.MenuItem(
+                    lambda item: self.service.get_speed_test_status_text(),
+                    lambda icon, item: None,
+                    enabled=False,
+                ),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    '\u26a0 Restart as Administrator for Ethernet control',
+                    lambda icon, item: None,
+                    enabled=False,
+                    visible=lambda item: self._needs_admin_notification,
+                ),
+                pystray.MenuItem('Manage Networks…', self.on_manage_networks),
+                pystray.MenuItem('Rescan Now', self.on_rescan),
+                pystray.MenuItem('Restore Wi-Fi (Disable Auto Ethernet)', self.on_reenable_wifi),
+                pystray.MenuItem(
+                    'Show Output Console',
+                    self.on_show_output_console,
+                    enabled=lambda item: self.show_output_console_callback is not None,
+                ),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem('Quit', self.on_quit),
+            ),
+        )
 
     def show_runtime_warning(self, title: str, message: str) -> None:
         """
@@ -338,53 +378,61 @@ class TrayApplication:
         """
         Start the service and tray icon loop.
         """
-        self._icon_ready_event = threading.Event()
-        self._icon_run_done_event = threading.Event()
+        self._quit_requested = False
         self.service.start()
         icon_title = (
             'PolyFi: Ranked \u26a0 Restart as Administrator for Ethernet control'
             if self._needs_admin_notification
             else 'PolyFi: Ranked'
         )
-        self.icon = pystray.Icon(
-            'polyfi_ranked',
-            self.create_image(),
-            icon_title,
-            menu=pystray.Menu(
-                pystray.MenuItem(
-                    lambda item: self.service.get_speed_test_status_text(),
-                    lambda icon, item: None,
-                    enabled=False,
-                ),
-                pystray.Menu.SEPARATOR,
-                pystray.MenuItem(
-                    '\u26a0 Restart as Administrator for Ethernet control',
-                    lambda icon, item: None,
-                    enabled=False,
-                    visible=lambda item: self._needs_admin_notification,
-                ),
-                pystray.MenuItem('Manage Networks…', self.on_manage_networks),
-                pystray.MenuItem('Rescan Now', self.on_rescan),
-                pystray.MenuItem('Restore Wi-Fi (Disable Auto Ethernet)', self.on_reenable_wifi),
-                pystray.MenuItem(
-                    'Show Output Console',
-                    self.on_show_output_console,
-                    enabled=lambda item: self.show_output_console_callback is not None,
-                ),
-                pystray.Menu.SEPARATOR,
-                pystray.MenuItem('Quit', self.on_quit),
-            ),
-        )
-        watchdog = threading.Thread(
-            target=self._setup_watchdog,
-            daemon=True,
-            name='polyfi-tray-watchdog',
-        )
-        watchdog.start()
-        try:
-            self.icon.run(setup=self._on_icon_ready)
-        finally:
-            self._icon_run_done_event.set()
+        unexpected_exit_retries = 0
+
+        while True:
+            self._icon_ready_event = threading.Event()
+            self._icon_run_done_event = threading.Event()
+            self.icon = self._build_icon(icon_title)
+            watchdog = threading.Thread(
+                target=self._setup_watchdog,
+                daemon=True,
+                name='polyfi-tray-watchdog',
+            )
+            watchdog.start()
+            loop_started = time.monotonic()
+            try:
+                self.icon.run(setup=self._on_icon_ready)
+            finally:
+                self._icon_run_done_event.set()
+            loop_duration = max(0.0, time.monotonic() - loop_started)
+            if self._quit_requested:
+                return
+            if loop_duration >= self._TRAY_UNEXPECTED_EXIT_THRESHOLD:
+                self.logger.warning(
+                    'Tray loop exited after %.2f s without a quit request.',
+                    loop_duration,
+                )
+                self._append_startup_trace(
+                    f'tray loop exited after {loop_duration:.2f}s without quit request'
+                )
+                self.service.stop()
+                return
+
+            unexpected_exit_retries += 1
+            self.logger.warning(
+                'Tray loop exited after %.2f s without a quit request; retrying (%d/%d).',
+                loop_duration,
+                unexpected_exit_retries,
+                self._TRAY_UNEXPECTED_EXIT_MAX_RETRIES,
+            )
+            self._append_startup_trace(
+                f'unexpected tray loop exit after {loop_duration:.2f}s; '
+                f'retry {unexpected_exit_retries}/{self._TRAY_UNEXPECTED_EXIT_MAX_RETRIES}'
+            )
+            if unexpected_exit_retries > self._TRAY_UNEXPECTED_EXIT_MAX_RETRIES:
+                self.service.stop()
+                raise RuntimeError(
+                    'PolyFi could not keep the system tray icon running during startup.'
+                )
+            time.sleep(self._TRAY_UNEXPECTED_EXIT_RETRY_DELAY)
 
     def _setup_watchdog(self) -> None:
         """

@@ -48,6 +48,9 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
     else:
         if packaged_launcher.exists():
             return packaged_launcher, [], packaged_launcher.parent
+        sibling_python = executable.with_name('python.exe')
+        if executable.name.casefold() == 'pythonw.exe' and sibling_python.exists():
+            return sibling_python, ['-m', 'wifi_pref_manager.app'], sibling_python.parent
 
     virtual_env = os.environ.get('VIRTUAL_ENV', '').strip()
     if virtual_env:
@@ -77,23 +80,31 @@ class ShortcutSpec:
     description: str
 
 
-class StartMenuShortcutManager:
+class WindowsShortcutManager:
     """
-    Manage the user's PolyFi Start Menu shortcut.
+    Manage a Windows shortcut for launching PolyFi in tray mode.
     """
+
+    shortcut_label = 'Windows shortcut'
 
     def __init__(self, paths: AppPaths | None = None) -> None:
         self.paths = paths or AppPaths()
 
     def get_shortcut_path(self) -> Path:
         """
-        Return the shortcut path used for the Start Menu entry.
+        Return the shortcut path used by this manager.
         """
-        return self.paths.start_menu_shortcut_file
+        raise NotImplementedError
+
+    def get_icon_path(self) -> Path:
+        """
+        Return the icon path shared by shell shortcuts.
+        """
+        return self.paths.shortcut_icon_file
 
     def install(self, launch_arguments: list[str], overwrite: bool = False) -> Path:
         """
-        Create the Start Menu shortcut and its icon file.
+        Create the shortcut and its icon file.
 
         Parameters:
             launch_arguments:
@@ -107,7 +118,7 @@ class StartMenuShortcutManager:
         shortcut_path = self.get_shortcut_path()
         if shortcut_path.exists():
             if not overwrite:
-                raise FileExistsError(f'Start Menu shortcut already exists: {shortcut_path}')
+                raise FileExistsError(f'{self.shortcut_label} already exists: {shortcut_path}')
             shortcut_path.unlink()
 
         spec = self._build_shortcut_spec(launch_arguments)
@@ -118,7 +129,7 @@ class StartMenuShortcutManager:
 
     def remove(self) -> bool:
         """
-        Remove the Start Menu shortcut if it exists.
+        Remove the shortcut if it exists.
 
         Returns:
             True when the shortcut was removed.
@@ -136,15 +147,18 @@ class StartMenuShortcutManager:
             target_path=executable,
             arguments=[*base_args, *launch_arguments],
             working_directory=working_directory,
-            icon_path=self.paths.start_menu_icon_file,
+            icon_path=self.get_icon_path(),
             description=f'Launch {APP_NAME} in the system tray.',
         )
 
     def _resolve_runtime_launch_target(self) -> tuple[Path, list[str], Path]:
         """
-        Resolve the preferred executable and base arguments for a Start Menu launch.
+        Resolve the shell launcher target.
+
+        Shell shortcuts intentionally avoid ``pythonw.exe`` so PolyFi can stay
+        in the current process and hide its own console window after startup.
         """
-        return resolve_runtime_launch_target(prefer_windowless=True)
+        return resolve_runtime_launch_target(prefer_windowless=False)
 
     def _create_shortcut(self, spec: ShortcutSpec) -> None:
         """
@@ -173,7 +187,73 @@ $shortcut.Save()
         )
         if result.returncode != 0:
             raise OSError(
-                'Could not create the Start Menu shortcut.\n'
+                f'Could not create the {self.shortcut_label.lower()}.\n'
                 f'stdout:\n{result.stdout}\n'
                 f'stderr:\n{result.stderr}'
             )
+
+
+class StartMenuShortcutManager(WindowsShortcutManager):
+    """
+    Manage the user's PolyFi Start Menu shortcut.
+    """
+
+    shortcut_label = 'Start Menu shortcut'
+
+    def get_shortcut_path(self) -> Path:
+        """
+        Return the shortcut path used for the Start Menu entry.
+        """
+        return self.paths.start_menu_shortcut_file
+
+    def install(self, launch_arguments: list[str], overwrite: bool = False) -> Path:
+        """
+        Create the Start Menu shortcut and remove the legacy publisher-folder copy.
+        """
+        shortcut_path = super().install(launch_arguments, overwrite=overwrite)
+        self._remove_legacy_shortcut()
+        self._remove_empty_folder(self.paths.legacy_start_menu_folder)
+        return shortcut_path
+
+    def remove(self) -> bool:
+        """
+        Remove current and legacy Start Menu shortcuts if they exist.
+        """
+        removed = super().remove()
+        removed = self._remove_legacy_shortcut() or removed
+        self._remove_empty_folder(self.paths.start_menu_folder)
+        self._remove_empty_folder(self.paths.legacy_start_menu_folder)
+        return removed
+
+    def _remove_legacy_shortcut(self) -> bool:
+        """
+        Remove the older publisher-folder Start Menu shortcut if present.
+        """
+        try:
+            self.paths.legacy_start_menu_shortcut_file.unlink()
+        except FileNotFoundError:
+            return False
+        return True
+
+    @staticmethod
+    def _remove_empty_folder(path: Path) -> None:
+        """
+        Remove a folder only when it exists and is empty.
+        """
+        try:
+            path.rmdir()
+        except (FileNotFoundError, OSError):
+            return
+
+class StartupProgramsShortcutManager(WindowsShortcutManager):
+    """
+    Manage the user's PolyFi shortcut in the Windows Startup Programs folder.
+    """
+
+    shortcut_label = 'Startup Programs shortcut'
+
+    def get_shortcut_path(self) -> Path:
+        """
+        Return the shortcut path used for Windows Startup Programs.
+        """
+        return self.paths.startup_programs_shortcut_file

@@ -89,6 +89,9 @@ class AppConfig:
             ``disable_adapter`` turns the Wi-Fi adapter fully off.
         show_wifi_disabled_dialog:
             Whether to show a dialog when PolyFi disables the Wi-Fi adapter.
+        add_to_startup_programs:
+            Whether PolyFi should keep a tray-launch shortcut in the user's
+            Windows Startup Programs folder.
         show_startup_splash:
             Whether to show the startup splash screen.
         splash_image_path:
@@ -122,6 +125,7 @@ class AppConfig:
     auto_disable_wifi_on_ethernet: bool = True
     ethernet_wifi_mode: str = ETHERNET_WIFI_MODE_DISCONNECT
     show_wifi_disabled_dialog: bool = True
+    add_to_startup_programs: bool = False
     show_startup_splash: bool = True
     splash_image_path: str = ''
     splash_fade_in_ms: int = 280

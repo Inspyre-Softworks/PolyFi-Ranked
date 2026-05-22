@@ -4,6 +4,9 @@
 - In a fresh checkout, run `poetry install --with dev --no-interaction` before
   assuming test tooling is missing.
 - Verify changes with `poetry run pytest`.
+- For changes that affect shipped behavior, packaging, dependencies, Windows
+  integration, or release automation, update `CHANGELOG.md` and bump the
+  version in both `pyproject.toml` and `src/wifi_pref_manager/__init__.py`.
 - For documentation work, install `poetry install --with docs --no-interaction`
   and verify with `poetry run sphinx-build -W -b html docs docs/_build/local-html`.
 - Keep Tkinter work on the shared UI thread in
