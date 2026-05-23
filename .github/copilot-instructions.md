@@ -4,6 +4,8 @@
 - In a fresh checkout, run `poetry install --with dev --no-interaction` before
   assuming test tooling is missing.
 - Verify changes with `poetry run pytest`.
+- For Windows packaging work, install `poetry install --with packaging --no-interaction`
+  and build with `powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1`.
 - For changes that affect shipped behavior, packaging, dependencies, Windows
   integration, or release automation, update `CHANGELOG.md` and bump the
   version in both `pyproject.toml` and `src/wifi_pref_manager/__init__.py`.

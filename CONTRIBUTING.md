@@ -64,6 +64,27 @@ poetry run sphinx-build -W -b html docs docs/_build/local-html
 Read the Docs is configured to install the Poetry `docs` group and build from
 `docs/conf.py`, so local Sphinx changes should be verified before pushing.
 
+## Building Windows Packages
+
+Install the packaging dependencies with:
+
+```powershell
+poetry install --with packaging --no-interaction
+```
+
+Build the PyInstaller app bundle and, when Inno Setup 6 is installed, the
+Windows installer executable with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
+```
+
+If you only want the onedir app bundle, skip the installer stage:
+
+```powershell
+poetry run python scripts/build_windows_artifacts.py --skip-installer
+```
+
 ## GUI and Windows Notes
 
 - Keep Tkinter UI work on the shared UI thread in

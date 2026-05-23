@@ -468,7 +468,7 @@ class Application:
         runtime_args: list[str] = []
         if config_path:
             runtime_args.extend(['--config', str(config_path)])
-        runtime_args.extend(['--tray', '--direct-tray'])
+        runtime_args.append('--tray')
         return runtime_args
 
     def build_runtime_argument_list(
@@ -948,7 +948,6 @@ class Application:
                     args,
                     force_tray=True,
                     force_show_splash=True,
-                    force_direct_tray=True,
                 ),
                 overwrite=args.force,
             )

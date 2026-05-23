@@ -38,6 +38,13 @@ poetry install --with docs --no-interaction
 poetry run sphinx-build -W -b html docs docs/_build/local-html
 ```
 
+- Build the Windows PyInstaller bundle and Inno Setup installer with:
+
+```powershell
+poetry install --with packaging --no-interaction
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
+```
+
 - For runtime smoke checks, prefer:
 
 ```powershell

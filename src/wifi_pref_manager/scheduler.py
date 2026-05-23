@@ -98,7 +98,7 @@ class TaskSchedulerInstaller:
         )
         return cls(
             launch_executable=executable,
-            launch_arguments=[*base_arguments, '--tray', '--direct-tray'],
+            launch_arguments=[*base_arguments, '--tray'],
             task_name=task_name,
         )
 

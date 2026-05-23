@@ -39,6 +39,13 @@ Run the app with:
 poetry run polyfi-ranked
 ```
 
+Build the Windows executable and installer with:
+
+```powershell
+poetry install --with packaging --no-interaction
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
+```
+
 ## Testing
 
 Run the full suite with:

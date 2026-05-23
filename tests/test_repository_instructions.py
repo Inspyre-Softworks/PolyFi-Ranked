@@ -41,6 +41,19 @@ class RepositoryInstructionTests(unittest.TestCase):
             self.assertIn('pyproject.toml', content, msg=str(path))
             self.assertIn('src/wifi_pref_manager/__init__.py', content, msg=str(path))
 
+    def test_windows_packaging_workflow_is_documented_for_contributors_and_agents(self) -> None:
+        instruction_files = [
+            PROJECT_ROOT / 'CONTRIBUTING.md',
+            PROJECT_ROOT / 'AGENTS.md',
+            PROJECT_ROOT / '.github' / 'copilot-instructions.md',
+            PROJECT_ROOT / '.zencoder' / 'rules' / 'repo.md',
+        ]
+
+        for path in instruction_files:
+            content = path.read_text(encoding='utf-8')
+            self.assertIn('poetry install --with packaging --no-interaction', content, msg=str(path))
+            self.assertIn('build_windows_installer.ps1', content, msg=str(path))
+
     def test_pull_request_template_keeps_test_and_docs_checklist(self) -> None:
         content = (PROJECT_ROOT / '.github' / 'pull_request_template.md').read_text(encoding='utf-8')
 

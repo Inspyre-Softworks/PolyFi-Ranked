@@ -27,6 +27,56 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Placeholder for upcoming changes.
 
+## [1.0.0-dev.8] - 2026-05-22
+
+### Fixed
+
+- The Windows installer now creates the `PolyFi Ranked` Start Menu folder and
+  launcher entries as part of the normal install instead of treating them as an
+  optional task hidden under the Programs root.
+- The installer no longer auto-launches PolyFi after setup, which avoids the
+  immediate post-install tray launch that Windows Defender was blocking for
+  unsigned local builds.
+
+## [1.0.0-dev.7] - 2026-05-21
+
+### Fixed
+
+- Start Menu, Startup Programs, and scheduled tray launchers now start PolyFi
+  with the detached `--tray` path instead of forcing `--direct-tray`, so
+  Windows shell launches can hand off cleanly to the background tray runtime.
+- Windows shortcut generation now prefers the installed `Scripts\polyfi-ranked.exe`
+  launcher when the active Python runtime lives above a `Scripts` directory,
+  keeping Start Menu and Startup shortcuts anchored to the correct installed app.
+
+## [1.0.0-dev.6] - 2026-05-21
+
+### Added
+
+- The Windows installer now offers Start Menu shortcuts, Startup Programs
+  registration, and Wi-Fi helper task setup directly on the installer task
+  page, with uninstall cleanup for the Startup and Wi-Fi helper integrations.
+- The installer wizard now uses PolyFi-branded artwork generated from the
+  project's icon art instead of the default Inno Setup visuals.
+
+## [1.0.0-dev.5] - 2026-05-21
+
+### Fixed
+
+- The Windows packaging helper now performs its own retrying cleanup for
+  PyInstaller work folders instead of relying on PyInstaller's `--clean`
+  removal path, which could fail on Windows with `WinError 5` against
+  `localpycs`.
+
+## [1.0.0-dev.4] - 2026-05-21
+
+### Added
+
+- A Windows packaging workflow that builds a PyInstaller onedir executable and,
+  when Inno Setup 6 is available, a native installer `.exe`.
+- Checked-in PyInstaller and Inno Setup packaging definitions plus helper
+  scripts so the Windows installer build stays reproducible in-repo.
+
 ## [1.0.0-dev.3] - 2026-05-21
 
 ### Added

@@ -112,6 +112,26 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             self.assertEqual(arguments, ['-m', 'wifi_pref_manager.app'])
             self.assertEqual(working_directory, sibling_python.parent)
 
+    def test_non_windowless_launch_prefers_scripts_console_launcher(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            base_dir = Path(tmp_dir) / 'base-python'
+            base_dir.mkdir(parents=True)
+            python_executable = base_dir / 'python.exe'
+            python_executable.write_text('', encoding='utf-8')
+            scripts_dir = base_dir / 'Scripts'
+            scripts_dir.mkdir()
+            scripts_launcher = scripts_dir / 'polyfi-ranked.exe'
+            scripts_launcher.write_text('', encoding='utf-8')
+
+            with patch.object(sys, 'executable', str(python_executable)):
+                executable, arguments, working_directory = resolve_runtime_launch_target(
+                    prefer_windowless=False
+                )
+
+            self.assertEqual(executable, scripts_launcher)
+            self.assertEqual(arguments, [])
+            self.assertEqual(working_directory, scripts_dir)
+
     @patch('wifi_pref_manager.windows_shell.resolve_runtime_launch_target')
     def test_startup_programs_shortcut_avoids_windowless_launcher(
         self,
@@ -129,17 +149,17 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             Path(r'C:\Python312'),
         )
 
-        spec = manager._build_shortcut_spec(['--tray', '--direct-tray'])
+        spec = manager._build_shortcut_spec(['--tray'])
 
         mock_resolve_runtime_launch_target.assert_called_once_with(prefer_windowless=False)
         self.assertEqual(spec.target_path, Path(r'C:\Python312\python.exe'))
         self.assertEqual(
             spec.arguments,
-            ['-m', 'wifi_pref_manager.app', '--tray', '--direct-tray'],
+            ['-m', 'wifi_pref_manager.app', '--tray'],
         )
 
     @patch('wifi_pref_manager.scheduler.resolve_runtime_launch_target')
-    def test_scheduler_current_runtime_uses_direct_tray_console_launch(
+    def test_scheduler_current_runtime_uses_console_launch(
         self,
         mock_resolve_runtime_launch_target: Mock,
     ) -> None:
@@ -155,7 +175,7 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
         self.assertEqual(installer.launch_executable, Path(r'C:\Python312\python.exe'))
         self.assertEqual(
             installer.launch_arguments,
-            ['-m', 'wifi_pref_manager.app', '--tray', '--direct-tray'],
+            ['-m', 'wifi_pref_manager.app', '--tray'],
         )
 
     def test_scheduler_build_command_uses_compact_launch_string(self) -> None:
@@ -221,11 +241,10 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             args,
             force_tray=True,
             force_show_splash=True,
-            force_direct_tray=True,
         )
 
         self.assertIn('--tray', runtime_args)
-        self.assertIn('--direct-tray', runtime_args)
+        self.assertNotIn('--direct-tray', runtime_args)
         self.assertIn('--show-splash', runtime_args)
 
     def test_startup_shortcut_arguments_include_config_and_tray(self) -> None:
@@ -233,7 +252,7 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
 
         runtime_args = app.build_startup_shortcut_argument_list('custom.toml')
 
-        self.assertEqual(runtime_args, ['--config', 'custom.toml', '--tray', '--direct-tray'])
+        self.assertEqual(runtime_args, ['--config', 'custom.toml', '--tray'])
 
     @patch('wifi_pref_manager.app.StartupProgramsShortcutManager')
     def test_sync_startup_programs_preference_installs_shortcut_when_enabled(
@@ -255,7 +274,7 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
         app.sync_startup_programs_preference(config, logger)
 
         manager.install.assert_called_once_with(
-            ['--config', 'custom.toml', '--tray', '--direct-tray'],
+            ['--config', 'custom.toml', '--tray'],
             overwrite=False,
         )
 
@@ -362,6 +381,36 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
         mock_release_single_instance_guard.assert_not_called()
         mock_maybe_show_startup_splash.assert_not_called()
         mock_launch_detached_tray_process.assert_not_called()
+
+    @patch.object(Application, 'launch_detached_tray_process', return_value=4321)
+    @patch.object(Application, 'maybe_show_startup_splash', return_value=True)
+    @patch.object(Application, 'release_single_instance_guard')
+    @patch.object(Application, 'acquire_single_instance_guard', return_value=True)
+    @patch('wifi_pref_manager.app.ConfigLoader.load')
+    @patch('wifi_pref_manager.app.ConfigLoader.ensure_default_config')
+    def test_handle_run_command_tray_shortcut_relaunches_detached_process(
+        self,
+        mock_ensure_default_config: Mock,
+        mock_load: Mock,
+        mock_acquire_single_instance_guard: Mock,
+        mock_release_single_instance_guard: Mock,
+        mock_maybe_show_startup_splash: Mock,
+        mock_launch_detached_tray_process: Mock,
+    ) -> None:
+        app = Application()
+        args = app.argument_parser.parse_args(['run', '--tray', '--show-splash'])
+        mock_ensure_default_config.return_value = r'C:\config.toml'
+        mock_load.return_value = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+        )
+
+        result = app.handle_run_command(args)
+
+        self.assertEqual(result, 0)
+        mock_acquire_single_instance_guard.assert_called_once_with(show_dialog_on_duplicate=True)
+        mock_release_single_instance_guard.assert_called_once_with()
+        mock_maybe_show_startup_splash.assert_called_once()
+        mock_launch_detached_tray_process.assert_called_once_with(args, suppress_splash=True)
 
     @patch('wifi_pref_manager.app.TrayApplication')
     @patch('wifi_pref_manager.app.WiFiPreferenceService')

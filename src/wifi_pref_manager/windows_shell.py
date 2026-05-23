@@ -37,6 +37,7 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
     """
     executable = Path(sys.executable)
     packaged_launcher = executable.parent / 'polyfi-ranked.exe'
+    scripts_launcher = executable.parent / 'Scripts' / 'polyfi-ranked.exe'
 
     if prefer_windowless:
         pythonw = executable.with_name('pythonw.exe')
@@ -48,6 +49,8 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
     else:
         if packaged_launcher.exists():
             return packaged_launcher, [], packaged_launcher.parent
+        if scripts_launcher.exists():
+            return scripts_launcher, [], scripts_launcher.parent
         sibling_python = executable.with_name('python.exe')
         if executable.name.casefold() == 'pythonw.exe' and sibling_python.exists():
             return sibling_python, ['-m', 'wifi_pref_manager.app'], sibling_python.parent

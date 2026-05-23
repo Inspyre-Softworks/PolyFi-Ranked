@@ -167,6 +167,47 @@ poetry run pytest
 
 When changing the tray or Tk GUI, keep all Tk work on the shared UI thread and prefer targeted regression tests for splash, launcher, and tray-fallback behavior.
 
+## Windows Packaging
+
+Install the packaging toolchain with:
+
+```powershell
+poetry install --with packaging --no-interaction
+```
+
+Build the PyInstaller app folder and, when Inno Setup 6 is installed, the
+installer `.exe` with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
+```
+
+The underlying build driver is also available directly:
+
+```powershell
+poetry run python scripts/build_windows_artifacts.py
+```
+
+By default this produces:
+
+- `dist\pyinstaller\polyfi-ranked\polyfi-ranked.exe`
+- `dist\installer\polyfi-ranked-setup-<version>.exe`
+
+The installer uses PolyFi-branded wizard art and can optionally add Start Menu
+shortcuts, a desktop shortcut, a Startup Programs shortcut, and Wi-Fi helper
+scheduled tasks during setup. The Wi-Fi helper task option may trigger a
+Windows approval prompt because it installs elevated scheduled tasks. The
+finish-page launch option is preserved; when Start Menu shortcuts were selected,
+the launcher now goes through the installed Start Menu entry instead of spawning
+the EXE directly from Setup.
+
+If Inno Setup is not on `PATH`, point the build at `ISCC.exe` explicitly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1 `
+  -Iscc 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+```
+
 ## Documentation
 
 Sphinx and Read the Docs dependencies live in the Poetry `docs` group:
