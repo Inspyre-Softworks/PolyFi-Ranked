@@ -6,7 +6,7 @@ name: Auto-release on version bump
 #   1. Builds the Python wheel and source distribution.
 #   2. Publishes prerelease versions to TestPyPI, stable versions to PyPI.
 #   3. Creates the v<version> git tag and a GitHub Release with the built
-#      distributions attached.
+#      distributions and Windows release artifacts attached.
 #
 # Trusted publishing must be configured in both PyPI and TestPyPI for this
 # repository's auto-release.yml workflow.
@@ -146,6 +146,56 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  build-windows-artifacts:
+    needs:
+      - detect-version-bump
+      - build-python-distributions
+    if: needs.detect-version-bump.outputs.bumped == 'true'
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: python -m pip install poetry
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Install packaging dependencies
+        run: poetry install --with packaging --no-interaction
+
+      - name: Build Windows artifacts
+        run: powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
+
+      - name: Archive the PyInstaller app bundle
+        shell: pwsh
+        env:
+          POLYFI_VERSION: ${{ needs.detect-version-bump.outputs.version }}
+        run: |
+          $bundleDir = Join-Path $PWD 'dist\pyinstaller\polyfi-ranked'
+          $archivePath = Join-Path $PWD "dist\installer\polyfi-ranked-app-$env:POLYFI_VERSION-windows-x64.zip"
+          if (Test-Path $archivePath) {
+              Remove-Item $archivePath -Force
+          }
+          Compress-Archive -Path (Join-Path $bundleDir '*') -DestinationPath $archivePath
+
+      - name: Upload Windows release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-assets
+          path: |
+            dist/installer/*.exe
+            dist/installer/*.zip
+          if-no-files-found: error
+          retention-days: 30
+
   publish-package-index:
     needs:
       - detect-version-bump
@@ -181,6 +231,7 @@ jobs:
     needs:
       - detect-version-bump
       - build-python-distributions
+      - build-windows-artifacts
       - publish-package-index
     if: needs.detect-version-bump.outputs.bumped == 'true'
     runs-on: ubuntu-latest
@@ -191,8 +242,8 @@ jobs:
       - name: Download release assets
         uses: actions/download-artifact@v4
         with:
-          name: python-distributions
           path: release-assets
+          merge-multiple: true
 
       - name: Create git tag and publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -201,4 +252,5 @@ jobs:
           name: PolyFi Ranked ${{ needs.detect-version-bump.outputs.version }}
           prerelease: ${{ needs.detect-version-bump.outputs.prerelease == 'true' }}
           generate_release_notes: true
-          files: release-assets/**
+          files: |
+            release-assets/*

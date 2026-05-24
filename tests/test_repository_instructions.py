@@ -104,6 +104,13 @@ class RepositoryInstructionTests(unittest.TestCase):
         # Must create the GitHub Release.
         self.assertIn('softprops/action-gh-release', content)
 
+        # Must also build and attach Windows release artifacts.
+        self.assertIn('build-windows-artifacts', content)
+        self.assertIn('build_windows_installer.ps1', content)
+        self.assertIn('dist/installer/*.exe', content)
+        self.assertIn('dist/installer/*.zip', content)
+        self.assertIn('merge-multiple: true', content)
+
     def test_release_automation_is_documented_for_contributors_and_agents(self) -> None:
         instruction_files = [
             PROJECT_ROOT / 'README.md',
