@@ -6,6 +6,9 @@
 - Verify changes with `poetry run pytest`.
 - For Windows packaging work, install `poetry install --with packaging --no-interaction`
   and build with `powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1`.
+- `ci.yml` uploads Python package artifacts, and `release.yml` publishes
+  matching `v<version>` tags to GitHub Releases, TestPyPI for prereleases, and
+  PyPI for non-prereleases.
 - For changes that affect shipped behavior, packaging, dependencies, Windows
   integration, or release automation, update `CHANGELOG.md` and bump the
   version in both `pyproject.toml` and `src/wifi_pref_manager/__init__.py`.

@@ -167,6 +167,105 @@ public static class PolyFiEnvironmentNotifier
     [PolyFiEnvironmentNotifier]::NotifyEnvironmentChanged()
 }
 
+function Get-PolyFiInstallRecordPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$AppDataRoot
+    )
+
+    return Join-Path $AppDataRoot 'install-record.json'
+}
+
+function Read-PolyFiInstallRecord {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RecordPath
+    )
+
+    if (-not (Test-Path -LiteralPath $RecordPath)) {
+        return $null
+    }
+
+    return Get-Content -LiteralPath $RecordPath -Raw | ConvertFrom-Json
+}
+
+function Find-PolyFiInstallRecord {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$CandidateRoots
+    )
+
+    $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($candidateRoot in $CandidateRoots) {
+        if ([string]::IsNullOrWhiteSpace($candidateRoot)) {
+            continue
+        }
+
+        $normalizedRoot = Get-NormalizedPath -PathValue $candidateRoot
+        if (-not $seen.Add($normalizedRoot)) {
+            continue
+        }
+
+        $recordPath = Get-PolyFiInstallRecordPath -AppDataRoot $normalizedRoot
+        $record = Read-PolyFiInstallRecord -RecordPath $recordPath
+        if ($null -ne $record) {
+            return [pscustomobject]@{
+                AppDataRoot = $normalizedRoot
+                Record = $record
+                RecordPath = $recordPath
+            }
+        }
+    }
+
+    return $null
+}
+
+function Write-PolyFiInstallRecord {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Parameters
+    )
+
+    $helperScript = Join-Path $RepoRoot 'scripts\manage_install_record.ps1'
+    if (-not (Test-Path -LiteralPath $helperScript)) {
+        throw "Install record helper not found: $helperScript"
+    }
+
+    & $helperScript @Parameters
+}
+
+function Remove-PolyFiInstallRecord {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RecordPath
+    )
+
+    $helperScript = Join-Path $RepoRoot 'scripts\manage_install_record.ps1'
+    if (-not (Test-Path -LiteralPath $helperScript)) {
+        throw "Install record helper not found: $helperScript"
+    }
+
+    & $helperScript -Mode Remove -RecordPath $RecordPath
+}
+
+function Get-PolyFiCommandPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$CommandName
+    )
+
+    $command = Get-Command $CommandName -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -eq $command) {
+        return $null
+    }
+
+    if ($command.Source) {
+        return $command.Source
+    }
+
+    return $command.Path
+}
+
 Push-Location $RepoRoot
 try {
     $appDataRootWasSpecified = $PSBoundParameters.ContainsKey('AppDataRoot')
@@ -181,7 +280,34 @@ try {
         $InstallStartup = $true
     }
 
-    $defaultAppDataRoot = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Inspyre-Softworks\PolyFi-Ranked'
+    $platformDefaultAppDataRoot = Get-NormalizedPath -PathValue (
+        Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Inspyre-Softworks\PolyFi-Ranked'
+    )
+    $currentPersistentOverride = [Environment]::GetEnvironmentVariable('POLYFI_APPDATA_ROOT', 'User')
+    $currentPersistentOverride = if ([string]::IsNullOrWhiteSpace($currentPersistentOverride)) {
+        $null
+    }
+    else {
+        Get-NormalizedPath -PathValue $currentPersistentOverride
+    }
+    $existingInstallRecord = Find-PolyFiInstallRecord -CandidateRoots @(
+        if ($appDataRootWasSpecified) { $AppDataRoot }
+        if ($currentPersistentOverride) { $currentPersistentOverride }
+        $platformDefaultAppDataRoot
+    )
+    $defaultAppDataRoot = if (
+        $existingInstallRecord -and
+        $existingInstallRecord.Record.paths -and
+        $existingInstallRecord.Record.paths.app_data_root
+    ) {
+        Get-NormalizedPath -PathValue $existingInstallRecord.Record.paths.app_data_root
+    }
+    elseif ($currentPersistentOverride) {
+        $currentPersistentOverride
+    }
+    else {
+        $platformDefaultAppDataRoot
+    }
     $selectedAppDataRoot = Get-NormalizedPath -PathValue (
         Resolve-PathChoice `
             -Prompt 'PolyFi app-data root' `
@@ -190,6 +316,7 @@ try {
             -SpecifiedValue $AppDataRoot
     )
     $configPath = Join-Path $selectedAppDataRoot 'config.toml'
+    $selectedInstallRecordPath = Get-PolyFiInstallRecordPath -AppDataRoot $selectedAppDataRoot
 
     $shouldInstallPackage = Resolve-YesNoChoice `
         -Prompt 'Install the PolyFi package now?' `
@@ -223,9 +350,13 @@ try {
     }
 
     Write-Host "Repo root: $RepoRoot"
-    Write-Host "Default PolyFi app-data root: $(Get-NormalizedPath -PathValue $defaultAppDataRoot)"
+    Write-Host "Default PolyFi app-data root: $defaultAppDataRoot"
     Write-Host "Selected PolyFi app-data root: $selectedAppDataRoot"
     Write-Host "PolyFi config path: $configPath"
+    if ($existingInstallRecord) {
+        Write-Host "Existing install record: $($existingInstallRecord.RecordPath)"
+    }
+    Write-Host "Target install record: $selectedInstallRecordPath"
     if ($Dev) {
         Write-Host 'Install mode: Poetry dev environment'
     }
@@ -292,7 +423,29 @@ try {
         )
     }
 
+    $commandPath = Get-PolyFiCommandPath -CommandName 'polyfi-ranked'
+    $installMode = if ($Dev) { 'poetry-dev' } else { 'pip' }
+    Write-PolyFiInstallRecord -Parameters @{
+        Mode = 'Write'
+        RecordPath = $selectedInstallRecordPath
+        InstallMode = $installMode
+        AppDataRoot = $selectedAppDataRoot
+        ConfigPath = $configPath
+        CommandPath = $commandPath
+        StartMenu = $InstallStartMenu
+        StartupShortcut = $InstallStartup
+        WifiTasks = $InstallWifiTasks
+        ScheduledLogonTask = $false
+        AddToPath = $false
+        DesktopShortcut = $false
+    }
+    if ($existingInstallRecord -and $existingInstallRecord.RecordPath -ine $selectedInstallRecordPath) {
+        Remove-PolyFiInstallRecord -RecordPath $existingInstallRecord.RecordPath
+        Write-Host "Removed stale install record: $($existingInstallRecord.RecordPath)"
+    }
+
     Write-Host ''
+    Write-Host "Install record saved to: $selectedInstallRecordPath"
     Write-Host 'PolyFi installation workflow completed.'
 }
 finally {

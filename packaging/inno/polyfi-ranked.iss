@@ -42,10 +42,12 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
+ChangesEnvironment=yes
 
 [Tasks]
 Name: "startmenuicons"; Description: "Create Start Menu shortcuts"; GroupDescription: "Windows shortcuts:"
 Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
+Name: "addtopath"; Description: "Add PolyFi to the system PATH"; GroupDescription: "Windows integrations:"
 Name: "startupshortcut"; Description: "Start PolyFi automatically when I sign in"; GroupDescription: "Windows integrations:"; Flags: unchecked
 Name: "wifitasks"; Description: "Install Wi-Fi helper tasks for adapter control (may prompt for approval)"; GroupDescription: "Windows integrations:"; Flags: unchecked
 
@@ -53,6 +55,8 @@ Name: "wifitasks"; Description: "Install Wi-Fi helper tasks for adapter control 
 Source: "{#MyAppDistDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#SourcePath}\..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourcePath}\..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourcePath}\..\..\scripts\manage_install_record.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourcePath}\..\..\scripts\manage_windows_path.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\PolyFi Ranked"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--tray --show-splash"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Launch PolyFi in the system tray"; Tasks: startmenuicons
@@ -60,11 +64,38 @@ Name: "{group}\PolyFi Ranked Console"; Filename: "{app}\{#MyAppExeName}"; Workin
 Name: "{autodesktop}\PolyFi Ranked"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--tray --show-splash"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-ExecutionPolicy Bypass -NoProfile -File ""{app}\manage_windows_path.ps1"" -Mode Add -InstallDir ""{app}"""; StatusMsg: "Adding PolyFi to PATH..."; Tasks: addtopath; Flags: runhidden waituntilterminated
 Filename: "{app}\{#MyAppExeName}"; Parameters: "windows startup install --force"; WorkingDir: "{app}"; StatusMsg: "Installing Startup Programs shortcut..."; Tasks: startupshortcut; Flags: runhidden waituntilterminated
 Filename: "{app}\{#MyAppExeName}"; Parameters: "windows wifi-tasks install"; WorkingDir: "{app}"; StatusMsg: "Installing Wi-Fi helper tasks..."; Tasks: wifitasks; Flags: hidewizard runhidden waituntilterminated
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "{code:GetInstallRecordParameters}"; StatusMsg: "Recording installed features..."; Flags: runhidden waituntilterminated
 Filename: "{group}\PolyFi Ranked"; Description: "Launch PolyFi in the system tray"; Flags: nowait postinstall shellexec skipifsilent unchecked; Tasks: startmenuicons
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--tray --show-splash"; Description: "Launch PolyFi in the system tray"; Flags: nowait postinstall skipifsilent unchecked; Tasks: not startmenuicons
 
 [UninstallRun]
-Filename: "{app}\{#MyAppExeName}"; Parameters: "windows startup remove"; WorkingDir: "{app}"; RunOnceId: "RemovePolyFiStartupShortcut"; Flags: runhidden waituntilterminated skipifdoesntexist
-Filename: "{app}\{#MyAppExeName}"; Parameters: "windows wifi-tasks uninstall"; WorkingDir: "{app}"; RunOnceId: "RemovePolyFiWifiTasks"; Flags: runhidden waituntilterminated skipifdoesntexist
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-ExecutionPolicy Bypass -NoProfile -File ""{app}\manage_windows_path.ps1"" -Mode Remove -InstallDir ""{app}"""; RunOnceId: "RemovePolyFiPath"; Flags: runhidden waituntilterminated skipifdoesntexist
+Filename: "{app}\{#MyAppExeName}"; Parameters: "windows uninstall"; WorkingDir: "{app}"; RunOnceId: "RemovePolyFiWindowsIntegrations"; Flags: runhidden waituntilterminated skipifdoesntexist
+
+[Code]
+function BoolToLower(Value: Boolean): String;
+begin
+  if Value then
+    Result := 'true'
+  else
+    Result := 'false';
+end;
+
+function GetInstallRecordParameters(Param: String): String;
+begin
+  Result :=
+    '-ExecutionPolicy Bypass -NoProfile -File "' + ExpandConstant('{app}\manage_install_record.ps1') + '"' +
+    ' -Mode Write' +
+    ' -InstallMode "inno-setup"' +
+    ' -InstallRoot "' + ExpandConstant('{app}') + '"' +
+    ' -AppExecutable "' + ExpandConstant('{app}\{#MyAppExeName}') + '"' +
+    ' -AddToPath ' + BoolToLower(WizardIsTaskSelected('addtopath')) +
+    ' -DesktopShortcut ' + BoolToLower(WizardIsTaskSelected('desktopicon')) +
+    ' -ScheduledLogonTask false' +
+    ' -StartMenu ' + BoolToLower(WizardIsTaskSelected('startmenuicons')) +
+    ' -StartupShortcut ' + BoolToLower(WizardIsTaskSelected('startupshortcut')) +
+    ' -WifiTasks ' + BoolToLower(WizardIsTaskSelected('wifitasks'));
+end;

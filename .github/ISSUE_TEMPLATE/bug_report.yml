@@ -52,7 +52,7 @@ body:
     id: version
     attributes:
       label: PolyFi: Ranked version
-      placeholder: "e.g. 1.0.0-dev.8"
+      placeholder: "e.g. 1.0.0-dev.10"
     validations:
       required: true
 

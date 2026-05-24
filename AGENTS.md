@@ -45,6 +45,10 @@ poetry install --with packaging --no-interaction
 powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
 ```
 
+- For GitHub release automation, `ci.yml` retains built package artifacts and
+  `release.yml` publishes matching `v<version>` tags to GitHub Releases, sends
+  prereleases to TestPyPI, and sends non-prereleases to PyPI.
+
 - For runtime smoke checks, prefer:
 
 ```powershell
@@ -61,6 +65,18 @@ poetry run polyfi-ranked --tray
   - splash path resolution in `ui/splash.py`
 - Prefer adapting instructions and templates to this repo's real structure
   instead of copying wording from other projects verbatim.
+- All runtime paths flow through `AppPaths` in `paths.py`. The `POLYFI_APPDATA_ROOT`
+  environment variable overrides the default `%LOCALAPPDATA%` root; tests that need
+  an isolated path context should set this variable rather than monkey-patching
+  individual path constants. `AppPaths.migrate_legacy_files()` runs automatically
+  on the first `ensure_directories()` call and moves data from the old `~\AppData`
+  layout into the current `platformdirs`-based layout.
+- The named Windows mutex in `single_instance.py` (`SingleInstanceGuard`) prevents
+  running two PolyFi processes simultaneously. Tests that exercise startup should
+  mock or skip the mutex rather than acquiring it for real.
+- `install_record.py` writes `install-record.json` under the app-data root when
+  install or uninstall scripts record their choices; setup and teardown flows read
+  this file to restore context rather than reprompting the user.
 
 ## Important Modules
 
@@ -68,4 +84,22 @@ poetry run polyfi-ranked --tray
 - `src/wifi_pref_manager/service.py`: Wi-Fi preference evaluation and switching
 - `src/wifi_pref_manager/windows_shell.py`: launcher and Start Menu integration
 - `src/wifi_pref_manager/ui/`: tray, dialogs, settings, and splash UI helpers
-- `tests/`: regression coverage for config, tray, splash, service, and task setup
+- `src/wifi_pref_manager/models.py`: `AppConfig`, `WiFiProfilePreference`, and
+  `SpeedTestResult` dataclasses — the canonical source of runtime config fields
+  and their defaults
+- `src/wifi_pref_manager/paths.py`: `AppPaths` — all resolved file paths; also
+  defines `APPDATA_ROOT_ENV_VAR = 'POLYFI_APPDATA_ROOT'`
+- `src/wifi_pref_manager/scheduler.py`: Task Scheduler logon-task integration,
+  entry point for `polyfi-ranked-install-task` / `polyfi-ranked-install-task --uninstall`
+- `src/wifi_pref_manager/wifi_adapter_tasks.py`: elevated Wi-Fi adapter control via
+  on-demand schtasks helpers (`PolyFi-DisableWiFi`, `PolyFi-EnableWiFi`) for the
+  `disable_adapter` Ethernet mode
+- `src/wifi_pref_manager/managed_interface_state.py`: JSON persistence for the last
+  managed Wi-Fi interface name across restarts
+- `src/wifi_pref_manager/single_instance.py`: `SingleInstanceGuard` — named Windows
+  mutex that prevents duplicate tray processes
+- `src/wifi_pref_manager/install_record.py`: read/write helpers for `install-record.json`
+- `src/wifi_pref_manager/speedtest_runner.py`: `SpeedTestRunner` wrapping `speedtest-cli`
+- `tests/`: regression coverage for config, paths, tray UI, splash, service switching,
+  Ethernet mode, scheduler, Wi-Fi adapter tasks, install record, icon assets, settings
+  window, UI dialogs, Windows packaging, release hygiene, docs setup, and version metadata

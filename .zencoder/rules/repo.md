@@ -46,6 +46,10 @@ poetry install --with packaging --no-interaction
 powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
 ```
 
+GitHub Actions retains Python package artifacts in `ci.yml`, and
+`.github/workflows/release.yml` publishes matching `v<version>` tags to
+GitHub Release assets, TestPyPI for prereleases, and PyPI for non-prereleases.
+
 ## Testing
 
 Run the full suite with:

@@ -27,6 +27,34 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Placeholder for upcoming changes.
 
+## [1.0.0-dev.10] - 2026-05-23
+
+### Added
+
+- A dedicated `scripts/purge_polyfi.ps1` workflow now removes recorded PolyFi
+  app-data traces, Windows shell integrations, scheduled tasks, PATH entries,
+  install records, and the recorded install directory in one pass.
+
+## [1.0.0-dev.9] - 2026-05-23
+
+### Added
+
+- A tag-driven GitHub release workflow now validates `v<version>` tags, builds
+  Python distributions plus Windows release assets, publishes prereleases to
+  TestPyPI, publishes stable releases to PyPI, and attaches the build outputs
+  to the matching GitHub Release.
+- The Windows installer now offers a checked-by-default option to add the
+  installed PolyFi directory to `PATH`, with matching uninstall cleanup for the
+  PATH entry.
+- PolyFi's setup and Windows integration commands now keep an
+  `install-record.json` file in sync so the teardown workflow can reuse the
+  recorded directories and installed features before removing them.
+
+### Changed
+
+- The main CI workflow now uploads the built wheel and source distribution as
+  GitHub Actions artifacts so package outputs are retained for each run.
+
 ## [1.0.0-dev.8] - 2026-05-22
 
 ### Fixed

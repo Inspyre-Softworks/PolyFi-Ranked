@@ -49,6 +49,7 @@ import sys
 from wifi_pref_manager.console_output import ConsoleOutputManager
 from wifi_pref_manager.config import ConfigError, ConfigLoader, save_config
 from wifi_pref_manager import __version__
+from wifi_pref_manager.install_record import default_install_record_path, remove_install_record, upsert_install_record
 from wifi_pref_manager.logging_utils import configure_logging
 from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
@@ -754,6 +755,40 @@ class Application:
         print(f'Wrote default config file: {written_path}')
         return 0
 
+    def _resolve_install_record_path(self, config_path: str | Path | None = None) -> Path:
+        if config_path:
+            return default_install_record_path(Path(config_path).expanduser().parent)
+        return default_install_record_path(self.paths.app_data_root)
+
+    def sync_install_record_state(
+        self,
+        config_path: str | Path | None = None,
+        *,
+        feature_updates: dict[str, bool | None] | None = None,
+        path_updates: dict[str, str | Path | None] | None = None,
+        install_mode: str | None = None,
+    ) -> Path:
+        record_path = self._resolve_install_record_path(config_path)
+        resolved_config_path = Path(config_path).expanduser() if config_path else self.paths.config_file
+        combined_path_updates: dict[str, str | Path | None] = {
+            'app_data_root': record_path.parent,
+            'command_dir': Path(sys.executable).parent,
+            'command_path': Path(sys.executable),
+            'config_path': resolved_config_path,
+        }
+        if path_updates:
+            combined_path_updates.update(path_updates)
+        upsert_install_record(
+            record_path,
+            install_mode=install_mode,
+            path_updates=combined_path_updates,
+            feature_updates=feature_updates,
+        )
+        return record_path
+
+    def remove_install_record_state(self, config_path: str | Path | None = None) -> bool:
+        return remove_install_record(self._resolve_install_record_path(config_path))
+
     def launch_detached_tray_process(self, args: argparse.Namespace, *, suppress_splash: bool = False) -> int:
         """
         Launch the tray runtime in a detached background process.
@@ -955,6 +990,15 @@ class Application:
             print(f'Start Menu shortcut error: {exc}', file=sys.stderr)
             return 1
 
+        try:
+            self.sync_install_record_state(
+                getattr(args, 'config', None),
+                feature_updates={'start_menu': True},
+            )
+        except OSError as exc:
+            print(f'Install record error: {exc}', file=sys.stderr)
+            return 1
+
         print(f'Installed Start Menu shortcut: {shortcut_path}')
         return 0
 
@@ -975,6 +1019,11 @@ class Application:
             print(f'Removed Start Menu shortcut: {manager.get_shortcut_path()}')
         else:
             print(f'No Start Menu shortcut found at: {manager.get_shortcut_path()}')
+        try:
+            self.sync_install_record_state(feature_updates={'start_menu': False})
+        except OSError as exc:
+            print(f'Install record error: {exc}', file=sys.stderr)
+            return 1
         return 0
 
     def handle_start_menu_path_command(self, args: argparse.Namespace) -> int:
@@ -1030,6 +1079,15 @@ class Application:
             if config_file is not None:
                 messages.append(f'Enabled add_to_startup_programs in config: {config_file}')
 
+        if not errors:
+            try:
+                self.sync_install_record_state(
+                    getattr(args, 'config', None),
+                    feature_updates={'startup_shortcut': True},
+                )
+            except OSError as exc:
+                errors.append(f'Install record error: {exc}')
+
         for message in messages:
             print(message)
         for error in errors:
@@ -1072,6 +1130,15 @@ class Application:
                 messages.append(f'Removed Startup Programs shortcut: {manager.get_shortcut_path()}')
             else:
                 messages.append(f'No Startup Programs shortcut found at: {manager.get_shortcut_path()}')
+
+        if not errors:
+            try:
+                self.sync_install_record_state(
+                    getattr(args, 'config', None),
+                    feature_updates={'startup_shortcut': False},
+                )
+            except OSError as exc:
+                errors.append(f'Install record error: {exc}')
 
         for message in messages:
             print(message)
@@ -1168,6 +1235,22 @@ class Application:
             except OSError as exc:
                 errors.append(f'Could not purge PolyFi settings/log files: {exc}')
 
+        if not errors:
+            try:
+                self.sync_install_record_state(
+                    getattr(args, 'config', None),
+                    feature_updates={
+                        'scheduled_logon_task': False,
+                        'start_menu': False,
+                        'startup_shortcut': False,
+                        'wifi_tasks': False,
+                    },
+                )
+                if args.purge_data and self.remove_install_record_state(getattr(args, 'config', None)):
+                    messages.append('Removed install record.')
+            except OSError as exc:
+                errors.append(f'Install record error: {exc}')
+
         for message in messages:
             print(message)
         for error in errors:
@@ -1204,6 +1287,11 @@ class Application:
             return 1
 
         if installed:
+            try:
+                self.sync_install_record_state(feature_updates={'wifi_tasks': True})
+            except OSError as exc:
+                print(f'Install record error: {exc}', file=sys.stderr)
+                return 1
             print(
                 f'Successfully installed tasks:\n'
                 f'  PolyFi-DisableWiFi\n'
@@ -1232,6 +1320,11 @@ class Application:
         del args
         task_manager = WifiAdapterTaskManager()
         task_manager.uninstall()
+        try:
+            self.sync_install_record_state(feature_updates={'wifi_tasks': False})
+        except OSError as exc:
+            print(f'Install record error: {exc}', file=sys.stderr)
+            return 1
         print('Removed PolyFi Wi-Fi adapter control tasks (if they existed).')
         return 0
 

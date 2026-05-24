@@ -1,0 +1,171 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-python-distributions:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      tag: ${{ steps.metadata.outputs.tag }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: python -m pip install poetry packaging
+
+      - name: Validate release tag and classify the version
+        id: metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+          from packaging.version import Version
+
+          version = tomllib.loads(
+              Path('pyproject.toml').read_text(encoding='utf-8')
+          )['tool']['poetry']['version']
+          expected_tag = f'v{version}'
+          actual_tag = os.environ['GITHUB_REF_NAME']
+          if actual_tag != expected_tag:
+              raise SystemExit(
+                  f'Git tag {actual_tag!r} does not match pyproject version {expected_tag!r}.'
+              )
+
+          parsed = Version(version)
+          prerelease = parsed.is_prerelease or parsed.is_devrelease
+          with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as handle:
+              handle.write(f'version={version}\n')
+              handle.write(f'tag={expected_tag}\n')
+              handle.write(f'prerelease={"true" if prerelease else "false"}\n')
+          PY
+
+      - name: Build Python distributions
+        run: poetry build
+
+      - name: Upload Python distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  build-windows-artifacts:
+    needs: build-python-distributions
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: python -m pip install poetry
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Install packaging dependencies
+        run: poetry install --with packaging --no-interaction
+
+      - name: Build Windows artifacts
+        run: powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
+
+      - name: Archive the PyInstaller app bundle
+        shell: pwsh
+        env:
+          POLYFI_VERSION: ${{ needs.build-python-distributions.outputs.version }}
+        run: |
+          $bundleDir = Join-Path $PWD 'dist\pyinstaller\polyfi-ranked'
+          $archivePath = Join-Path $PWD "dist\installer\polyfi-ranked-app-$env:POLYFI_VERSION-windows-x64.zip"
+          if (Test-Path $archivePath) {
+              Remove-Item $archivePath -Force
+          }
+          Compress-Archive -Path (Join-Path $bundleDir '*') -DestinationPath $archivePath
+
+      - name: Upload Windows release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-assets
+          path: |
+            dist/installer/*.exe
+            dist/installer/*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-package-index:
+    needs: build-python-distributions
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download Python distribution artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-distributions
+          path: dist
+
+      - name: Publish prerelease distributions to TestPyPI
+        if: ${{ needs.build-python-distributions.outputs.prerelease == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+      - name: Publish stable distributions to PyPI
+        if: ${{ needs.build-python-distributions.outputs.prerelease != 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          skip-existing: true
+
+  publish-github-release:
+    needs:
+      - build-python-distributions
+      - build-windows-artifacts
+      - publish-package-index
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build-python-distributions.outputs.tag }}
+          name: PolyFi Ranked ${{ needs.build-python-distributions.outputs.version }}
+          prerelease: ${{ needs.build-python-distributions.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            release-assets/*

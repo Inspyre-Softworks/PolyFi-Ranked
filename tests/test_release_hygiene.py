@@ -55,6 +55,17 @@ class ReleaseHygieneTests(unittest.TestCase):
             changed_files,
         )
 
+    def test_workflow_changes_trigger_release_requirement(self) -> None:
+        changed_files = [
+            '.github/workflows/ci.yml',
+            '.github/workflows/release.yml',
+        ]
+
+        self.assertEqual(
+            check_release_hygiene.release_hygiene_triggers(changed_files),
+            changed_files,
+        )
+
     def test_release_files_satisfy_requirement_for_code_changes(self) -> None:
         changed_files = [
             'src/wifi_pref_manager/app.py',

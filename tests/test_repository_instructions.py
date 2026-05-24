@@ -66,10 +66,34 @@ class RepositoryInstructionTests(unittest.TestCase):
 
         self.assertTrue((workflow_dir / 'ci.yml').exists())
         self.assertTrue((workflow_dir / 'release-hygiene.yml').exists())
+        self.assertTrue((workflow_dir / 'release.yml').exists())
+        self.assertIn(
+            'actions/upload-artifact',
+            (workflow_dir / 'ci.yml').read_text(encoding='utf-8'),
+        )
         self.assertIn(
             'scripts/check_release_hygiene.py',
             (workflow_dir / 'release-hygiene.yml').read_text(encoding='utf-8'),
         )
+        release_content = (workflow_dir / 'release.yml').read_text(encoding='utf-8')
+        self.assertIn('pypa/gh-action-pypi-publish', release_content)
+        self.assertIn('https://test.pypi.org/legacy/', release_content)
+        self.assertIn('softprops/action-gh-release', release_content)
+
+    def test_release_automation_is_documented_for_contributors_and_agents(self) -> None:
+        instruction_files = [
+            PROJECT_ROOT / 'README.md',
+            PROJECT_ROOT / 'CONTRIBUTING.md',
+            PROJECT_ROOT / 'AGENTS.md',
+            PROJECT_ROOT / '.github' / 'copilot-instructions.md',
+            PROJECT_ROOT / '.zencoder' / 'rules' / 'repo.md',
+        ]
+
+        for path in instruction_files:
+            content = path.read_text(encoding='utf-8')
+            self.assertIn('GitHub Release', content, msg=str(path))
+            self.assertIn('TestPyPI', content, msg=str(path))
+            self.assertIn('PyPI', content, msg=str(path))
 
 
 if __name__ == '__main__':

@@ -34,6 +34,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+from wifi_pref_manager.install_record import default_install_record_path, upsert_install_record
+from wifi_pref_manager.paths import AppPaths
 from wifi_pref_manager.windows_shell import resolve_runtime_launch_target
 
 TASK_NAME = 'PolyFi Ranked'
@@ -220,15 +222,32 @@ def main(argv: list[str] | None = None) -> int:
     """
     args = build_argument_parser().parse_args(argv)
     installer = TaskSchedulerInstaller.for_current_runtime(task_name=args.task_name)
+    app_paths = AppPaths()
+    record_path = default_install_record_path(app_paths.app_data_root)
+    record_paths = {
+        'app_data_root': app_paths.app_data_root,
+        'command_dir': Path(sys.executable).parent,
+        'command_path': Path(sys.executable),
+    }
     try:
         if args.uninstall:
             removed = installer.uninstall()
+            upsert_install_record(
+                record_path,
+                path_updates=record_paths,
+                feature_updates={'scheduled_logon_task': False},
+            )
             if removed:
                 print(f'Removed scheduled task: {args.task_name}')
             else:
                 print(f'No scheduled task found: {args.task_name}')
         else:
             installer.install()
+            upsert_install_record(
+                record_path,
+                path_updates=record_paths,
+                feature_updates={'scheduled_logon_task': True},
+            )
     except OSError as exc:
         print(f'Scheduled task error: {exc}', file=sys.stderr)
         return 1

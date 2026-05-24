@@ -77,7 +77,9 @@ interactively and uses the shown default if you press Enter. Pass
 `-NoInteraction` to skip prompts and accept the defaults instead. In
 non-interactive mode, the Start Menu entry defaults to installed,
 `-InstallStartup` and `-InstallWifiTasks` default to off, and `-InstallAll`
-enables everything.
+enables everything. The setup script also writes an `install-record.json` file
+under the selected app-data root so later teardown and integration changes can
+reuse the recorded directories and feature choices.
 
 You can also point PolyFi at a custom app-data root:
 
@@ -99,8 +101,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_polyfi.ps1
 In non-interactive mode, the uninstall script defaults to removing the package,
 Start Menu shortcut, Startup shortcut, Wi-Fi helper tasks, and scheduled logon
 task, while leaving `-PurgeData` off. When a persistent `POLYFI_APPDATA_ROOT`
-override exists, the uninstall script uses that as its default selected root
-and offers to clear it:
+override or install record exists, the uninstall script uses the recorded
+app-data root and feature flags as its starting point and offers to clear the
+override when appropriate:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_polyfi.ps1 `
@@ -117,6 +120,23 @@ powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_polyfi.ps1 `
   -SkipPackageUninstall `
   -RemoveStartup `
   -ClearAppDataOverride
+```
+
+To purge all known traces of PolyFi in one pass, including the recorded
+app-data location, Windows integrations, scheduled tasks, install record, and
+the install directory when it was recorded:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\purge_polyfi.ps1
+```
+
+The purge script reads `install-record.json` first when it exists, so it can
+reuse the recorded app-data root, install directory, and feature state before
+removing them. For unattended teardown:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\purge_polyfi.ps1 `
+  -NoInteraction
 ```
 
 To generate a full config file with every supported setting and its defaults:
@@ -192,14 +212,19 @@ By default this produces:
 
 - `dist\pyinstaller\polyfi-ranked\polyfi-ranked.exe`
 - `dist\installer\polyfi-ranked-setup-<version>.exe`
+- `dist\installer\polyfi-ranked-app-<version>-windows-x64.zip` in the GitHub release workflow
 
 The installer uses PolyFi-branded wizard art and can optionally add Start Menu
-shortcuts, a desktop shortcut, a Startup Programs shortcut, and Wi-Fi helper
-scheduled tasks during setup. The Wi-Fi helper task option may trigger a
-Windows approval prompt because it installs elevated scheduled tasks. The
-finish-page launch option is preserved; when Start Menu shortcuts were selected,
-the launcher now goes through the installed Start Menu entry instead of spawning
-the EXE directly from Setup.
+shortcuts, a desktop shortcut, a checked-by-default `PATH` entry, a Startup
+Programs shortcut, and Wi-Fi helper scheduled tasks during setup. The Wi-Fi
+helper task option may trigger a Windows approval prompt because it installs
+elevated scheduled tasks. The bundled uninstaller removes the installed `PATH`
+entry, Startup Programs shortcut, and Wi-Fi helper tasks automatically. Setup
+also records the selected installer features and install/app-data directories in
+the default app-data root so the command-line teardown workflow can reuse that
+state before anything is removed. The finish-page launch option is preserved;
+when Start Menu shortcuts were selected, the launcher now goes through the
+installed Start Menu entry instead of spawning the EXE directly from Setup.
 
 If Inno Setup is not on `PATH`, point the build at `ISCC.exe` explicitly:
 
@@ -207,6 +232,23 @@ If Inno Setup is not on `PATH`, point the build at `ISCC.exe` explicitly:
 powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1 `
   -Iscc 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 ```
+
+## GitHub Releases
+
+GitHub Actions keeps Python package builds as workflow artifacts in `ci.yml`.
+Pushing a tag that matches the project version in `pyproject.toml`, using the
+format `v<version>`, runs `.github/workflows/release.yml`.
+
+That release workflow:
+
+- builds the wheel and source distribution
+- builds the Windows installer and a zipped PyInstaller app bundle
+- publishes prerelease versions to TestPyPI
+- publishes non-prerelease versions to PyPI
+- publishes a GitHub Release with the built package files and Windows assets
+
+PyPI and TestPyPI publishing are configured for trusted publishing, so the
+registries should trust this repository's `release.yml` workflow.
 
 ## Documentation
 

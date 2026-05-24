@@ -25,3 +25,16 @@ jobs:
 
       - name: Run test suite
         run: poetry run pytest
+
+      - name: Build Python distributions
+        run: poetry build
+
+      - name: Upload Python distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
