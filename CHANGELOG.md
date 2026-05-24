@@ -27,6 +27,17 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Placeholder for upcoming changes.
 
+## [1.0.0-dev.11] - 2026-05-24
+
+### Added
+
+- A push-to-main auto-release workflow (`auto-release.yml`) that detects version
+  increments, creates the matching `v<version>` git tag, publishes prerelease
+  versions to TestPyPI and stable versions to PyPI via OIDC trusted publishing,
+  and opens a GitHub Release with the built distributions attached. The workflow
+  is idempotent — it skips silently when the version is unchanged or the tag
+  already exists.
+
 ## [1.0.0-dev.10] - 2026-05-23
 
 ### Added

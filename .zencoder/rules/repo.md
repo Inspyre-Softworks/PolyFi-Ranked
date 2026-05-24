@@ -46,9 +46,13 @@ poetry install --with packaging --no-interaction
 powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
 ```
 
-GitHub Actions retains Python package artifacts in `ci.yml`, and
-`.github/workflows/release.yml` publishes matching `v<version>` tags to
-GitHub Release assets, TestPyPI for prereleases, and PyPI for non-prereleases.
+GitHub Actions retains Python package artifacts in `ci.yml`. `auto-release.yml`
+fires on every push to `main` and, when it detects a version increment with no
+existing tag, publishes to TestPyPI for prereleases and PyPI for non-prereleases,
+then creates a GitHub Release with the built distributions attached.
+`.github/workflows/release.yml` handles the same publishing and GitHub Release
+creation for manually pushed `v<version>` tags and additionally builds the
+Windows installer and zipped app bundle.
 
 ## Testing
 

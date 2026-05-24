@@ -235,20 +235,30 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1 `
 
 ## GitHub Releases
 
-GitHub Actions keeps Python package builds as workflow artifacts in `ci.yml`.
-Pushing a tag that matches the project version in `pyproject.toml`, using the
-format `v<version>`, runs `.github/workflows/release.yml`.
+Releases are created automatically and can also be triggered manually:
 
-That release workflow:
+**Automatic (push to `main`):** `.github/workflows/auto-release.yml` fires on
+every push to `main`. When it detects that the version in `pyproject.toml` has
+been incremented and no matching tag yet exists, it:
 
 - builds the wheel and source distribution
-- builds the Windows installer and a zipped PyInstaller app bundle
 - publishes prerelease versions to TestPyPI
 - publishes non-prerelease versions to PyPI
-- publishes a GitHub Release with the built package files and Windows assets
+- creates the `v<version>` git tag and a GitHub Release with the built distributions attached
 
-PyPI and TestPyPI publishing are configured for trusted publishing, so the
-registries should trust this repository's `release.yml` workflow.
+The workflow is idempotent — repeated pushes with the same version are no-ops.
+
+**Manual (tag push):** Pushing a tag that matches the project version in
+`pyproject.toml`, using the format `v<version>`, runs
+`.github/workflows/release.yml`. That workflow additionally builds the Windows
+installer and zipped PyInstaller app bundle and attaches them to the GitHub
+Release alongside the Python distributions.
+
+`ci.yml` also uploads the Python wheel and source distribution as workflow
+artifacts on every push so builds are retained without a full release.
+
+PyPI and TestPyPI publishing are configured for trusted publishing, so both
+`auto-release.yml` and `release.yml` must be trusted by the registries.
 
 ## Documentation
 

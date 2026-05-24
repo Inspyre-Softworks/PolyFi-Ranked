@@ -80,6 +80,30 @@ class RepositoryInstructionTests(unittest.TestCase):
         self.assertIn('https://test.pypi.org/legacy/', release_content)
         self.assertIn('softprops/action-gh-release', release_content)
 
+    def test_auto_release_workflow_exists_and_is_well_formed(self) -> None:
+        workflow_dir = PROJECT_ROOT / '.github' / 'workflows'
+        auto_release = workflow_dir / 'auto-release.yml'
+
+        self.assertTrue(auto_release.exists(), 'auto-release.yml is missing')
+        content = auto_release.read_text(encoding='utf-8')
+
+        # Must be triggered by push to main.
+        self.assertIn('branches:', content)
+        self.assertIn('- main', content)
+
+        # Must detect version bumps by reading pyproject.toml.
+        self.assertIn('pyproject.toml', content)
+
+        # Must guard against duplicate tags.
+        self.assertIn('ls-remote', content)
+
+        # Must publish to both TestPyPI and PyPI.
+        self.assertIn('pypa/gh-action-pypi-publish', content)
+        self.assertIn('https://test.pypi.org/legacy/', content)
+
+        # Must create the GitHub Release.
+        self.assertIn('softprops/action-gh-release', content)
+
     def test_release_automation_is_documented_for_contributors_and_agents(self) -> None:
         instruction_files = [
             PROJECT_ROOT / 'README.md',
