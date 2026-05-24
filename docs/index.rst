@@ -7,7 +7,14 @@ importable modules in the package.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents
+   :caption: Installation
+
+   getting-started-installer
+   building-windows-installer
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Configuration & Reference
 
    configuration
    config-reference
