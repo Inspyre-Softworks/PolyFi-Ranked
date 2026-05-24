@@ -45,9 +45,13 @@ poetry install --with packaging --no-interaction
 powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
 ```
 
-- For GitHub release automation, `ci.yml` retains built package artifacts and
-  `release.yml` publishes matching `v<version>` tags to GitHub Releases, sends
-  prereleases to TestPyPI, and sends non-prereleases to PyPI.
+- For GitHub release automation, `ci.yml` retains built package artifacts.
+  `auto-release.yml` fires on every push to `main` and, when it detects a
+  version increment with no existing tag, publishes to TestPyPI (prerelease) or
+  PyPI (stable) and creates the matching GitHub Release. `release.yml` handles
+  the same publishing and GitHub Release creation for manually pushed
+  `v<version>` tags and additionally builds the Windows installer and zipped
+  app bundle.
 
 - For runtime smoke checks, prefer:
 

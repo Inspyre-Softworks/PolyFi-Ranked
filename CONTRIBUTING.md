@@ -85,14 +85,20 @@ If you only want the onedir app bundle, skip the installer stage:
 poetry run python scripts/build_windows_artifacts.py --skip-installer
 ```
 
-GitHub Actions keeps built Python packages as CI artifacts and uses
-`.github/workflows/release.yml` for tag-driven publishing. Push tags in the
-format `v<version>` so they match `pyproject.toml`.
+GitHub Actions keeps built Python packages as CI artifacts and supports two
+release paths:
 
-- Prerelease tags publish to TestPyPI.
-- Non-prerelease tags publish to PyPI.
-- The GitHub Release attaches the wheel, source distribution, Windows installer,
-  and zipped PyInstaller app bundle.
+- **Automatic:** `.github/workflows/auto-release.yml` fires on every push to
+  `main`. When it detects a version increment and no matching tag exists, it
+  publishes to TestPyPI (prerelease) or PyPI (stable) and opens a GitHub Release
+  with the built distributions attached.
+- **Manual:** Push a tag in the format `v<version>` to trigger
+  `.github/workflows/release.yml`. That workflow additionally builds the Windows
+  installer and zipped PyInstaller bundle and attaches them to the GitHub Release.
+
+Prerelease tags/versions publish to TestPyPI; non-prerelease versions publish to
+PyPI. The GitHub Release attaches the wheel, source distribution, and (for manual
+tag builds) Windows installer and zipped PyInstaller app bundle.
 
 Trusted publishing should be configured in both PyPI and TestPyPI for this
 repository before relying on the automated release workflow.
