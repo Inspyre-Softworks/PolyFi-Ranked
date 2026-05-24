@@ -5,6 +5,12 @@ description = "Windows Wi-Fi preference manager that auto-switches to the highes
 authors = ["Inspyre Softworks"]
 readme = "README.md"
 packages = [{ include = "wifi_pref_manager", from = "src" }]
+classifiers = [
+    "Environment :: Win32 (MS Windows)",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
