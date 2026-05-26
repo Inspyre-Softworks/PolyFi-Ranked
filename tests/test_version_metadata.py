@@ -40,10 +40,11 @@ class VersionMetadataTests(unittest.TestCase):
         content = (PROJECT_ROOT / '.github' / 'ISSUE_TEMPLATE' / 'bug_report.yml').read_text(encoding='utf-8')
         template = yaml.safe_load(content)
 
-        version_field = next(
-            (field for field in template.get('body', []) if field.get('id') == 'version'),
-            None,
-        )
+        version_field = None
+        for field in template.get('body', []):
+            if field.get('id') == 'version':
+                version_field = field
+                break
         self.assertIsNotNone(version_field)
         self.assertEqual(version_field.get('type'), 'input')
         self.assertRegex(
