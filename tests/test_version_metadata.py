@@ -9,6 +9,8 @@ import tomllib
 import unittest
 from unittest.mock import patch
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 from wifi_pref_manager import __version__
@@ -36,17 +38,17 @@ class VersionMetadataTests(unittest.TestCase):
 
     def test_bug_report_template_has_version_field_with_example(self) -> None:
         content = (PROJECT_ROOT / '.github' / 'ISSUE_TEMPLATE' / 'bug_report.yml').read_text(encoding='utf-8')
+        template = yaml.safe_load(content)
 
-        self.assertIn('id: version', content)
+        version_field = next(
+            (field for field in template.get('body', []) if field.get('id') == 'version'),
+            None,
+        )
+        self.assertIsNotNone(version_field)
+        self.assertEqual(version_field.get('type'), 'input')
         self.assertRegex(
-            content,
-            re.compile(
-                r'- type: input\s*\n'
-                r'\s+id: version\s*\n'
-                r'\s+attributes:\s*\n'
-                r'(?:\s+.*\n)*?'
-                r'\s+placeholder: "e\.g\. \d+\.\d+\.\d+(?:-dev\.\d+)?"',
-            ),
+            version_field.get('attributes', {}).get('placeholder', ''),
+            r'^e\.g\. \d+\.\d+\.\d+(?:-dev\.\d+)?$',
         )
 
     def test_cli_version_flag_prints_current_version(self) -> None:
