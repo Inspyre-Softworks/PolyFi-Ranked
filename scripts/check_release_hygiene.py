@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
+import subprocess
 import sys
+import tomllib
 
 
 RELEASE_FILES = (
     'CHANGELOG.md',
+    'pyproject.toml',
+    'src/wifi_pref_manager/__init__.py',
+)
+
+VERSION_FILES = (
     'pyproject.toml',
     'src/wifi_pref_manager/__init__.py',
 )
@@ -67,9 +74,56 @@ def release_hygiene_triggers(changed_files: list[str]) -> list[str]:
     ]
 
 
+def has_version_bump(changed_files: list[str]) -> bool:
+    changed = set(changed_files)
+    return all(path in changed for path in VERSION_FILES)
+
+
+def _parse_pyproject_version(text: str) -> str:
+    """Return the version string from pyproject.toml content."""
+    return tomllib.loads(text)['tool']['poetry']['version']
+
+
+def version_actually_changed(base_ref: str) -> bool:
+    """Return True when the version in pyproject.toml differs between *base_ref* and HEAD.
+
+    Falls back to True (treat as changed) when the comparison cannot be made,
+    e.g. pyproject.toml did not exist at *base_ref* or git is unavailable.
+    """
+    try:
+        result = subprocess.run(
+            ['git', 'show', f'{base_ref}:pyproject.toml'],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        old_version = _parse_pyproject_version(result.stdout)
+    except (subprocess.CalledProcessError, KeyError, tomllib.TOMLDecodeError):
+        return True
+
+    try:
+        new_version = _parse_pyproject_version(
+            Path('pyproject.toml').read_text(encoding='utf-8')
+        )
+    except (OSError, KeyError, tomllib.TOMLDecodeError):
+        return True
+
+    return old_version != new_version
+
+
 def missing_release_files(changed_files: list[str]) -> list[str]:
     changed = set(changed_files)
-    return [path for path in RELEASE_FILES if path not in changed]
+    missing: list[str] = []
+
+    if 'CHANGELOG.md' not in changed:
+        missing.append('CHANGELOG.md')
+
+    if not has_version_bump(changed_files):
+        for path in VERSION_FILES:
+            if path not in changed:
+                missing.append(path)
+
+    return missing
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -84,6 +138,15 @@ def main(argv: list[str] | None = None) -> int:
         nargs='*',
         help='Changed repo-relative paths. If omitted, newline-delimited paths are read from stdin.',
     )
+    parser.add_argument(
+        '--base',
+        metavar='REF',
+        help=(
+            'Git ref for the base of the comparison. When provided, the version '
+            'in pyproject.toml is also compared against that ref to verify it '
+            'actually changed, not just that the file was touched.'
+        ),
+    )
     args = parser.parse_args(argv)
 
     changed_files = load_changed_files(args.files)
@@ -97,18 +160,32 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     missing = missing_release_files(changed_files)
-    if not missing:
-        print('Release hygiene satisfied for this change set.')
-        return 0
+    if missing:
+        print('Release hygiene check failed.', file=sys.stderr)
+        print('These files triggered the requirement:', file=sys.stderr)
+        for path in triggering_files:
+            print(f'  - {path}', file=sys.stderr)
+        print('Add these files to the same change:', file=sys.stderr)
+        for path in missing:
+            print(f'  - {path}', file=sys.stderr)
+        return 1
 
-    print('Release hygiene check failed.', file=sys.stderr)
-    print('These files triggered the requirement:', file=sys.stderr)
-    for path in triggering_files:
-        print(f'  - {path}', file=sys.stderr)
-    print('Add these files to the same change:', file=sys.stderr)
-    for path in missing:
-        print(f'  - {path}', file=sys.stderr)
-    return 1
+    if args.base and has_version_bump(changed_files) and not version_actually_changed(args.base):
+        print('Release hygiene check failed.', file=sys.stderr)
+        print(
+            'The version files are present in the change set but the version '
+            'value in pyproject.toml has not changed relative to the base.',
+            file=sys.stderr,
+        )
+        print(
+            'Increment the version in pyproject.toml and '
+            'src/wifi_pref_manager/__init__.py.',
+            file=sys.stderr,
+        )
+        return 1
+
+    print('Release hygiene satisfied for this change set.')
+    return 0
 
 
 if __name__ == '__main__':

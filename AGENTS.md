@@ -29,7 +29,10 @@ poetry run pytest
 - For changes headed to `main` or `master` that affect shipped behavior,
   packaging, dependencies, Windows integration, or release automation, update
   `CHANGELOG.md` and bump the version in both `pyproject.toml` and
-  `src/wifi_pref_manager/__init__.py` in the same change.
+  `src/wifi_pref_manager/__init__.py` in the same change.  If the PR already
+  contains a version bump (i.e. `pyproject.toml` and
+  `src/wifi_pref_manager/__init__.py` reflect a new version relative to the
+  base branch), do not bump the version again.
 
 - Build the Sphinx docs with:
 

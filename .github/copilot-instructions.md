@@ -15,6 +15,9 @@
 - For changes that affect shipped behavior, packaging, dependencies, Windows
   integration, or release automation, update `CHANGELOG.md` and bump the
   version in both `pyproject.toml` and `src/wifi_pref_manager/__init__.py`.
+  If the PR already contains a version bump (i.e. `pyproject.toml` and
+  `src/wifi_pref_manager/__init__.py` reflect a new version relative to the
+  base branch), do not bump the version again.
 - For documentation work, install `poetry install --with docs --no-interaction`
   and verify with `poetry run sphinx-build -W -b html docs docs/_build/local-html`.
 - Keep Tkinter work on the shared UI thread in
