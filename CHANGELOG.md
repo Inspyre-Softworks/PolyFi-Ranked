@@ -27,6 +27,14 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Placeholder for upcoming changes.
 
+## [1.0.0-dev.13] - 2026-05-26
+
+### Fixed
+
+- The auto-release workflow now validates `POLYFI_VERSION` before constructing
+  the Windows PyInstaller app bundle archive path, and reuses the validated
+  value for archive naming to avoid empty-value `Join-Path` failures.
+
 ## [1.0.0-dev.12] - 2026-05-26
 
 ### Fixed
