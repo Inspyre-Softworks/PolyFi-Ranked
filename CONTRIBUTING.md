@@ -118,7 +118,10 @@ repository before relying on the automated release workflow.
 3. If the change affects shipped behavior, packaging, dependencies, Windows
    integration, or automation that supports releases, update `CHANGELOG.md`
    and bump the version in `pyproject.toml` and
-   `src/wifi_pref_manager/__init__.py` in the same PR.
+   `src/wifi_pref_manager/__init__.py` in the same PR.  If the PR already
+   contains a version bump (i.e. `pyproject.toml` and
+   `src/wifi_pref_manager/__init__.py` reflect a new version relative to the
+   base branch), do not bump the version again.
 4. Docs-only and template-only changes may skip the release bump, but note that
    clearly in the PR checklist.
 5. Fill in the pull request template with your testing notes.
