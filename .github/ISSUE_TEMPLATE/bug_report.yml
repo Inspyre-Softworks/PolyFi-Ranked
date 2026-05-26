@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug or unexpected behavior in PolyFi: Ranked
+description: "Report a bug or unexpected behavior in PolyFi: Ranked"
 labels: ["bug"]
 body:
   - type: markdown
@@ -51,7 +51,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: PolyFi: Ranked version
+      label: "PolyFi: Ranked version"
       placeholder: "e.g. 1.0.0-dev.11"
     validations:
       required: true
