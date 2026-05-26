@@ -109,6 +109,8 @@ class RepositoryInstructionTests(unittest.TestCase):
         self.assertIn('build_windows_installer.ps1', content)
         self.assertIn('dist/installer/*.exe', content)
         self.assertIn('dist/installer/*.zip', content)
+        self.assertIn('IsNullOrWhiteSpace($env:POLYFI_VERSION)', content)
+        self.assertIn('polyfi-ranked-app-$polyfiVersion-windows-x64.zip', content)
         # Must download the two expected named artifact sets for the release.
         self.assertIn('name: python-distributions', content)
         self.assertIn('name: windows-release-assets', content)
