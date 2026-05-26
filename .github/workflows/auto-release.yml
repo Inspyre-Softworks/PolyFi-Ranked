@@ -246,11 +246,17 @@ jobs:
       contents: write
 
     steps:
-      - name: Download release assets
+      - name: Download Python distribution artifacts
         uses: actions/download-artifact@v4
         with:
+          name: python-distributions
           path: release-assets
-          merge-multiple: true
+
+      - name: Download Windows release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release-assets
+          path: release-assets
 
       - name: Create git tag and publish GitHub Release
         uses: softprops/action-gh-release@v2

@@ -109,7 +109,9 @@ class RepositoryInstructionTests(unittest.TestCase):
         self.assertIn('build_windows_installer.ps1', content)
         self.assertIn('dist/installer/*.exe', content)
         self.assertIn('dist/installer/*.zip', content)
-        self.assertIn('merge-multiple: true', content)
+        # Must download the two expected named artifact sets for the release.
+        self.assertIn('name: python-distributions', content)
+        self.assertIn('name: windows-release-assets', content)
 
     def test_release_automation_is_documented_for_contributors_and_agents(self) -> None:
         instruction_files = [
