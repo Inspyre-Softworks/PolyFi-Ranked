@@ -27,6 +27,14 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Placeholder for upcoming changes.
 
+## [1.0.0-dev.12] - 2026-05-26
+
+### Fixed
+
+- Release hygiene now treats a PR-wide version bump as satisfying the policy for
+  later release-sensitive changes in the same PR, so follow-up commits do not
+  fail unless the PR never updated the changelog and version metadata at all.
+
 ## [1.0.0-dev.11] - 2026-05-24
 
 ### Added

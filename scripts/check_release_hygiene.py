@@ -11,6 +11,11 @@ RELEASE_FILES = (
     'src/wifi_pref_manager/__init__.py',
 )
 
+VERSION_FILES = (
+    'pyproject.toml',
+    'src/wifi_pref_manager/__init__.py',
+)
+
 EXEMPT_FILES = {
     '.gitattributes',
     '.gitignore',
@@ -67,9 +72,24 @@ def release_hygiene_triggers(changed_files: list[str]) -> list[str]:
     ]
 
 
+def has_version_bump(changed_files: list[str]) -> bool:
+    changed = set(changed_files)
+    return all(path in changed for path in VERSION_FILES)
+
+
 def missing_release_files(changed_files: list[str]) -> list[str]:
     changed = set(changed_files)
-    return [path for path in RELEASE_FILES if path not in changed]
+    missing: list[str] = []
+
+    if 'CHANGELOG.md' not in changed:
+        missing.append('CHANGELOG.md')
+
+    if not has_version_bump(changed_files):
+        for path in VERSION_FILES:
+            if path not in changed:
+                missing.append(path)
+
+    return missing
 
 
 def main(argv: list[str] | None = None) -> int:

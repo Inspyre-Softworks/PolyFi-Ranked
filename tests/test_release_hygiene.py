@@ -76,6 +76,29 @@ class ReleaseHygieneTests(unittest.TestCase):
 
         self.assertEqual(check_release_hygiene.missing_release_files(changed_files), [])
 
+    def test_version_bump_requires_both_version_files(self) -> None:
+        changed_files = [
+            'src/wifi_pref_manager/app.py',
+            'CHANGELOG.md',
+            'pyproject.toml',
+        ]
+
+        self.assertEqual(
+            check_release_hygiene.missing_release_files(changed_files),
+            ['src/wifi_pref_manager/__init__.py'],
+        )
+
+    def test_existing_pr_bump_allows_later_release_sensitive_changes(self) -> None:
+        changed_files = [
+            '.github/workflows/auto-release.yml',
+            'CHANGELOG.md',
+            'pyproject.toml',
+            'src/wifi_pref_manager/__init__.py',
+            'docs/building-windows-installer.rst',
+        ]
+
+        self.assertEqual(check_release_hygiene.missing_release_files(changed_files), [])
+
 
 if __name__ == '__main__':
     unittest.main()
