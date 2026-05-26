@@ -41,7 +41,7 @@ PyInstaller step and the Inno Setup step in one command:
 
    powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
 
-When the script finishes successfully, two artefacts are produced:
+When the script finishes successfully, two artifacts are produced:
 
 - **PyInstaller app folder:**
   ``dist\pyinstaller\polyfi-ranked\polyfi-ranked.exe``
@@ -182,7 +182,7 @@ GitHub-hosted Windows runner:
 
 Both workflows install the Poetry ``packaging`` group, run
 ``scripts\build_windows_installer.ps1``, archive the PyInstaller bundle as a
-zip, and upload the artefacts before creating the GitHub Release.
+zip, and upload the artifacts before creating the GitHub Release.
 
 Troubleshooting
 ---------------

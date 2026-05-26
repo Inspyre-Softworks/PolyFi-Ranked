@@ -31,7 +31,7 @@ The wizard steps are:
 
 1. **License agreement** — read and accept the license.
 2. **Destination folder** — the default is
-   ``%ProgramFiles%\Inspyre-Softworks\PolyFi Ranked``.  Change it only if you
+   ``%ProgramFiles%\PolyFi-Ranked``.  Change it only if you
    have a specific reason.
 3. **Components** — choose which optional pieces to install:
 
@@ -168,11 +168,11 @@ files, the ``PATH`` entry, Startup Programs shortcut, and Wi-Fi helper
 scheduled tasks automatically.
 
 To also remove all PolyFi data (config, logs, state files) in one pass, run
-the purge script from a terminal:
+the following from a terminal:
 
 .. code-block:: text
 
-   polyfi-ranked-purge
+   polyfi-ranked windows uninstall --purge-data
 
 Or from the repository root (if you have the source available):
 
