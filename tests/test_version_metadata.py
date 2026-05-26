@@ -34,10 +34,20 @@ class VersionMetadataTests(unittest.TestCase):
         self.assertRegex(content, heading_pattern)
         self.assertIn('## [Unreleased]', content)
 
-    def test_bug_report_template_uses_current_version_example(self) -> None:
+    def test_bug_report_template_has_version_field_with_example(self) -> None:
         content = (PROJECT_ROOT / '.github' / 'ISSUE_TEMPLATE' / 'bug_report.yml').read_text(encoding='utf-8')
 
-        self.assertIn(f'placeholder: "e.g. {__version__}"', content)
+        self.assertIn('id: version', content)
+        self.assertRegex(
+            content,
+            re.compile(
+                r'- type: input\s*\n'
+                r'\s+id: version\s*\n'
+                r'\s+attributes:\s*\n'
+                r'(?:\s+.*\n)*?'
+                r'\s+placeholder: "e\.g\. \d+\.\d+\.\d+(?:-dev\.\d+)?"',
+            ),
+        )
 
     def test_cli_version_flag_prints_current_version(self) -> None:
         with patch('wifi_pref_manager.app.SingleInstanceGuard'):
