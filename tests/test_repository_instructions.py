@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import unittest
 
 
@@ -109,6 +110,18 @@ class RepositoryInstructionTests(unittest.TestCase):
         self.assertIn('build_windows_installer.ps1', content)
         self.assertIn('dist/installer/*.exe', content)
         self.assertIn('dist/installer/*.zip', content)
+        self.assertRegex(
+            content,
+            re.compile(r'IsNullOrWhiteSpace\(\s*\$env:POLYFI_VERSION\s*\)'),
+        )
+        self.assertRegex(
+            content,
+            re.compile(r'\$polyfiVersion\s*=\s*\$env:POLYFI_VERSION'),
+        )
+        self.assertRegex(
+            content,
+            re.compile(r'polyfi-ranked-app-\$polyfiVersion-.*windows-x64\.zip'),
+        )
         # Must download the two expected named artifact sets for the release.
         self.assertIn('name: python-distributions', content)
         self.assertIn('name: windows-release-assets', content)

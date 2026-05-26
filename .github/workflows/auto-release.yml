@@ -179,8 +179,14 @@ jobs:
         env:
           POLYFI_VERSION: ${{ needs.detect-version-bump.outputs.version }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:POLYFI_VERSION)) {
+              Write-Error "POLYFI_VERSION environment variable is not set for archive naming."
+              exit 1
+          }
+
+          $polyfiVersion = $env:POLYFI_VERSION
           $bundleDir = Join-Path $PWD 'dist\pyinstaller\polyfi-ranked'
-          $archivePath = Join-Path $PWD "dist\installer\polyfi-ranked-app-$env:POLYFI_VERSION-windows-x64.zip"
+          $archivePath = Join-Path $PWD "dist\installer\polyfi-ranked-app-$polyfiVersion-windows-x64.zip"
 
           if (-not (Test-Path $bundleDir)) {
               Write-Error "Expected bundle directory '$bundleDir' not found. Ensure Windows artifacts are built before archiving."
