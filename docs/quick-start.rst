@@ -57,7 +57,8 @@ entries:
    powershell -ExecutionPolicy Bypass -File .\scripts\install_polyfi.ps1 -InstallAll
 
 That script uses ``python -m pip install .`` by default.  Use ``-Dev`` only
-when you want a contributor-style Poetry environment:
+when you want a Poetry editable install that includes development dependencies
+(the contributor workflow):
 
 .. code-block:: powershell
 

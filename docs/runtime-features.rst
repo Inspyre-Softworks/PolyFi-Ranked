@@ -127,7 +127,8 @@ control it:
 
 - ``splash_hold_ms`` controls how long the splash stays visible.
 - The fade timing fields (``splash_fade_in_ms``, ``splash_fade_out_ms``) are
-  accepted so existing configs keep working, but they are currently ignored.
+  accepted so existing configs keep working, but fade animations are not
+  currently implemented.  The fields are preserved for forward compatibility.
 - When ``splash_image_path`` is blank, PolyFi looks for
   ``polyfi_ranked_splash.png`` in:
 
