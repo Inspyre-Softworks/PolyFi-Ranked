@@ -9,7 +9,8 @@ Prerequisites
 -------------
 
 - Windows 10 or Windows 11 (64-bit)
-- Python 3.12 or later — `python.org <https://www.python.org/downloads/>`_
+- Python 3.11 or later — `python.org <https://www.python.org/downloads/>`_
+  (the exit-state restoration feature requires Python 3.12 or later)
 - `Poetry <https://python-poetry.org/docs/#installation>`_
 
 Basic Install and Run
@@ -109,8 +110,7 @@ Non-interactive uninstall (removes package, shortcuts, tasks; keeps data):
 
    powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_polyfi.ps1 `
      -NoInteraction `
-     -UninstallAll `
-     -PurgeData
+     -UninstallAll
 
 To target a Poetry contributor environment instead of the normal install:
 
