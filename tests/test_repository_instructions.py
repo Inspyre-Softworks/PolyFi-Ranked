@@ -112,7 +112,7 @@ class RepositoryInstructionTests(unittest.TestCase):
         self.assertIn('dist/installer/*.zip', content)
         self.assertRegex(
             content,
-            re.compile(r'IsNullOrWhiteSpace\(\s*\$env:POLYFI_VERSION\s*\)'),
+            re.compile(r'\[string\]::IsNullOrWhiteSpace\(\s*\$polyfiVersion\s*\)'),
         )
         self.assertRegex(
             content,
