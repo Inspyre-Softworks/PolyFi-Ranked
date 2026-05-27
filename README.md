@@ -51,3 +51,24 @@ Full documentation is hosted on [Read the Docs](https://polyfi-ranked.readthedoc
 
 - PolyFi uses `netsh wlan` under the hood — your SSIDs must already exist as saved Windows Wi-Fi profiles.
 - Set the `POLYFI_APPDATA_ROOT` environment variable to store config, logs, and state files in a custom directory instead of the default `%LOCALAPPDATA%` path.
+
+## Maintenance and Cleanup
+
+If you need to fully remove PolyFi artifacts created by install/setup scripts, use:
+
+- `scripts/purge_polyfi.ps1`
+
+This cleanup flow references the installation record file:
+
+- `install-record.json`
+
+Use this when you want to remove installed files, PATH/task-scheduler/startup artifacts, and related app-data created during setup/testing.
+
+## Release Automation
+
+This repository includes automated publishing that verifies and publishes packages to:
+
+- TestPyPI
+- PyPI
+
+The release pipeline also creates a GitHub Release with built artifacts.
