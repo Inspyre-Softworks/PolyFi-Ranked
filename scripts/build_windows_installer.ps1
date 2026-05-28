@@ -9,10 +9,10 @@ param(
 
 # Resolve script directory robustly: $PSScriptRoot can be empty when GitHub
 # Actions invokes the script, so fall back to MyInvocation and then CWD.
-if (-not $RepoRoot) {
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $scriptDir = $PSScriptRoot
     if ([string]::IsNullOrWhiteSpace($scriptDir)) {
-        if ($MyInvocation.MyCommand.Path) {
+        if (-not [string]::IsNullOrWhiteSpace($MyInvocation.MyCommand.Path)) {
             $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
         } else {
             $scriptDir = (Get-Location).Path
