@@ -27,6 +27,22 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Placeholder for upcoming changes.
 
+## [1.0.0-dev.16] - 2026-05-28
+
+### Changed
+
+- Reduced steady-state tray overhead by using the lighter `netsh interface`
+  path for routine Ethernet checks, skipping visible-network scans while the
+  current Wi-Fi network is already the highest actionable preference, and
+  slowing idle Tk dialog queue polling.
+
+### Fixed
+
+- Automatic speed tests configured for new connections no longer run just
+  because PolyFi starts while Windows is already connected; they now wait for
+  an actual observed connection change, an app-initiated connection change, or
+  the configured periodic interval.
+
 ## [1.0.0-dev.15] - 2026-05-28
 
 ### Fixed

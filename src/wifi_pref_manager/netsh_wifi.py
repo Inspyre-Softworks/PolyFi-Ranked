@@ -679,35 +679,21 @@ class NetshWiFiApi:
             List of interface names that look like real, active Ethernet links.
         """
         try:
-            output = self._run_powershell(
-                '$adapters = Get-NetAdapter -Physical | Where-Object {'
-                ' $_.InterfaceType -eq 6'
-                ' -and $_.Status -eq "Up"'
-                ' -and $_.MediaConnectionState -eq "Connected"'
-                ' -and $_.PhysicalMediaType -eq "802.3"'
-                ' -and $_.ComponentID -ne "*msloop"'
-                ' } | Select-Object Name, InterfaceDescription;'
-                ' if ($adapters) { $adapters | ConvertTo-Json -Compress } else { "[]" }'
-            )
-            parsed = json.loads(output or '[]')
-            adapters = parsed if isinstance(parsed, list) else [parsed]
-            names = [
-                str(adapter.get('Name', '')).strip()
-                for adapter in adapters
-                if self._is_probable_ethernet_name(str(adapter.get('Name', '')))
-                and self._is_probable_ethernet_name(str(adapter.get('InterfaceDescription', '')))
-            ]
+            return self._get_active_ethernet_interfaces_netsh_strict(wifi_interface_name)
+        except NetshError:
             self.logger.debug(
-                'PowerShell Ethernet candidates: %s',
-                ', '.join(names) if names else '[none]',
-            )
-            return names
-        except (json.JSONDecodeError, OSError, subprocess.SubprocessError):
-            self.logger.debug(
-                'PowerShell Ethernet detection unavailable; falling back to netsh.',
+                'Netsh Ethernet detection unavailable; falling back to PowerShell.',
                 exc_info=True,
             )
-            return self._get_active_ethernet_interfaces_netsh(wifi_interface_name)
+
+        try:
+            return self._get_active_ethernet_interfaces_powershell()
+        except (json.JSONDecodeError, OSError, subprocess.SubprocessError):
+            self.logger.debug(
+                'PowerShell Ethernet detection unavailable.',
+                exc_info=True,
+            )
+            return []
 
     def is_ethernet_connected(self, wifi_interface_name: str | None = None) -> bool:
         """
@@ -731,9 +717,44 @@ class NetshWiFiApi:
         """
         return bool(self.get_active_ethernet_interfaces(wifi_interface_name))
 
-    def _get_active_ethernet_interfaces_netsh(self, wifi_interface_name: str | None = None) -> list[str]:
+    def _get_active_ethernet_interfaces_powershell(self) -> list[str]:
         """
-        Netsh-based fallback for Ethernet detection.
+        Return active Ethernet interfaces using PowerShell as a fallback.
+
+        This path is intentionally kept out of the normal polling loop because
+        starting PowerShell every few seconds is noticeably heavier than the
+        ``netsh`` interface query.
+        """
+        output = self._run_powershell(
+            '$adapters = Get-NetAdapter -Physical | Where-Object {'
+            ' $_.InterfaceType -eq 6'
+            ' -and $_.Status -eq "Up"'
+            ' -and $_.MediaConnectionState -eq "Connected"'
+            ' -and $_.PhysicalMediaType -eq "802.3"'
+            ' -and $_.ComponentID -ne "*msloop"'
+            ' } | Select-Object Name, InterfaceDescription;'
+            ' if ($adapters) { $adapters | ConvertTo-Json -Compress } else { "[]" }'
+        )
+        parsed = json.loads(output or '[]')
+        adapters = parsed if isinstance(parsed, list) else [parsed]
+        names = [
+            str(adapter.get('Name', '')).strip()
+            for adapter in adapters
+            if self._is_probable_ethernet_name(str(adapter.get('Name', '')))
+            and self._is_probable_ethernet_name(str(adapter.get('InterfaceDescription', '')))
+        ]
+        self.logger.debug(
+            'PowerShell Ethernet candidates: %s',
+            ', '.join(names) if names else '[none]',
+        )
+        return names
+
+    def _get_active_ethernet_interfaces_netsh_strict(
+        self,
+        wifi_interface_name: str | None = None,
+    ) -> list[str]:
+        """
+        Netsh-based Ethernet detection that lets command failures propagate.
 
         Checks ``netsh interface show interface`` for any enabled, connected,
         Dedicated interface that is not a known wireless adapter and does not
@@ -746,15 +767,14 @@ class NetshWiFiApi:
         Returns:
             List of candidate Ethernet interface names.
         """
-        try:
-            output = self.run_netsh(['interface', 'show', 'interface'])
-        except NetshError:
-            return []
+        output = self.run_netsh(['interface', 'show', 'interface'])
 
         # Collect *all* wireless interface names so we can exclude them.
-        wireless_names: set[str] = self._get_all_wireless_interface_names()
+        wireless_names: set[str] = set()
         if wifi_interface_name:
             wireless_names.add(wifi_interface_name.strip().lower())
+        else:
+            wireless_names.update(self._get_all_wireless_interface_names())
 
         connected_interfaces: list[str] = []
         for line in output.splitlines():
@@ -778,6 +798,15 @@ class NetshWiFiApi:
             ', '.join(connected_interfaces) if connected_interfaces else '[none]',
         )
         return connected_interfaces
+
+    def _get_active_ethernet_interfaces_netsh(self, wifi_interface_name: str | None = None) -> list[str]:
+        """
+        Netsh-based fallback for Ethernet detection.
+        """
+        try:
+            return self._get_active_ethernet_interfaces_netsh_strict(wifi_interface_name)
+        except NetshError:
+            return []
 
     def sync_profile_order(self, interface_name: str, ssids: list[str]) -> None:
         """

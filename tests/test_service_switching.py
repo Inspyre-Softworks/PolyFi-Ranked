@@ -25,6 +25,7 @@ class FakeWiFiApi:
         }
         self.disconnect_calls = 0
         self.connect_calls: list[str] = []
+        self.visible_scan_calls = 0
 
     def is_interface_enabled(self, interface_name: str) -> bool:
         del interface_name
@@ -84,6 +85,7 @@ class FakeWiFiApi:
         return True
 
     def get_visible_network_signals(self) -> dict[str, int]:
+        self.visible_scan_calls += 1
         return dict(self.visible_networks)
 
     def sync_profile_order(self, interface_name: str, ssids: list[str]) -> None:
@@ -169,6 +171,66 @@ class ServiceSwitchingThresholdTests(unittest.TestCase):
 
         self.assertEqual(api.connect_calls, ['BackupWiFi'])
         self.assertEqual(api.current_ssid, 'BackupWiFi')
+
+    def test_skips_visible_scan_when_current_network_is_already_highest_actionable(self) -> None:
+        api = FakeWiFiApi()
+        api.current_ssid = 'HomeWiFi'
+        api.visible_networks = {'BackupWiFi': -40}
+        config = AppConfig(
+            preferred_networks=[
+                WiFiProfilePreference('HomeWiFi'),
+                WiFiProfilePreference('BackupWiFi'),
+            ],
+            interface_name='Wi-Fi',
+            auto_disable_wifi_on_ethernet=False,
+            show_wifi_disabled_dialog=False,
+            enable_speed_tests=False,
+        )
+        service = WiFiPreferenceService(
+            config=config,
+            wifi_api=api,
+            logger=Mock(),
+        )
+
+        service.evaluate_and_switch()
+
+        self.assertEqual(api.visible_scan_calls, 0)
+        self.assertEqual(api.disconnect_calls, 0)
+        self.assertEqual(api.connect_calls, [])
+
+    def test_still_scans_when_current_network_has_minimum_signal_threshold(self) -> None:
+        api = FakeWiFiApi()
+        api.current_ssid = 'HomeWiFi'
+        api.visible_networks = {'HomeWiFi': -55}
+        service = self._build_service(api)
+
+        service.evaluate_and_switch()
+
+        self.assertEqual(api.visible_scan_calls, 1)
+        self.assertEqual(api.disconnect_calls, 0)
+        self.assertEqual(api.connect_calls, [])
+
+    def test_speed_test_on_new_connection_ignores_initial_observed_connection(self) -> None:
+        api = FakeWiFiApi()
+        config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('HomeWiFi')],
+            interface_name='Wi-Fi',
+            auto_disable_wifi_on_ethernet=False,
+            show_wifi_disabled_dialog=False,
+            enable_speed_tests=True,
+            speed_test_on_new_connection=True,
+        )
+        service = WiFiPreferenceService(
+            config=config,
+            wifi_api=api,
+            logger=Mock(),
+        )
+        service._start_speed_test = Mock()  # type: ignore[method-assign]
+
+        service._maybe_schedule_speed_test('HomeWiFi')
+        service._maybe_schedule_speed_test('BackupWiFi')
+
+        service._start_speed_test.assert_called_once_with('BackupWiFi', 'new network connection')
 
 
 if __name__ == '__main__':

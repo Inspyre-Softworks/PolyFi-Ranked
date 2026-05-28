@@ -117,6 +117,7 @@ class WiFiPreferenceService:
             message='Waiting for an active network connection.',
         )
         self._last_observed_ssid: str | None = None
+        self._has_observed_connection_state = False
         self._connected_ssid_since: float | None = None
         self._last_speed_test_attempt_ssid: str | None = None
         self._last_speed_test_at: float | None = None
@@ -315,6 +316,32 @@ class WiFiPreferenceService:
                 continue
             return preference.ssid
         return None
+
+    def _needs_visible_network_scan(self, current_ssid: str | None) -> bool:
+        """
+        Return whether the current state needs a visible-network scan.
+
+        ``netsh wlan show networks mode=bssid`` is one of the more expensive
+        commands in the steady-state tray loop.  When the machine is already on
+        the highest actionable preference and no signal threshold is configured
+        for that network, scanning cannot produce a different switching
+        decision, so the service can safely wait for the next cycle.
+        """
+        if current_ssid is None:
+            return True
+
+        current_index = self.preference_index(current_ssid)
+        if current_index >= len(self.config.preferred_networks):
+            return True
+
+        current_preference = self.config.preferred_networks[current_index]
+        if current_preference.min_db is not None:
+            return True
+
+        return any(
+            preference.auto_switch
+            for preference in self.config.preferred_networks[:current_index]
+        )
 
     def reload_config(self, new_config: AppConfig) -> None:
         """
@@ -971,11 +998,18 @@ class WiFiPreferenceService:
                 Optional explicit connection-change signal for immediate post-connect runs.
         """
         now = time.time()
-        observed_change = current_ssid != self._last_observed_ssid if connection_changed is None else connection_changed
+        previous_ssid = self._last_observed_ssid
+        had_observed_connection_state = self._has_observed_connection_state
+        observed_change = (
+            had_observed_connection_state and current_ssid != previous_ssid
+            if connection_changed is None
+            else connection_changed
+        )
 
-        if current_ssid != self._last_observed_ssid:
+        if not had_observed_connection_state or current_ssid != previous_ssid:
             self._connected_ssid_since = now if current_ssid is not None else None
         self._last_observed_ssid = current_ssid
+        self._has_observed_connection_state = True
 
         if not self.config.enable_speed_tests:
             return
@@ -1113,6 +1147,16 @@ class WiFiPreferenceService:
 
         current_ssid = self.wifi_api.get_current_ssid()
         self._track_current_wifi_network(current_ssid)
+
+        if not self._needs_visible_network_scan(current_ssid):
+            self.logger.debug(
+                'Skipping visible-network scan while connected to %r; no higher-priority '
+                'auto-switch network or signal threshold applies.',
+                current_ssid,
+            )
+            self._maybe_schedule_speed_test(current_ssid)
+            return
+
         visible_networks = self.wifi_api.get_visible_network_signals()
         best_available = self.best_available_ssid(visible_networks)
         current_meets_min_signal = self._network_meets_signal_requirement(current_ssid, visible_networks)
