@@ -770,11 +770,9 @@ class NetshWiFiApi:
         output = self.run_netsh(['interface', 'show', 'interface'])
 
         # Collect *all* wireless interface names so we can exclude them.
-        wireless_names: set[str] = set()
+        wireless_names: set[str] = self._get_all_wireless_interface_names()
         if wifi_interface_name:
             wireless_names.add(wifi_interface_name.strip().lower())
-        else:
-            wireless_names.update(self._get_all_wireless_interface_names())
 
         connected_interfaces: list[str] = []
         for line in output.splitlines():
