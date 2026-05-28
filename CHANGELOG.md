@@ -27,6 +27,14 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Placeholder for upcoming changes.
 
+## [1.0.0-dev.14] - 2026-05-27
+
+### Added
+
+- A local `docs/wiki/` source-of-truth workflow can now sync Markdown pages to
+  the adjacent `PolyFi-Ranked.wiki` checkout with dry-run, dirty-repo, link
+  rewrite, and prune safety checks.
+
 ## [1.0.0-dev.13] - 2026-05-26
 
 ### Fixed
