@@ -1,4 +1,4 @@
-<a id="polyfi-ranked-cli-reference"></a>
+(polyfi-ranked-cli-reference)=
 
 # CLI Reference
 
@@ -27,7 +27,7 @@ PolyFi: Ranked provides command-line tools for launching the app, inspecting res
 
 ---
 
-<a id="quick-start"></a>
+(quick-start)=
 
 ## Quick Start
 
@@ -68,7 +68,7 @@ poetry run polyfi-ranked
 
 ---
 
-<a id="top-level-flags"></a>
+(top-level-flags)=
 
 ## Top-Level Flags
 
@@ -100,7 +100,7 @@ CRITICAL
 
 ---
 
-<a id="paths"></a>
+(paths)=
 
 ## `paths`
 
@@ -127,7 +127,7 @@ Examples include checking:
 
 ---
 
-<a id="config"></a>
+(config)=
 
 ## `config`
 
@@ -135,7 +135,7 @@ The `config` command group manages PolyFi: Ranked configuration files.
 
 ---
 
-<a id="config-init"></a>
+(config-init)=
 
 ## `config init`
 
@@ -165,7 +165,7 @@ polyfi-ranked config init --config C:\path\to\config.toml --force
 
 ---
 
-<a id="windows"></a>
+(windows)=
 
 ## `windows`
 
@@ -182,7 +182,7 @@ This includes:
 
 ---
 
-<a id="windows-start-menu-install"></a>
+(windows-start-menu-install)=
 
 ## `windows start-menu install`
 
@@ -200,7 +200,7 @@ After installation, PolyFi: Ranked should appear in the Windows Start Menu.
 
 ---
 
-<a id="windows-startup-install"></a>
+(windows-startup-install)=
 
 ## `windows startup install`
 
@@ -218,7 +218,7 @@ PolyFi: Ranked will start automatically on user login.
 
 ---
 
-<a id="windows-uninstall"></a>
+(windows-uninstall)=
 
 ## `windows uninstall`
 
@@ -242,7 +242,7 @@ polyfi-ranked windows uninstall --purge-data
 
 ---
 
-<a id="task-scheduler-entry-points"></a>
+(task-scheduler-entry-points)=
 
 ## Task Scheduler Entry Points
 
@@ -252,7 +252,7 @@ This is mainly useful when you want to manage the scheduled logon task directly.
 
 ---
 
-<a id="polyfi-ranked-install-task"></a>
+(polyfi-ranked-install-task)=
 
 ## `polyfi-ranked-install-task`
 
@@ -272,7 +272,8 @@ polyfi-ranked-install-task --uninstall
 
 ---
 
-<a id="reference-links"></a>
+(reference-links)=
+
 ## Reference Links
 
 Use these links to jump to sections on this page.

@@ -1,5 +1,13 @@
 # PolyFi: Ranked
 
+[![CI](https://github.com/Inspyre-Softworks/PolyFi-Ranked/actions/workflows/ci.yml/badge.svg)](https://github.com/Inspyre-Softworks/PolyFi-Ranked/actions/workflows/ci.yml)
+[![Release Hygiene](https://github.com/Inspyre-Softworks/PolyFi-Ranked/actions/workflows/release-hygiene.yml/badge.svg)](https://github.com/Inspyre-Softworks/PolyFi-Ranked/actions/workflows/release-hygiene.yml)
+[![Documentation Status](https://readthedocs.org/projects/polyfi-ranked/badge/?version=latest)](https://polyfi-ranked.readthedocs.io/en/latest/)
+[![PyPI version](https://img.shields.io/pypi/v/polyfi-ranked.svg)](https://pypi.org/project/polyfi-ranked/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078D4.svg?logo=windows)](https://www.microsoft.com/windows)
+
 A Windows-focused Python application that lets you define an ordered list of Wi-Fi networks and automatically connects to the highest-priority available network.
 
 ## Features

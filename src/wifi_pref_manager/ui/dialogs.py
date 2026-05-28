@@ -18,6 +18,7 @@ MB_ICONWARNING = 0x00000030
 MB_ICONINFORMATION = 0x00000040
 MB_SETFOREGROUND = 0x00010000
 MB_TOPMOST = 0x00040000
+UI_QUEUE_POLL_INTERVAL_MS = 100
 
 
 class _TkUiDispatcher:
@@ -41,7 +42,7 @@ class _TkUiDispatcher:
         self._root = root
         self._owner_thread_id = threading.get_ident()
         self._ready_event.set()
-        root.after(10, self._drain_queue)
+        root.after(UI_QUEUE_POLL_INTERVAL_MS, self._drain_queue)
         root.mainloop()
 
     def _ensure_started(self) -> None:
@@ -80,7 +81,7 @@ class _TkUiDispatcher:
                 if done_event is not None:
                     done_event.set()
 
-        root.after(10, self._drain_queue)
+        root.after(UI_QUEUE_POLL_INTERVAL_MS, self._drain_queue)
 
     def call(self, callback: Callable[[tk.Tk], object], *, wait: bool) -> object | None:
         """
