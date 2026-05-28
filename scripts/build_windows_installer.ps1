@@ -1,11 +1,25 @@
 [CmdletBinding()]
 param(
-    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
+    [string]$RepoRoot,
     [switch]$SkipPyInstaller,
     [switch]$SkipInstaller,
     [switch]$NoClean,
     [string]$Iscc
 )
+
+# Resolve script directory robustly: $PSScriptRoot can be empty when GitHub
+# Actions invokes the script, so fall back to MyInvocation and then CWD.
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+    $scriptDir = $PSScriptRoot
+    if ([string]::IsNullOrWhiteSpace($scriptDir)) {
+        if (-not [string]::IsNullOrWhiteSpace($MyInvocation.MyCommand.Path)) {
+            $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        } else {
+            $scriptDir = (Get-Location).Path
+        }
+    }
+    $RepoRoot = (Resolve-Path (Join-Path -Path $scriptDir -ChildPath '..')).Path
+}
 
 $ErrorActionPreference = 'Stop'
 

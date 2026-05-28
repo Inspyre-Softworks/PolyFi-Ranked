@@ -27,6 +27,15 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Placeholder for upcoming changes.
 
+## [1.0.0-dev.15] - 2026-05-28
+
+### Fixed
+
+- Resolved `Join-Path` failure in `scripts/build_windows_installer.ps1` when
+  `$PSScriptRoot` is empty under GitHub Actions by adding a CI-safe fallback
+  that tries `$MyInvocation.MyCommand.Path` then `Get-Location` before
+  computing `$RepoRoot` (fixes workflow run 26550598265, job 78211816902).
+
 ## [1.0.0-dev.14] - 2026-05-27
 
 ### Added
