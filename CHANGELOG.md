@@ -28,8 +28,6 @@ versions so packaging, docs, and support paths stay aligned.
 - `ui/tray.py` (`TrayApplication._append_startup_trace`): delegates to `append_startup_trace_line()`;
   existing guard on `None` trace path and OSError suppression are preserved.
 
-All changes are behavior-preserving; no user-facing functionality has been removed or altered.
-
 ### Fixed
 
 - `service.py` (`WiFiPreferenceService.restore_startup_network_state`): wrapped the entire method body

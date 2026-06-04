@@ -130,6 +130,19 @@ class EthernetWiFiModeStateTests(unittest.TestCase):
         self.assertEqual(api.current_ssid, 'HomeWiFi')
         self.assertEqual(api.profile_modes, {'HomeWiFi': True, 'CafeWiFi': False})
 
+    def test_exit_restore_swallows_oserror_from_get_current_ssid(self) -> None:
+        api = FakeWiFiApi()
+        service = WiFiPreferenceService(
+            config=self._build_config(),
+            wifi_api=api,
+            logger=Mock(),
+        )
+
+        service.evaluate_and_switch()
+        service.wifi_api.get_current_ssid = Mock(side_effect=OSError('netsh unavailable'))  # type: ignore[method-assign]
+
+        service.restore_startup_network_state()
+
 
 if __name__ == '__main__':
     unittest.main()

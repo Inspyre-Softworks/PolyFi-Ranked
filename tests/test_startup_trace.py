@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
@@ -44,13 +43,12 @@ class AppendStartupTraceLineTests(unittest.TestCase):
     def test_line_contains_iso_timestamp(self) -> None:
         with TemporaryDirectory() as tmp_dir:
             trace_path = Path(tmp_dir) / 'trace.log'
-            before = datetime.now().isoformat(timespec='seconds')
 
             append_startup_trace_line(trace_path, 'ts-check')
 
             content = trace_path.read_text(encoding='utf-8')
-            # The line must start with a bracketed ISO timestamp
-            self.assertRegex(content, r'^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\]')
+            # The line must start with a bracketed ISO timestamp followed by a space
+            self.assertRegex(content, r'^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\] ')
 
     def test_successive_appends_produce_multiple_lines(self) -> None:
         with TemporaryDirectory() as tmp_dir:
