@@ -9,23 +9,26 @@ versions so packaging, docs, and support paths stay aligned.
 
 ### Added
 
-- Placeholder for upcoming changes.
+- `src/wifi_pref_manager/subprocess_utils.py`: new shared helper `hidden_subprocess_kwargs()` that
+  returns Windows-specific subprocess flags to suppress console windows.
+- `src/wifi_pref_manager/startup_trace.py`: new shared helper `append_startup_trace_line(trace_path, message)`
+  that appends one ISO-timestamped line to a startup trace file, creating parent directories as needed.
+- `tests/test_subprocess_utils.py`: tests covering all major branches of `hidden_subprocess_kwargs`.
+- `tests/test_startup_trace.py`: tests verifying parent-directory creation, line format/content,
+  successive appends, UTF-8 encoding, and error propagation.
 
 ### Changed
 
-- Placeholder for upcoming changes.
+- `scheduler.py` (`TaskSchedulerInstaller._hidden_subprocess_kwargs`): delegates to the new
+  shared `hidden_subprocess_kwargs()` helper; public interface preserved for backward compatibility.
+- `netsh_wifi.py` (`NetshWiFiApi._hidden_subprocess_kwargs`): same delegation refactor.
+- `wifi_adapter_tasks.py` (`WifiAdapterTaskManager._hidden_subprocess_kwargs`): same delegation refactor.
+- `app.py` (`Application.append_startup_trace`): delegates to `append_startup_trace_line()`; existing
+  OSError suppression and logging semantics are preserved.
+- `ui/tray.py` (`TrayApplication._append_startup_trace`): delegates to `append_startup_trace_line()`;
+  existing guard on `None` trace path and OSError suppression are preserved.
 
-### Fixed
-
-- Placeholder for upcoming changes.
-
-### Removed
-
-- Placeholder for upcoming changes.
-
-### Security
-
-- Placeholder for upcoming changes.
+All changes are behavior-preserving; no user-facing functionality has been removed or altered.
 
 ## [1.0.0-dev.16] - 2026-05-28
 

@@ -31,7 +31,6 @@ Example Usage:
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime
 import logging
 from pathlib import Path
 import threading
@@ -46,6 +45,7 @@ from wifi_pref_manager.icon_assets import create_app_icon_image
 from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.paths import APP_NAME
 from wifi_pref_manager.service import WiFiPreferenceService
+from wifi_pref_manager.startup_trace import append_startup_trace_line
 from wifi_pref_manager.ui.dialogs import show_custom_dialog_async, show_dialog_async, show_native_message_box
 
 if TYPE_CHECKING:
@@ -116,10 +116,7 @@ class TrayApplication:
         if self._startup_trace_path is None:
             return
         try:
-            timestamp = datetime.now().isoformat(timespec='seconds')
-            self._startup_trace_path.parent.mkdir(parents=True, exist_ok=True)
-            with self._startup_trace_path.open('a', encoding='utf-8') as handle:
-                handle.write(f'[{timestamp}] tray:{message}\n')
+            append_startup_trace_line(self._startup_trace_path, f'tray:{message}')
         except OSError:
             return
 
