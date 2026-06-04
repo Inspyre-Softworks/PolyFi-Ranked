@@ -57,6 +57,20 @@ class TaskSchedulerInstaller:
         launch_arguments: list[str] | None = None,
         task_name: str = TASK_NAME,
     ) -> None:
+        """
+        Initialize a task scheduler installer for a specific launch command. This stores the executable, arguments, and task name for later use.
+
+        Parameters:
+
+            launch_executable:
+                Executable that the scheduled task will run.
+
+            launch_arguments:
+                Optional list of arguments to pass to the executable when the task runs.
+
+            task_name:
+                Name of the Windows scheduled task to create or manage.
+        """
         self.launch_executable = Path(launch_executable)
         self.launch_arguments = list(launch_arguments or [])
         self.task_name = task_name
@@ -67,7 +81,7 @@ class TaskSchedulerInstaller:
         Return Windows-specific subprocess flags that suppress console windows.
 
         Returns:
-            Keyword arguments safe to splat into ``subprocess.run``.
+            Keyword arguments are safe to splat into `subprocess.run`.
         """
         return hidden_subprocess_kwargs()
 
