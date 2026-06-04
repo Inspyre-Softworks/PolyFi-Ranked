@@ -30,6 +30,19 @@ versions so packaging, docs, and support paths stay aligned.
 
 All changes are behavior-preserving; no user-facing functionality has been removed or altered.
 
+### Fixed
+
+- `service.py` (`WiFiPreferenceService.restore_startup_network_state`): wrapped the entire method body
+  in a broad `except Exception` guard so this atexit handler never propagates an exception.  Previously,
+  restarting Windows without quitting PolyFi first caused `easy-exit-calls` to re-raise any uncaught
+  exception from the handler, producing an error pop-up referencing `netsh`.  Root causes addressed:
+  - `subprocess.run` can raise `OSError` (not `NetshError`) when `netsh.exe` cannot be launched while
+    Windows network services are shutting down; all inner `except NetshError` clauses in
+    `restore_startup_network_state` and `_restore_wifi_state_after_ethernet` are now
+    `except (NetshError, OSError)`.
+  - `get_current_ssid()` was called without any exception guard; it is now wrapped in
+    `try/except (NetshError, OSError)`.
+
 ## [1.0.0-dev.16] - 2026-05-28
 
 ### Changed
