@@ -601,7 +601,7 @@ class WiFiPreferenceService:
                     enabled=auto_connect_enabled,
                     interface_name=self.interface_name,
                 )
-            except NetshError as exc:
+            except (NetshError, OSError) as exc:
                 self.logger.warning(
                     'Failed to restore auto-connect mode for %r during %s: %s',
                     profile_name,
@@ -611,7 +611,7 @@ class WiFiPreferenceService:
 
         try:
             current_ssid = self.wifi_api.get_current_ssid()
-        except NetshError as exc:
+        except (NetshError, OSError) as exc:
             self.logger.warning('Could not read current SSID while restoring Wi-Fi state (%s): %s', reason, exc)
             current_ssid = None
 
@@ -620,7 +620,7 @@ class WiFiPreferenceService:
                 if current_ssid is not None:
                     try:
                         self.wifi_api.disconnect(self.interface_name)
-                    except NetshError as exc:
+                    except (NetshError, OSError) as exc:
                         self.logger.warning(
                             'Failed to disconnect Wi-Fi before reconnect restore during %s: %s',
                             reason,
@@ -632,7 +632,7 @@ class WiFiPreferenceService:
                         ssid=self._wifi_ssid_before_ethernet,
                         timeout=self.config.connect_timeout,
                     )
-                except NetshError as exc:
+                except (NetshError, OSError) as exc:
                     self.logger.warning(
                         'Failed to reconnect to pre-Ethernet SSID %r during %s: %s',
                         self._wifi_ssid_before_ethernet,
@@ -642,7 +642,7 @@ class WiFiPreferenceService:
         elif current_ssid is not None:
             try:
                 self.wifi_api.disconnect(self.interface_name)
-            except NetshError as exc:
+            except (NetshError, OSError) as exc:
                 self.logger.warning(
                     'Failed to restore pre-Ethernet disconnected Wi-Fi state during %s: %s',
                     reason,
@@ -741,60 +741,73 @@ class WiFiPreferenceService:
     def restore_startup_network_state(self) -> None:
         """
         Restore the Wi-Fi adapter and SSID state captured at startup.
+
+        This method is registered as an atexit handler and must never propagate
+        exceptions; any failure is logged and silently swallowed so that the
+        calling exit machinery (e.g. easy-exit-calls) does not raise a crash
+        dialog on Windows shutdown or restart.
         """
-        self._restore_wifi_state_after_ethernet(reason='application exit')
-
-        if self._startup_wifi_adapter_enabled is None:
-            return
-
-        self.logger.debug('Restoring startup network state before exit.')
-
         try:
-            current_adapter_enabled = self.wifi_api.is_interface_enabled(self.interface_name)
-        except NetshError as exc:
-            self.logger.error('Could not determine current Wi-Fi adapter state during exit restore: %s', exc)
-            return
+            self._restore_wifi_state_after_ethernet(reason='application exit')
 
-        if self._startup_wifi_adapter_enabled and not current_adapter_enabled:
-            self.logger.info('Restoring Wi-Fi adapter to enabled state.')
-            try:
-                self.enable_wifi_adapter()
-            except NetshError as exc:
-                self.logger.error('Failed to re-enable Wi-Fi adapter during exit restore: %s', exc)
-                return
-        elif not self._startup_wifi_adapter_enabled and current_adapter_enabled:
-            self.logger.info('Restoring Wi-Fi adapter to disabled state.')
-            try:
-                self.wifi_api.disable_wifi_adapter(self.interface_name)
-            except NetshError as exc:
-                self.logger.error('Failed to disable Wi-Fi adapter during exit restore: %s', exc)
-            return
-
-        if not self._startup_wifi_adapter_enabled:
-            return
-
-        current_ssid = self.wifi_api.get_current_ssid()
-        if self._startup_ssid:
-            if current_ssid == self._startup_ssid:
+            if self._startup_wifi_adapter_enabled is None:
                 return
 
-            self.logger.info('Restoring Wi-Fi connection to startup SSID %r.', self._startup_ssid)
+            self.logger.debug('Restoring startup network state before exit.')
+
             try:
-                if current_ssid is not None:
+                current_adapter_enabled = self.wifi_api.is_interface_enabled(self.interface_name)
+            except (NetshError, OSError) as exc:
+                self.logger.error('Could not determine current Wi-Fi adapter state during exit restore: %s', exc)
+                return
+
+            if self._startup_wifi_adapter_enabled and not current_adapter_enabled:
+                self.logger.info('Restoring Wi-Fi adapter to enabled state.')
+                try:
+                    self.enable_wifi_adapter()
+                except (NetshError, OSError) as exc:
+                    self.logger.error('Failed to re-enable Wi-Fi adapter during exit restore: %s', exc)
+                    return
+            elif not self._startup_wifi_adapter_enabled and current_adapter_enabled:
+                self.logger.info('Restoring Wi-Fi adapter to disabled state.')
+                try:
+                    self.wifi_api.disable_wifi_adapter(self.interface_name)
+                except (NetshError, OSError) as exc:
+                    self.logger.error('Failed to disable Wi-Fi adapter during exit restore: %s', exc)
+                return
+
+            if not self._startup_wifi_adapter_enabled:
+                return
+
+            try:
+                current_ssid = self.wifi_api.get_current_ssid()
+            except (NetshError, OSError) as exc:
+                self.logger.error('Could not determine current Wi-Fi SSID during exit restore: %s', exc)
+                return
+
+            if self._startup_ssid:
+                if current_ssid == self._startup_ssid:
+                    return
+
+                self.logger.info('Restoring Wi-Fi connection to startup SSID %r.', self._startup_ssid)
+                try:
+                    if current_ssid is not None:
+                        self.wifi_api.disconnect(self.interface_name)
+                    self.wifi_api.connect(
+                        interface_name=self.interface_name,
+                        ssid=self._startup_ssid,
+                        timeout=self.config.connect_timeout,
+                    )
+                except (NetshError, OSError) as exc:
+                    self.logger.error('Failed to restore startup SSID %r: %s', self._startup_ssid, exc)
+            elif current_ssid is not None:
+                self.logger.info('Disconnecting Wi-Fi to restore the startup disconnected state.')
+                try:
                     self.wifi_api.disconnect(self.interface_name)
-                self.wifi_api.connect(
-                    interface_name=self.interface_name,
-                    ssid=self._startup_ssid,
-                    timeout=self.config.connect_timeout,
-                )
-            except NetshError as exc:
-                self.logger.error('Failed to restore startup SSID %r: %s', self._startup_ssid, exc)
-        elif current_ssid is not None:
-            self.logger.info('Disconnecting Wi-Fi to restore the startup disconnected state.')
-            try:
-                self.wifi_api.disconnect(self.interface_name)
-            except NetshError as exc:
-                self.logger.error('Failed to restore startup disconnected state: %s', exc)
+                except (NetshError, OSError) as exc:
+                    self.logger.error('Failed to restore startup disconnected state: %s', exc)
+        except Exception as exc:  # noqa: BLE001
+            self.logger.error('Unexpected error during startup network state restore: %s', exc, exc_info=True)
 
     def get_speed_test_status_text(self) -> str:
         """

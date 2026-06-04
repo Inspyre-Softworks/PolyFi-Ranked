@@ -35,6 +35,7 @@ import subprocess
 import time
 
 from wifi_pref_manager.paths import AppPaths
+from wifi_pref_manager.subprocess_utils import hidden_subprocess_kwargs
 
 
 TASK_NAME_DISABLE = 'PolyFi-DisableWiFi'
@@ -79,18 +80,7 @@ class WifiAdapterTaskManager:
     @staticmethod
     def _hidden_subprocess_kwargs() -> dict[str, object]:
         """Return subprocess kwargs that suppress console windows."""
-        kwargs: dict[str, object] = {}
-        create_no_window = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-        if create_no_window:
-            kwargs['creationflags'] = create_no_window
-        startupinfo_type = getattr(subprocess, 'STARTUPINFO', None)
-        startf_use_showwindow = getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
-        if startupinfo_type is not None and startf_use_showwindow:
-            si = startupinfo_type()
-            si.dwFlags |= startf_use_showwindow
-            si.wShowWindow = 0
-            kwargs['startupinfo'] = si
-        return kwargs
+        return hidden_subprocess_kwargs()
 
     def _run_schtasks(self, *args: str) -> subprocess.CompletedProcess:
         return subprocess.run(

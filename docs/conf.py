@@ -34,7 +34,7 @@ master_doc = 'index'
 autoclass_content = 'both'
 autodoc_member_order = 'bysource'
 autodoc_preserve_defaults = True
-autodoc_typehints = 'description'
+autodoc_typehints = 'none'
 autodoc_mock_imports = [
     'pystray',
     'tkinter',

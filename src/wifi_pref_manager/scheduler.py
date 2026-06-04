@@ -36,6 +36,7 @@ import sys
 
 from wifi_pref_manager.install_record import default_install_record_path, upsert_install_record
 from wifi_pref_manager.paths import AppPaths
+from wifi_pref_manager.subprocess_utils import hidden_subprocess_kwargs
 from wifi_pref_manager.windows_shell import resolve_runtime_launch_target
 
 TASK_NAME = 'PolyFi Ranked'
@@ -68,20 +69,7 @@ class TaskSchedulerInstaller:
         Returns:
             Keyword arguments safe to splat into ``subprocess.run``.
         """
-        kwargs: dict[str, object] = {}
-        create_no_window = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-        if create_no_window:
-            kwargs['creationflags'] = create_no_window
-
-        startupinfo_type = getattr(subprocess, 'STARTUPINFO', None)
-        startf_use_showwindow = getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
-        if startupinfo_type is not None and startf_use_showwindow:
-            startupinfo = startupinfo_type()
-            startupinfo.dwFlags |= startf_use_showwindow
-            startupinfo.wShowWindow = 0
-            kwargs['startupinfo'] = startupinfo
-
-        return kwargs
+        return hidden_subprocess_kwargs()
 
     @classmethod
     def for_current_runtime(cls, task_name: str = TASK_NAME) -> TaskSchedulerInstaller:

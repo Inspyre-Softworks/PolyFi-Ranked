@@ -38,6 +38,8 @@ import time
 from typing import TYPE_CHECKING, Sequence
 import xml.etree.ElementTree as ET
 
+from wifi_pref_manager.subprocess_utils import hidden_subprocess_kwargs
+
 if TYPE_CHECKING:
     from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
 
@@ -117,20 +119,7 @@ class NetshWiFiApi:
         Returns:
             Keyword arguments safe to splat into ``subprocess.run``.
         """
-        kwargs: dict[str, object] = {}
-        create_no_window = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-        if create_no_window:
-            kwargs['creationflags'] = create_no_window
-
-        startupinfo_type = getattr(subprocess, 'STARTUPINFO', None)
-        startf_use_showwindow = getattr(subprocess, 'STARTF_USESHOWWINDOW', 0)
-        if startupinfo_type is not None and startf_use_showwindow:
-            startupinfo = startupinfo_type()
-            startupinfo.dwFlags |= startf_use_showwindow
-            startupinfo.wShowWindow = 0
-            kwargs['startupinfo'] = startupinfo
-
-        return kwargs
+        return hidden_subprocess_kwargs()
 
     @staticmethod
     def is_elevation_required_error(exc: BaseException) -> bool:

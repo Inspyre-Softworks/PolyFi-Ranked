@@ -38,7 +38,6 @@ from __future__ import annotations
 
 import argparse
 import ctypes
-from datetime import datetime
 import logging
 import os
 from pathlib import Path
@@ -57,6 +56,7 @@ from wifi_pref_manager.paths import APPDATA_ROOT_ENV_VAR, APP_NAME, APP_SLUG, AP
 from wifi_pref_manager.scheduler import TASK_NAME, TaskSchedulerInstaller
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
+from wifi_pref_manager.startup_trace import append_startup_trace_line
 from wifi_pref_manager.ui.dialogs import show_dialog, show_native_message_box
 from wifi_pref_manager.ui.splash import resolve_splash_image_path, show_startup_splash
 from wifi_pref_manager.ui.tray import TrayApplication
@@ -105,10 +105,10 @@ class Application:
                 Trace message to append.
         """
         try:
-            self.paths.local_data_dir.mkdir(parents=True, exist_ok=True)
-            timestamp = datetime.now().isoformat(timespec='seconds')
-            with self.startup_trace_file.open('a', encoding='utf-8') as handle:
-                handle.write(f'[{timestamp}] pid={Path(sys.executable).name}:{message}\n')
+            append_startup_trace_line(
+                self.startup_trace_file,
+                f'pid={Path(sys.executable).name}:{message}',
+            )
         except OSError:
             return
 

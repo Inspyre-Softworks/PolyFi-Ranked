@@ -32,3 +32,11 @@ highest-priority available Wi-Fi network from your configured preference list.
 
    development
    building-windows-installer
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Wiki
+
+   wiki/Home
+   wiki/Command-Line-Interface-(CLI)-Reference
+   wiki/Contributing-Docs
