@@ -31,6 +31,7 @@ class ConfigRoundTripTests(unittest.TestCase):
                 ethernet_wifi_mode='disable_adapter',
                 show_wifi_disabled_dialog=False,
                 add_to_startup_programs=True,
+                add_scheduled_logon_task=True,
                 show_startup_splash=False,
                 splash_image_path=str(Path(tmp_dir) / 'polyfi_ranked_splash.png'),
                 splash_fade_in_ms=123,
@@ -41,6 +42,7 @@ class ConfigRoundTripTests(unittest.TestCase):
                 speed_test_interval=12,
                 save_speed_test_history=True,
                 speed_test_history_file=str(Path(tmp_dir) / 'history.jsonl'),
+                auto_check_for_updates=False,
             )
 
             save_config(config, config_path)
@@ -58,6 +60,7 @@ class ConfigRoundTripTests(unittest.TestCase):
             self.assertEqual(loaded.ethernet_wifi_mode, config.ethernet_wifi_mode)
             self.assertEqual(loaded.show_wifi_disabled_dialog, config.show_wifi_disabled_dialog)
             self.assertEqual(loaded.add_to_startup_programs, config.add_to_startup_programs)
+            self.assertEqual(loaded.add_scheduled_logon_task, config.add_scheduled_logon_task)
             self.assertEqual(loaded.show_startup_splash, config.show_startup_splash)
             self.assertEqual(loaded.splash_image_path, config.splash_image_path)
             self.assertEqual(loaded.splash_fade_in_ms, config.splash_fade_in_ms)
@@ -68,6 +71,7 @@ class ConfigRoundTripTests(unittest.TestCase):
             self.assertEqual(loaded.speed_test_interval, config.speed_test_interval)
             self.assertEqual(loaded.save_speed_test_history, config.save_speed_test_history)
             self.assertEqual(loaded.speed_test_history_file, config.speed_test_history_file)
+            self.assertEqual(loaded.auto_check_for_updates, config.auto_check_for_updates)
 
     def test_invalid_toml_raises_config_error(self) -> None:
         with TemporaryDirectory() as tmp_dir:
@@ -119,6 +123,27 @@ class ConfigRoundTripTests(unittest.TestCase):
 
             loaded = ConfigLoader(config_path).load()
             self.assertEqual(loaded.ethernet_wifi_mode, 'disconnect_and_disable_autoconnect')
+
+    def test_missing_scheduled_logon_task_setting_is_unmanaged(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / 'config.toml'
+            config_path.write_text(
+                "\n".join(
+                    [
+                        "[general]",
+                        "",
+                        "[[networks]]",
+                        'ssid = "Example"',
+                        'auto_switch = true',
+                        "",
+                    ]
+                ),
+                encoding='utf-8',
+            )
+
+            loaded = ConfigLoader(config_path).load()
+
+            self.assertIsNone(loaded.add_scheduled_logon_task)
 
     def test_invalid_ethernet_wifi_mode_raises_config_error(self) -> None:
         with TemporaryDirectory() as tmp_dir:

@@ -50,8 +50,8 @@ One-Shot Setup Script
 ---------------------
 
 For a guided workflow that installs the package, optionally sets the PolyFi
-app-data root, and adds Wi-Fi helper tasks plus Start Menu and Startup Programs
-entries:
+app-data root, and adds Wi-Fi helper tasks plus Start Menu, Startup Programs,
+and scheduled logon task entries:
 
 .. code-block:: powershell
 
@@ -69,7 +69,8 @@ When you do not pass a flag for an installer choice, the script prompts
 interactively and uses the shown default when you press Enter.  Pass
 ``-NoInteraction`` to skip prompts and accept the defaults.  In non-interactive
 mode, the Start Menu entry defaults to installed; ``-InstallStartup`` and
-``-InstallWifiTasks`` default to off; ``-InstallAll`` enables everything.
+``-InstallLogonTask`` and ``-InstallWifiTasks`` default to off; ``-InstallAll``
+enables everything.
 
 The setup script writes an ``install-record.json`` file under the selected
 app-data root so later teardown scripts can reuse the recorded directories and
@@ -86,7 +87,8 @@ custom directory:
    powershell -ExecutionPolicy Bypass -File .\scripts\install_polyfi.ps1 `
      -AppDataRoot D:\Apps\PolyFi-Ranked `
      -InstallStartMenu `
-     -InstallStartup
+     -InstallStartup `
+     -InstallLogonTask
 
 You can also set the ``POLYFI_APPDATA_ROOT`` user environment variable directly.
 When it is set, PolyFi uses that directory as its app-data root instead of the

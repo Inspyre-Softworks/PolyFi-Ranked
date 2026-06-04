@@ -20,7 +20,8 @@ A Windows-focused Python application that lets you define an ordered list of Wi-
 - Rotating log file support
 - Optional system tray app
 - Optional Windows Startup Programs shortcut with config-backed self-install
-- Optional Windows Task Scheduler startup registration
+- Optional config-backed Windows Task Scheduler startup registration
+- Optional tray update checks with GitHub Release installer download
 - Default config and logs stored in platform app-data directories
 - Optional automatic speed tests on connect and at a fixed interval
 - Exit-time Wi-Fi state restoration when running on Python 3.12+

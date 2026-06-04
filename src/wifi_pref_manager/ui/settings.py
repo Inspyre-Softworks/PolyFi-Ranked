@@ -344,6 +344,22 @@ class SettingsWindow:
             variable=startup_programs_var,
         ).grid(row=4, column=0, pady=(4, 0), sticky='w')
 
+        scheduled_logon_task_var = tk.BooleanVar(
+            value=bool(getattr(config, 'add_scheduled_logon_task', False))
+        )
+        ttk.Checkbutton(
+            frame_opts,
+            text='Start earlier with Task Scheduler',
+            variable=scheduled_logon_task_var,
+        ).grid(row=5, column=0, pady=(4, 0), sticky='w')
+
+        update_check_var = tk.BooleanVar(value=getattr(config, 'auto_check_for_updates', True))
+        ttk.Checkbutton(
+            frame_opts,
+            text='Check for updates automatically',
+            variable=update_check_var,
+        ).grid(row=6, column=0, pady=(4, 0), sticky='w')
+
         # ---- Action buttons --------------------------------------------
         frame_btns = ttk.Frame(win)
         frame_btns.grid(row=2, column=0, padx=10, pady=(4, 10), sticky='e')
@@ -370,6 +386,7 @@ class SettingsWindow:
                 ethernet_wifi_mode=ethernet_mode_var.get(),
                 show_wifi_disabled_dialog=getattr(config, 'show_wifi_disabled_dialog', True),
                 add_to_startup_programs=startup_programs_var.get(),
+                add_scheduled_logon_task=scheduled_logon_task_var.get(),
                 show_startup_splash=splash_var.get(),
                 splash_image_path=getattr(config, 'splash_image_path', ''),
                 splash_fade_in_ms=getattr(config, 'splash_fade_in_ms', 280),
@@ -380,6 +397,7 @@ class SettingsWindow:
                 speed_test_interval=speed_test_interval,
                 save_speed_test_history=save_speed_test_history,
                 speed_test_history_file=speed_test_history_file,
+                auto_check_for_updates=update_check_var.get(),
             )
 
             try:

@@ -178,6 +178,27 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             ['-m', 'wifi_pref_manager.app', '--tray'],
         )
 
+    @patch('wifi_pref_manager.scheduler.resolve_runtime_launch_target')
+    def test_scheduler_current_runtime_can_include_config_path(
+        self,
+        mock_resolve_runtime_launch_target: Mock,
+    ) -> None:
+        mock_resolve_runtime_launch_target.return_value = (
+            Path(r'C:\Python312\python.exe'),
+            ['-m', 'wifi_pref_manager.app'],
+            Path(r'C:\Python312'),
+        )
+
+        installer = TaskSchedulerInstaller.for_current_runtime(
+            task_name='PolyFi Ranked',
+            config_path='custom.toml',
+        )
+
+        self.assertEqual(
+            installer.launch_arguments,
+            ['-m', 'wifi_pref_manager.app', '--config', 'custom.toml', '--tray'],
+        )
+
     def test_scheduler_build_command_uses_compact_launch_string(self) -> None:
         installer = TaskSchedulerInstaller(
             launch_executable=Path(r'C:\Python312\pythonw.exe'),
@@ -297,6 +318,67 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
         app.sync_startup_programs_preference(config, logger)
 
         manager.remove.assert_called_once_with()
+
+    @patch('wifi_pref_manager.app.TaskSchedulerInstaller')
+    def test_sync_scheduled_logon_task_installs_when_enabled(
+        self,
+        mock_installer_type: Mock,
+    ) -> None:
+        app = Application()
+        app.active_config_path = Path('custom.toml')
+        logger = Mock()
+        config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_scheduled_logon_task=True,
+        )
+
+        app.sync_scheduled_logon_task_preference(config, logger)
+
+        mock_installer_type.for_current_runtime.assert_called_once_with(
+            task_name='PolyFi Ranked',
+            config_path=Path('custom.toml'),
+        )
+        mock_installer_type.for_current_runtime.return_value.install.assert_called_once_with(
+            emit_message=False
+        )
+
+    @patch('wifi_pref_manager.app.TaskSchedulerInstaller')
+    def test_sync_scheduled_logon_task_skips_missing_config_key(
+        self,
+        mock_installer_type: Mock,
+    ) -> None:
+        app = Application()
+        logger = Mock()
+        config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_scheduled_logon_task=None,
+        )
+
+        app.sync_scheduled_logon_task_preference(config, logger)
+
+        mock_installer_type.assert_not_called()
+
+    @patch('wifi_pref_manager.app.TaskSchedulerInstaller')
+    def test_sync_scheduled_logon_task_removes_when_disabled(
+        self,
+        mock_installer_type: Mock,
+    ) -> None:
+        app = Application()
+        logger = Mock()
+        installer = mock_installer_type.return_value
+        installer.uninstall.return_value = True
+        config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_scheduled_logon_task=False,
+        )
+
+        app.sync_scheduled_logon_task_preference(config, logger)
+
+        mock_installer_type.assert_called_once_with(
+            launch_executable=Path(sys.executable),
+            task_name='PolyFi Ranked',
+        )
+        installer.uninstall.assert_called_once_with()
 
     @patch('wifi_pref_manager.app.subprocess.Popen')
     @patch('wifi_pref_manager.app.resolve_runtime_launch_target')

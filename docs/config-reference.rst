@@ -42,6 +42,14 @@ Config Reference
    If true, PolyFi keeps a tray-launch shortcut in the user's Windows Startup
    Programs folder so it can start automatically at logon.
 
+``add_scheduled_logon_task``
+   If true, PolyFi keeps a Windows Task Scheduler logon task registered so it
+   can start earlier after sign-in than the Startup Programs shortcut path.
+
+``auto_check_for_updates``
+   If true, the tray app checks GitHub Releases for a newer PolyFi installer
+   after startup.
+
 ``enable_speed_tests``
    Enables or disables automatic speed tests entirely.
 

@@ -93,23 +93,43 @@ a fixed interval.  These ``[general]`` settings control the feature:
 Windows Startup Integration
 -----------------------------
 
-These ``[general]`` settings control whether PolyFi keeps itself registered in
-the Windows Startup Programs folder:
+These ``[general]`` settings control whether PolyFi keeps itself registered for
+automatic startup:
 
 .. code-block:: toml
 
    add_to_startup_programs = false
+   add_scheduled_logon_task = false
 
 When enabled, PolyFi refreshes the Startup Programs shortcut on launch and
 whenever the config reloads.  When disabled, PolyFi removes the shortcut if it
 exists.
 
-You can also register a Windows Task Scheduler logon task instead:
+The scheduled logon task uses Windows Task Scheduler and can start earlier
+after sign-in than the Startup Programs shortcut.  Manage it from Settings or
+from the CLI:
+
+.. code-block:: powershell
+
+   polyfi-ranked windows logon-task install
+   polyfi-ranked windows logon-task remove
+
+The standalone helper remains available for environments that install console
+scripts:
 
 .. code-block:: powershell
 
    polyfi-ranked-install-task
    polyfi-ranked-install-task --uninstall
+
+Update Checks
+-------------
+
+When ``auto_check_for_updates`` is true, the tray app checks GitHub Releases
+after startup.  The tray menu also includes **Check for Updates** for manual
+checks and **About PolyFi: Ranked** for version, documentation, and GitHub
+links.  When a newer release includes a Windows installer asset, PolyFi can
+download the installer to local app-data and launch it for the user.
 
 Startup Splash Screen
 ---------------------

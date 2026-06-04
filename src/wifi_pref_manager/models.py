@@ -92,6 +92,11 @@ class AppConfig:
         add_to_startup_programs:
             Whether PolyFi should keep a tray-launch shortcut in the user's
             Windows Startup Programs folder.
+        add_scheduled_logon_task:
+            Whether PolyFi should keep a Windows Task Scheduler logon task
+            registered for earlier tray startup after sign-in. ``None`` means
+            the active config predates this setting and the task should not be
+            managed automatically until the setting is saved explicitly.
         show_startup_splash:
             Whether to show the startup splash screen.
         splash_image_path:
@@ -112,6 +117,9 @@ class AppConfig:
             Whether completed speed-test results should be appended to a history file.
         speed_test_history_file:
             Path to the speed-test history file. Blank uses the default local app-data path.
+        auto_check_for_updates:
+            Whether the tray app should check GitHub Releases for an update
+            after startup.
     """
 
     preferred_networks: list[WiFiProfilePreference] = field(default_factory=list)
@@ -126,6 +134,7 @@ class AppConfig:
     ethernet_wifi_mode: str = ETHERNET_WIFI_MODE_DISCONNECT
     show_wifi_disabled_dialog: bool = True
     add_to_startup_programs: bool = False
+    add_scheduled_logon_task: bool | None = None
     show_startup_splash: bool = True
     splash_image_path: str = ''
     splash_fade_in_ms: int = 280
@@ -136,6 +145,7 @@ class AppConfig:
     speed_test_interval: int = 1800
     save_speed_test_history: bool = False
     speed_test_history_file: str = ''
+    auto_check_for_updates: bool = True
 
 
 @dataclass
