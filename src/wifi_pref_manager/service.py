@@ -802,7 +802,7 @@ class WiFiPreferenceService:
             try:
                 current_adapter_enabled = self.wifi_api.is_interface_enabled(self.interface_name)
             except (NetshError, OSError) as exc:
-                _log_exit_restore_error(
+                self._log_exit_restore_error(
                     'Could not determine current Wi-Fi adapter state during exit restore: %s',
                     exc,
                 )
@@ -813,7 +813,7 @@ class WiFiPreferenceService:
                 try:
                     self.enable_wifi_adapter()
                 except (NetshError, OSError) as exc:
-                    _log_exit_restore_error(
+                    self._log_exit_restore_error(
                         'Failed to re-enable Wi-Fi adapter during exit restore: %s',
                         exc,
                     )
@@ -823,7 +823,7 @@ class WiFiPreferenceService:
                 try:
                     self.wifi_api.disable_wifi_adapter(self.interface_name)
                 except (NetshError, OSError) as exc:
-                    _log_exit_restore_error(
+                    self._log_exit_restore_error(
                         'Failed to disable Wi-Fi adapter during exit restore: %s',
                         exc,
                     )
@@ -835,7 +835,7 @@ class WiFiPreferenceService:
             try:
                 current_ssid = self.wifi_api.get_current_ssid()
             except (NetshError, OSError) as exc:
-                _log_exit_restore_error(
+                self._log_exit_restore_error(
                     'Could not determine current Wi-Fi SSID during exit restore: %s',
                     exc,
                 )
@@ -855,7 +855,7 @@ class WiFiPreferenceService:
                         timeout=self.config.connect_timeout,
                     )
                 except (NetshError, OSError) as exc:
-                    _log_exit_restore_error(
+                    self._log_exit_restore_error(
                         'Failed to restore startup SSID %r: %s',
                         self._startup_ssid,
                         exc,
@@ -865,7 +865,7 @@ class WiFiPreferenceService:
                 try:
                     self.wifi_api.disconnect(self.interface_name)
                 except (NetshError, OSError) as exc:
-                    _log_exit_restore_error('Failed to restore startup disconnected state: %s', exc)
+                    self._log_exit_restore_error('Failed to restore startup disconnected state: %s', exc)
         except Exception as exc:  # noqa: BLE001
             if self._shutdown_restore_blocked(exc, reason='application exit'):
                 self.logger.debug(
