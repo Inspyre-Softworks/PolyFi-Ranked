@@ -49,6 +49,7 @@ Name: "startmenuicons"; Description: "Create Start Menu shortcuts"; GroupDescrip
 Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
 Name: "addtopath"; Description: "Add PolyFi to the system PATH"; GroupDescription: "Windows integrations:"
 Name: "startupshortcut"; Description: "Start PolyFi automatically when I sign in"; GroupDescription: "Windows integrations:"; Flags: unchecked
+Name: "logontask"; Description: "Start PolyFi earlier with a scheduled logon task"; GroupDescription: "Windows integrations:"; Flags: unchecked
 Name: "wifitasks"; Description: "Install Wi-Fi helper tasks for adapter control (may prompt for approval)"; GroupDescription: "Windows integrations:"; Flags: unchecked
 
 [Files]
@@ -61,11 +62,13 @@ Source: "{#SourcePath}\..\..\scripts\manage_windows_path.ps1"; DestDir: "{app}";
 [Icons]
 Name: "{group}\PolyFi Ranked"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--tray --show-splash"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Launch PolyFi in the system tray"; Tasks: startmenuicons
 Name: "{group}\PolyFi Ranked Console"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Open the PolyFi command-line launcher"; Tasks: startmenuicons
+Name: "{group}\Uninstall Wi-Fi Helper Tasks"; Filename: "{app}\{#MyAppExeName}"; Parameters: "windows wifi-tasks uninstall"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Remove PolyFi Wi-Fi adapter helper scheduled tasks"; Tasks: startmenuicons
 Name: "{autodesktop}\PolyFi Ranked"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--tray --show-splash"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-ExecutionPolicy Bypass -NoProfile -File ""{app}\manage_windows_path.ps1"" -Mode Add -InstallDir ""{app}"""; StatusMsg: "Adding PolyFi to PATH..."; Tasks: addtopath; Flags: runhidden waituntilterminated
 Filename: "{app}\{#MyAppExeName}"; Parameters: "windows startup install --force"; WorkingDir: "{app}"; StatusMsg: "Installing Startup Programs shortcut..."; Tasks: startupshortcut; Flags: runhidden waituntilterminated
+Filename: "{app}\{#MyAppExeName}"; Parameters: "windows logon-task install"; WorkingDir: "{app}"; StatusMsg: "Installing scheduled logon task..."; Tasks: logontask; Flags: runhidden waituntilterminated
 Filename: "{app}\{#MyAppExeName}"; Parameters: "windows wifi-tasks install"; WorkingDir: "{app}"; StatusMsg: "Installing Wi-Fi helper tasks..."; Tasks: wifitasks; Flags: hidewizard runhidden waituntilterminated
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "{code:GetInstallRecordParameters}"; StatusMsg: "Recording installed features..."; Flags: runhidden waituntilterminated
 Filename: "{group}\PolyFi Ranked"; Description: "Launch PolyFi in the system tray"; Flags: nowait postinstall shellexec skipifsilent unchecked; Tasks: startmenuicons
@@ -94,7 +97,7 @@ begin
     ' -AppExecutable "' + ExpandConstant('{app}\{#MyAppExeName}') + '"' +
     ' -AddToPath ' + BoolToLower(WizardIsTaskSelected('addtopath')) +
     ' -DesktopShortcut ' + BoolToLower(WizardIsTaskSelected('desktopicon')) +
-    ' -ScheduledLogonTask false' +
+    ' -ScheduledLogonTask ' + BoolToLower(WizardIsTaskSelected('logontask')) +
     ' -StartMenu ' + BoolToLower(WizardIsTaskSelected('startmenuicons')) +
     ' -StartupShortcut ' + BoolToLower(WizardIsTaskSelected('startupshortcut')) +
     ' -WifiTasks ' + BoolToLower(WizardIsTaskSelected('wifitasks'));

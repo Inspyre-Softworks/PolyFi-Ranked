@@ -57,6 +57,7 @@ auto_disable_wifi_on_ethernet = true
 ethernet_wifi_mode = 'disconnect_and_disable_autoconnect'
 show_wifi_disabled_dialog = true
 add_to_startup_programs = false
+add_scheduled_logon_task = false
 show_startup_splash = true
 splash_image_path = ''
 splash_fade_in_ms = 280
@@ -67,6 +68,7 @@ speed_test_on_new_connection = true
 speed_test_interval = 1800
 save_speed_test_history = false
 speed_test_history_file = ''
+auto_check_for_updates = true
 
 [[networks]]
 ssid = 'MyBestWiFi'
@@ -413,6 +415,15 @@ class ConfigLoader:
                 field_name='general.add_to_startup_programs',
                 default=False,
             ),
+            add_scheduled_logon_task=(
+                self._coerce_bool(
+                    general.get('add_scheduled_logon_task'),
+                    field_name='general.add_scheduled_logon_task',
+                    default=False,
+                )
+                if 'add_scheduled_logon_task' in general
+                else None
+            ),
             show_startup_splash=self._coerce_bool(
                 general.get('show_startup_splash'),
                 field_name='general.show_startup_splash',
@@ -459,6 +470,11 @@ class ConfigLoader:
                 default=False,
             ),
             speed_test_history_file=speed_test_history_file,
+            auto_check_for_updates=self._coerce_bool(
+                general.get('auto_check_for_updates'),
+                field_name='general.auto_check_for_updates',
+                default=True,
+            ),
         )
         self.mark_loaded()
         return config
@@ -494,6 +510,11 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         f'ethernet_wifi_mode = {_str(config.ethernet_wifi_mode)}\n',
         f'show_wifi_disabled_dialog = {_bool(config.show_wifi_disabled_dialog)}\n',
         f'add_to_startup_programs = {_bool(config.add_to_startup_programs)}\n',
+        *(
+            [f'add_scheduled_logon_task = {_bool(config.add_scheduled_logon_task)}\n']
+            if config.add_scheduled_logon_task is not None
+            else []
+        ),
         f'show_startup_splash = {_bool(config.show_startup_splash)}\n',
         f'splash_image_path = {_str(config.splash_image_path)}\n',
         f'splash_fade_in_ms = {config.splash_fade_in_ms}\n',
@@ -504,6 +525,7 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         f'speed_test_interval = {config.speed_test_interval}\n',
         f'save_speed_test_history = {_bool(config.save_speed_test_history)}\n',
         f'speed_test_history_file = {_str(config.speed_test_history_file)}\n',
+        f'auto_check_for_updates = {_bool(config.auto_check_for_updates)}\n',
     ]
 
     for network in config.preferred_networks:

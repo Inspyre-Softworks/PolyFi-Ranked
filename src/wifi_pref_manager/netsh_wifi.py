@@ -140,6 +140,17 @@ class NetshWiFiApi:
             or 'requested operation requires elevation' in message
         )
 
+    @staticmethod
+    def is_windows_shutdown_process_start_error(exc: BaseException) -> bool:
+        """
+        Determine whether Windows is rejecting process creation during shutdown.
+        """
+        winerror = getattr(exc, 'winerror', None)
+        if winerror == 1115:
+            return True
+        message = str(exc).lower()
+        return 'shutdown is in progress' in message or 'system shutdown is in progress' in message
+
     def run_netsh(self, args: Sequence[str]) -> str:
         """
         Run a netsh command.

@@ -75,6 +75,20 @@ Print all resolved file paths (config, log, state files, and so on):
 
       polyfi-ranked windows startup install
 
+``windows logon-task install``
+   Install a Windows Task Scheduler logon task that launches PolyFi in tray
+   mode at logon:
+
+   .. code-block:: powershell
+
+      polyfi-ranked windows logon-task install
+
+   Remove the task:
+
+   .. code-block:: powershell
+
+      polyfi-ranked windows logon-task remove
+
 ``windows uninstall``
    Remove PolyFi shortcuts and scheduled tasks.  Add ``--purge-data`` to also
    remove all config, log, and state files:

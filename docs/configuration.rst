@@ -43,6 +43,8 @@ Example
    start_minimized_to_tray = false
    auto_disable_wifi_on_ethernet = true
    add_to_startup_programs = false
+   add_scheduled_logon_task = false
+   auto_check_for_updates = true
    show_wifi_disabled_dialog = true
    enable_speed_tests = false
    speed_test_on_new_connection = true
@@ -76,6 +78,10 @@ Practical Notes
 - ``log_file = ''`` means "use the default log path."
 - ``add_to_startup_programs = true`` means "keep a tray-launch shortcut in the
   Windows Startup Programs folder."
+- ``add_scheduled_logon_task = true`` means "keep a Windows Task Scheduler
+  logon task registered for earlier startup after sign-in."
+- ``auto_check_for_updates = true`` means "check GitHub Releases for a newer
+  installer after the tray icon starts."
 - ``speed_test_interval`` is measured in seconds.
 - Every ``[[networks]]`` entry must have a non-empty ``ssid``.
 - If a network has ``auto_switch = false``, it stays in the list but will not

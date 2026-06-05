@@ -20,6 +20,7 @@ PolyFi: Ranked provides command-line tools for launching the app, inspecting res
 - [`windows`](#windows)
   - [`windows start-menu install`](#windows-start-menu-install)
   - [`windows startup install`](#windows-startup-install)
+  - [`windows logon-task install`](#windows-logon-task-install)
   - [`windows uninstall`](#windows-uninstall)
 - [Task Scheduler Entry Points](#task-scheduler-entry-points)
   - [`polyfi-ranked-install-task`](#polyfi-ranked-install-task)
@@ -218,6 +219,30 @@ PolyFi: Ranked will start automatically on user login.
 
 ---
 
+(windows-logon-task-install)=
+
+## `windows logon-task install`
+
+Install a Windows Task Scheduler logon task that launches PolyFi: Ranked in tray mode when the user logs in.
+
+### Install the Task
+
+```powershell
+polyfi-ranked windows logon-task install
+```
+
+### Remove the Task
+
+```powershell
+polyfi-ranked windows logon-task remove
+```
+
+### Result
+
+PolyFi: Ranked can start earlier after sign-in than the Startup Programs shortcut path.
+
+---
+
 (windows-uninstall)=
 
 ## `windows uninstall`
@@ -289,6 +314,7 @@ Use these links to jump to sections on this page.
 | `windows` | [`windows`](#windows) |
 | `windows start-menu install` | [`windows start-menu install`](#windows-start-menu-install) |
 | `windows startup install` | [`windows startup install`](#windows-startup-install) |
+| `windows logon-task install` | [`windows logon-task install`](#windows-logon-task-install) |
 | `windows uninstall` | [`windows uninstall`](#windows-uninstall) |
 | Task Scheduler Entry Points | [Task Scheduler Entry Points](#task-scheduler-entry-points) |
 | `polyfi-ranked-install-task` | [`polyfi-ranked-install-task`](#polyfi-ranked-install-task) |
