@@ -7,6 +7,18 @@ versions so packaging, docs, and support paths stay aligned.
 
 ## [Unreleased]
 
+## [1.0.0-dev.19] - 2026-06-06
+
+### Fixed
+
+- Built the Windows app launcher as a windowless executable and kept a separate
+  `polyfi-ranked-console.exe` launcher for command-line sessions, preventing
+  Start Menu, Startup Programs, and scheduled logon launches from opening a
+  terminal window before the tray app starts.
+- Updated `scheduler.py` and `windows_shell.py` to prefer the windowless launcher
+  for scheduled logon tasks and shell shortcuts so no terminal window appears on
+  Windows-initiated starts.
+
 ## [1.0.0-dev.18] - 2026-06-05
 
 ### Added
@@ -21,10 +33,6 @@ versions so packaging, docs, and support paths stay aligned.
 
 ### Fixed
 
-- Built the Windows app launcher as a windowless executable and kept a separate
-  `polyfi-ranked-console.exe` launcher for command-line sessions, preventing
-  Start Menu, Startup Programs, and scheduled logon launches from opening a
-  terminal window before the tray app starts.
 - Downgraded Windows-shutdown `netsh` process creation failures during exit-time Wi-Fi restoration so
   shutdown does not surface a noisy error when Windows is already refusing new processes.
 
