@@ -26,6 +26,70 @@ else:
     KERNEL32 = None
 
 
+class NullStream(io.TextIOBase):
+    """
+    A no-op text stream used to replace ``None`` standard streams in windowed
+    (``--noconsole``) PyInstaller builds.
+
+    PyInstaller sets ``sys.stdout``, ``sys.stderr``, and ``sys.stdin`` to
+    ``None`` when building with ``console=False``.  Some libraries (e.g.
+    ``inspy-logger``) call ``sys.stdin.isatty()`` at import time, which raises
+    ``AttributeError: 'NoneType' object has no attribute 'isatty'``.  This
+    class provides safe no-op implementations for all standard stream methods
+    so that ``redirect_none_streams()`` can install it as a harmless stand-in.
+    """
+
+    def readable(self) -> bool:
+        return True
+
+    def writable(self) -> bool:
+        return True
+
+    def read(self, size: int = -1) -> str:
+        return ''
+
+    def readline(self, size: int = -1) -> str:
+        return ''
+
+    def write(self, s: str) -> int:
+        return len(s)
+
+    def flush(self) -> None:
+        pass
+
+    def isatty(self) -> bool:
+        return False
+
+
+def redirect_none_streams() -> None:
+    """
+    Replace any ``None`` standard stream with a :class:`NullStream` instance.
+
+    In a PyInstaller windowed build (``console=False``) the interpreter sets
+    ``sys.stdin``, ``sys.stdout``, and ``sys.stderr`` to ``None`` because no
+    console window is attached.  Third-party libraries imported before the
+    :class:`ConsoleOutputManager` stream proxies are installed may call
+    methods such as ``.isatty()`` on those streams unconditionally.  Calling
+    this function at module load time ensures the standard streams are never
+    ``None`` for the lifetime of the process.
+
+    In non-windowed environments the streams are already valid objects, so
+    this function is a no-op in normal development and testing contexts.
+    """
+    if sys.stdin is None:
+        sys.stdin = NullStream()
+    if sys.stdout is None:
+        sys.stdout = NullStream()
+    if sys.stderr is None:
+        sys.stderr = NullStream()
+
+
+# Replace None standard streams immediately on import so that any third-party
+# module imported afterwards (e.g. inspy-logger, which calls sys.stdin.isatty()
+# at module level) does not raise AttributeError in windowed PyInstaller builds.
+redirect_none_streams()
+
+
 class OutputHistoryBuffer:
     """
     Keep a bounded in-memory transcript of output lines.

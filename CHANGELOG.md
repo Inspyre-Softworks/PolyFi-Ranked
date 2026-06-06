@@ -7,6 +7,18 @@ versions so packaging, docs, and support paths stay aligned.
 
 ## [Unreleased]
 
+## [1.0.0-dev.20] - 2026-06-06
+
+### Fixed
+
+- Fixed installer crash (`'NoneType' object has no attribute 'isatty'`) that
+  occurred when the windowed PyInstaller bundle (`console=False`) set
+  `sys.stdin`, `sys.stdout`, and `sys.stderr` to `None`.  Added a `NullStream`
+  class and a `redirect_none_streams()` helper to `console_output.py` that
+  replaces any `None` standard stream with a safe no-op object at module-import
+  time, before third-party libraries such as `inspy-logger` call `isatty()` at
+  their own module level.
+
 ## [1.0.0-dev.19] - 2026-06-06
 
 ### Fixed
