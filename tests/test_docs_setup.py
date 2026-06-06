@@ -29,7 +29,14 @@ class DocumentationSetupTests(unittest.TestCase):
         self.assertIn("'myst_parser'", content)
         self.assertIn("'sphinx.ext.autodoc'", content)
         self.assertIn("'sphinx.ext.viewcode'", content)
+        self.assertIn("'easy_exit_calls'", content)
         self.assertIn("master_doc = 'index'", content)
+
+    def test_ci_builds_docs_with_warnings_as_errors(self) -> None:
+        content = (PROJECT_ROOT / '.github' / 'workflows' / 'ci.yml').read_text(encoding='utf-8')
+
+        self.assertIn('poetry install --with docs --no-interaction', content)
+        self.assertIn('poetry run sphinx-build -W -b html docs docs/_build/local-html', content)
 
     def test_index_includes_api_reference_page(self) -> None:
         content = (PROJECT_ROOT / 'docs' / 'index.rst').read_text(encoding='utf-8')

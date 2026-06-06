@@ -36,6 +36,7 @@ autodoc_member_order = 'bysource'
 autodoc_preserve_defaults = True
 autodoc_typehints = 'none'
 autodoc_mock_imports = [
+    'easy_exit_calls',
     'pystray',
     'tkinter',
     'tkinter.messagebox',
