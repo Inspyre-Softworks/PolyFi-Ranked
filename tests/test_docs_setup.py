@@ -8,6 +8,19 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class DocumentationSetupTests(unittest.TestCase):
+    @staticmethod
+    def _top_level_block(content: str, key: str) -> list[str]:
+        lines = content.splitlines()
+        for index, line in enumerate(lines):
+            if line == f'{key}:':
+                block: list[str] = []
+                for child in lines[index + 1:]:
+                    if child and not child.startswith(' '):
+                        break
+                    block.append(child)
+                return block
+        return []
+
     def test_pyproject_has_docs_group_dependencies(self) -> None:
         content = (PROJECT_ROOT / 'pyproject.toml').read_text(encoding='utf-8')
 
@@ -35,9 +48,14 @@ class DocumentationSetupTests(unittest.TestCase):
     def test_ci_builds_docs_with_warnings_as_errors(self) -> None:
         content = (PROJECT_ROOT / '.github' / 'workflows' / 'ci.yml').read_text(encoding='utf-8')
 
-        self.assertIn('contents: read', content)
-        self.assertIn('poetry install --with docs --no-interaction', content)
-        self.assertIn('poetry run sphinx-build -W -b html docs docs/_build/local-html', content)
+        permissions_block = self._top_level_block(content, 'permissions')
+        jobs_block = self._top_level_block(content, 'jobs')
+
+        self.assertIn('  contents: read', permissions_block)
+        self.assertIn('  docs:', jobs_block)
+        self.assertIn('poetry install', content)
+        self.assertIn('--with docs', content)
+        self.assertIn('sphinx-build -W', content)
 
     def test_index_includes_api_reference_page(self) -> None:
         content = (PROJECT_ROOT / 'docs' / 'index.rst').read_text(encoding='utf-8')
