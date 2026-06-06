@@ -35,6 +35,7 @@ class DocumentationSetupTests(unittest.TestCase):
     def test_ci_builds_docs_with_warnings_as_errors(self) -> None:
         content = (PROJECT_ROOT / '.github' / 'workflows' / 'ci.yml').read_text(encoding='utf-8')
 
+        self.assertIn('contents: read', content)
         self.assertIn('poetry install --with docs --no-interaction', content)
         self.assertIn('poetry run sphinx-build -W -b html docs docs/_build/local-html', content)
 
