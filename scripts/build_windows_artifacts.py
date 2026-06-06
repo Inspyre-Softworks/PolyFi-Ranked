@@ -14,10 +14,18 @@ from typing import Mapping
 
 
 APP_DIST_DIR_NAME = 'polyfi-ranked'
-APP_EXECUTABLE_NAME = 'polyfi-ranked.exe'
 INSTALLER_SCRIPT_NAME = 'polyfi-ranked.iss'
 SPEC_FILE_NAME = 'polyfi-ranked.spec'
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+_SRC_ROOT = PROJECT_ROOT / 'src'
+if str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
+
+from wifi_pref_manager.launcher_names import (  # noqa: E402
+    PACKAGED_APP_EXE_NAME as APP_EXECUTABLE_NAME,
+    PACKAGED_CONSOLE_EXE_NAME as CONSOLE_EXECUTABLE_NAME,
+)
 
 
 @dataclass(frozen=True)
@@ -249,6 +257,10 @@ def main(argv: list[str] | None = None) -> int:
     app_executable = paths.pyinstaller_app_dir / APP_EXECUTABLE_NAME
     if not app_executable.exists():
         print(f'Expected bundled executable was not found: {app_executable}', file=sys.stderr)
+        return 1
+    console_executable = paths.pyinstaller_app_dir / CONSOLE_EXECUTABLE_NAME
+    if not console_executable.exists():
+        print(f'Expected console executable was not found: {console_executable}', file=sys.stderr)
         return 1
 
     print(f'PyInstaller app bundle: {app_executable}')

@@ -91,7 +91,7 @@ class TaskSchedulerInstaller:
             Configured installer.
         """
         executable, base_arguments, _working_directory = resolve_runtime_launch_target(
-            prefer_windowless=False
+            prefer_windowless=True
         )
         launch_arguments = [*base_arguments]
         if config_path:

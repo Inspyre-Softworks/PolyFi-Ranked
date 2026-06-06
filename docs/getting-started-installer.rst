@@ -38,8 +38,8 @@ The wizard steps are:
    - *Start Menu shortcuts* — adds a PolyFi: Ranked entry to the Windows
      Start Menu.
    - *Desktop shortcut* — adds a shortcut to your desktop.
-   - *Add to PATH* — makes the ``polyfi-ranked`` command available in any
-     terminal window (recommended).
+   - *Add to PATH* — makes ``polyfi-ranked`` and
+     ``polyfi-ranked-console`` available in any terminal window (recommended).
    - *Startup Programs shortcut* — launches PolyFi automatically in tray mode
      when you log in.
    - *Scheduled logon task* — launches PolyFi in tray mode through Task
@@ -141,6 +141,10 @@ it from the Start Menu shortcut or by running:
 .. code-block:: text
 
    polyfi-ranked --tray
+
+The installed ``polyfi-ranked.exe`` app launcher is windowless so shortcuts do
+not flash a terminal window.  Use ``polyfi-ranked-console.exe`` when you need
+interactive command output from the installed bundle.
 
 Windows Startup Integration
 ----------------------------

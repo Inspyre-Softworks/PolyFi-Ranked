@@ -95,6 +95,16 @@ class WindowsPackagingTests(unittest.TestCase):
         self.assertIn("collect_data_files('inspy_logger'", spec_content)
         self.assertIn("version/VERSION.txt", spec_content)
 
+    def test_pyinstaller_spec_builds_windowed_app_and_console_launcher(self) -> None:
+        spec_content = (
+            PROJECT_ROOT / 'packaging' / 'pyinstaller' / 'polyfi-ranked.spec'
+        ).read_text(encoding='utf-8')
+
+        self.assertIn("name='polyfi-ranked'", spec_content)
+        self.assertIn('console=False', spec_content)
+        self.assertIn("name='polyfi-ranked-console'", spec_content)
+        self.assertIn('console=True', spec_content)
+
     def test_inno_script_uses_branded_art_and_installer_tasks(self) -> None:
         script_content = (
             PROJECT_ROOT / 'packaging' / 'inno' / 'polyfi-ranked.iss'
@@ -111,8 +121,9 @@ class WindowsPackagingTests(unittest.TestCase):
         self.assertIn('Name: "logontask"', script_content)
         self.assertIn('Name: "wifitasks"', script_content)
         self.assertIn('DefaultGroupName=PolyFi Ranked', script_content)
+        self.assertIn('#define MyConsoleExeName "polyfi-ranked-console.exe"', script_content)
         self.assertIn('Name: "{group}\\PolyFi Ranked"', script_content)
-        self.assertIn('Name: "{group}\\PolyFi Ranked Console"', script_content)
+        self.assertIn('Name: "{group}\\PolyFi Ranked Console"; Filename: "{app}\\{#MyConsoleExeName}"', script_content)
         self.assertIn('Name: "{group}\\Uninstall Wi-Fi Helper Tasks"', script_content)
         self.assertIn('manage_install_record.ps1', script_content)
         self.assertIn('GetInstallRecordParameters', script_content)
@@ -168,15 +179,86 @@ class WindowsPackagingTests(unittest.TestCase):
         mock_ensure_packaging_art,
     ) -> None:
         del mock_read_project_version
-        paths = build_windows_artifacts.build_packaging_paths(PROJECT_ROOT)
-        mock_build_packaging_paths.return_value = paths
+        with TemporaryDirectory() as tmp_dir:
+            project_root = Path(tmp_dir)
+            build_root = project_root / 'build' / 'windows'
+            pyinstaller_dist_root = project_root / 'dist' / 'pyinstaller'
+            paths = build_windows_artifacts.PackagingPaths(
+                project_root=project_root,
+                spec_file=project_root / 'packaging' / 'pyinstaller' / 'polyfi-ranked.spec',
+                installer_script=project_root / 'packaging' / 'inno' / 'polyfi-ranked.iss',
+                app_icon_file=build_root / 'polyfi-ranked.ico',
+                setup_icon_file=build_root / 'polyfi-ranked-setup.ico',
+                wizard_image_file=build_root / 'polyfi-ranked-wizard.png',
+                wizard_small_image_file=build_root / 'polyfi-ranked-wizard-small.png',
+                pyinstaller_dist_root=pyinstaller_dist_root,
+                pyinstaller_app_dir=pyinstaller_dist_root / 'polyfi-ranked',
+                pyinstaller_work_root=project_root / 'build' / 'pyinstaller',
+                installer_output_dir=project_root / 'dist' / 'installer',
+            )
+            mock_build_packaging_paths.return_value = paths
 
-        result = build_windows_artifacts.main(['--skip-installer'])
+            def create_bundled_executables(command: list[str], *, cwd: Path) -> None:
+                del command, cwd
+                paths.pyinstaller_app_dir.mkdir(parents=True)
+                (paths.pyinstaller_app_dir / 'polyfi-ranked.exe').write_text('', encoding='utf-8')
+                (paths.pyinstaller_app_dir / 'polyfi-ranked-console.exe').write_text('', encoding='utf-8')
+
+            mock_run_command.side_effect = create_bundled_executables
+
+            result = build_windows_artifacts.main(['--skip-installer'])
 
         self.assertEqual(result, 0)
         mock_ensure_packaging_art.assert_called_once_with(paths, paths.project_root)
         mock_prepare_pyinstaller_paths.assert_called_once_with(paths, clean=True)
-        mock_run_command.assert_called_once()
+        mock_run_command.assert_called_once_with(
+            build_windows_artifacts.build_pyinstaller_command(paths),
+            cwd=paths.project_root,
+        )
+
+    @patch.object(build_windows_artifacts, 'ensure_packaging_art')
+    @patch.object(build_windows_artifacts, 'prepare_pyinstaller_paths')
+    @patch.object(build_windows_artifacts, 'run_command')
+    @patch.object(build_windows_artifacts, 'read_project_version', return_value='1.0.0-dev.6')
+    @patch.object(build_windows_artifacts, 'build_packaging_paths')
+    def test_main_fails_when_console_executable_is_missing(
+        self,
+        mock_build_packaging_paths,
+        mock_read_project_version,
+        mock_run_command,
+        mock_prepare_pyinstaller_paths,
+        mock_ensure_packaging_art,
+    ) -> None:
+        del mock_read_project_version, mock_prepare_pyinstaller_paths, mock_ensure_packaging_art
+        with TemporaryDirectory() as tmp_dir:
+            project_root = Path(tmp_dir)
+            pyinstaller_dist_root = project_root / 'dist' / 'pyinstaller'
+            paths = build_windows_artifacts.PackagingPaths(
+                project_root=project_root,
+                spec_file=project_root / 'packaging' / 'pyinstaller' / 'polyfi-ranked.spec',
+                installer_script=project_root / 'packaging' / 'inno' / 'polyfi-ranked.iss',
+                app_icon_file=project_root / 'build' / 'windows' / 'polyfi-ranked.ico',
+                setup_icon_file=project_root / 'build' / 'windows' / 'polyfi-ranked-setup.ico',
+                wizard_image_file=project_root / 'build' / 'windows' / 'polyfi-ranked-wizard.png',
+                wizard_small_image_file=project_root / 'build' / 'windows' / 'polyfi-ranked-wizard-small.png',
+                pyinstaller_dist_root=pyinstaller_dist_root,
+                pyinstaller_app_dir=pyinstaller_dist_root / 'polyfi-ranked',
+                pyinstaller_work_root=project_root / 'build' / 'pyinstaller',
+                installer_output_dir=project_root / 'dist' / 'installer',
+            )
+            mock_build_packaging_paths.return_value = paths
+
+            def create_app_executable_only(command: list[str], *, cwd: Path) -> None:
+                del command, cwd
+                paths.pyinstaller_app_dir.mkdir(parents=True)
+                (paths.pyinstaller_app_dir / 'polyfi-ranked.exe').write_text('', encoding='utf-8')
+                # console exe is intentionally absent
+
+            mock_run_command.side_effect = create_app_executable_only
+
+            result = build_windows_artifacts.main(['--skip-installer'])
+
+        self.assertEqual(result, 1)
 
 
 if __name__ == '__main__':

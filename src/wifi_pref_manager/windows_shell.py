@@ -21,6 +21,7 @@ import subprocess
 import sys
 
 from wifi_pref_manager.icon_assets import write_app_icon_file
+from wifi_pref_manager.launcher_names import PACKAGED_APP_EXE_NAME, PACKAGED_CONSOLE_EXE_NAME
 from wifi_pref_manager.paths import APP_NAME, AppPaths
 
 
@@ -36,8 +37,9 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
         ``(executable, arguments, working_directory)``.
     """
     executable = Path(sys.executable)
-    packaged_launcher = executable.parent / 'polyfi-ranked.exe'
-    scripts_launcher = executable.parent / 'Scripts' / 'polyfi-ranked.exe'
+    packaged_launcher = executable.parent / PACKAGED_APP_EXE_NAME
+    packaged_console_launcher = executable.parent / PACKAGED_CONSOLE_EXE_NAME
+    scripts_launcher = executable.parent / 'Scripts' / PACKAGED_APP_EXE_NAME
 
     if prefer_windowless:
         pythonw = executable.with_name('pythonw.exe')
@@ -47,6 +49,8 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
             return packaged_launcher, [], packaged_launcher.parent
 
     else:
+        if packaged_console_launcher.exists():
+            return packaged_console_launcher, [], packaged_console_launcher.parent
         if packaged_launcher.exists():
             return packaged_launcher, [], packaged_launcher.parent
         if scripts_launcher.exists():
@@ -158,10 +162,10 @@ class WindowsShortcutManager:
         """
         Resolve the shell launcher target.
 
-        Shell shortcuts intentionally avoid ``pythonw.exe`` so PolyFi can stay
-        in the current process and hide its own console window after startup.
+        Shell shortcuts prefer a windowless launcher so Windows can start
+        PolyFi without creating a terminal window first.
         """
-        return resolve_runtime_launch_target(prefer_windowless=False)
+        return resolve_runtime_launch_target(prefer_windowless=True)
 
     def _create_shortcut(self, spec: ShortcutSpec) -> None:
         """

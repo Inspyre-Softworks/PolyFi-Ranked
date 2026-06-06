@@ -44,7 +44,8 @@ PyInstaller step and the Inno Setup step in one command:
 When the script finishes successfully, two artifacts are produced:
 
 - **PyInstaller app folder:**
-  ``dist\pyinstaller\polyfi-ranked\polyfi-ranked.exe``
+  ``dist\pyinstaller\polyfi-ranked\polyfi-ranked.exe`` and
+  ``dist\pyinstaller\polyfi-ranked\polyfi-ranked-console.exe``
 - **Windows installer:**
   ``dist\installer\polyfi-ranked-setup-<version>.exe``
 
@@ -131,7 +132,8 @@ After a full build the following files are present under the repository root:
    dist\
      pyinstaller\
        polyfi-ranked\
-         polyfi-ranked.exe          <- standalone app executable
+         polyfi-ranked.exe          <- windowless app executable
+         polyfi-ranked-console.exe  <- console launcher for CLI output
          (supporting DLLs and data files)
      installer\
        polyfi-ranked-setup-<version>.exe   <- Inno Setup installer

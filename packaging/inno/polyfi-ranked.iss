@@ -2,6 +2,7 @@
 #define MyAppName "PolyFi: Ranked"
 #define MyAppPublisher "Inspyre Softworks"
 #define MyAppExeName "polyfi-ranked.exe"
+#define MyConsoleExeName "polyfi-ranked-console.exe"
 #define MySetupIconFile AddBackslash(SourcePath) + "..\..\build\windows\polyfi-ranked-setup.ico"
 #define MyWizardImageFile AddBackslash(SourcePath) + "..\..\build\windows\polyfi-ranked-wizard.png"
 #define MyWizardSmallImageFile AddBackslash(SourcePath) + "..\..\build\windows\polyfi-ranked-wizard-small.png"
@@ -61,7 +62,7 @@ Source: "{#SourcePath}\..\..\scripts\manage_windows_path.ps1"; DestDir: "{app}";
 
 [Icons]
 Name: "{group}\PolyFi Ranked"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--tray --show-splash"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Launch PolyFi in the system tray"; Tasks: startmenuicons
-Name: "{group}\PolyFi Ranked Console"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Open the PolyFi command-line launcher"; Tasks: startmenuicons
+Name: "{group}\PolyFi Ranked Console"; Filename: "{app}\{#MyConsoleExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Open the PolyFi command-line launcher"; Tasks: startmenuicons
 Name: "{group}\Uninstall Wi-Fi Helper Tasks"; Filename: "{app}\{#MyAppExeName}"; Parameters: "windows wifi-tasks uninstall"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Remove PolyFi Wi-Fi adapter helper scheduled tasks"; Tasks: startmenuicons
 Name: "{autodesktop}\PolyFi Ranked"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--tray --show-splash"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 

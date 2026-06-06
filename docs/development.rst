@@ -72,6 +72,7 @@ The underlying Python driver is also available directly:
 Default build outputs:
 
 - ``dist\pyinstaller\polyfi-ranked\polyfi-ranked.exe``
+- ``dist\pyinstaller\polyfi-ranked\polyfi-ranked-console.exe``
 - ``dist\installer\polyfi-ranked-setup-<version>.exe``
 
 See :doc:`building-windows-installer` for full build documentation.
