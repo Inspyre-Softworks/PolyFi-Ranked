@@ -14,11 +14,18 @@ from typing import Mapping
 
 
 APP_DIST_DIR_NAME = 'polyfi-ranked'
-APP_EXECUTABLE_NAME = 'polyfi-ranked.exe'
-CONSOLE_EXECUTABLE_NAME = 'polyfi-ranked-console.exe'
 INSTALLER_SCRIPT_NAME = 'polyfi-ranked.iss'
 SPEC_FILE_NAME = 'polyfi-ranked.spec'
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+_SRC_ROOT = PROJECT_ROOT / 'src'
+if str(_SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SRC_ROOT))
+
+from wifi_pref_manager.launcher_names import (  # noqa: E402
+    PACKAGED_APP_EXE_NAME as APP_EXECUTABLE_NAME,
+    PACKAGED_CONSOLE_EXE_NAME as CONSOLE_EXECUTABLE_NAME,
+)
 
 
 @dataclass(frozen=True)

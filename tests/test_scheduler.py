@@ -150,6 +150,23 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             self.assertEqual(arguments, [])
             self.assertEqual(working_directory, app_dir)
 
+    def test_non_windowless_launch_falls_back_to_packaged_app_launcher_when_no_console_exe(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            app_dir = Path(tmp_dir) / 'app'
+            app_dir.mkdir(parents=True)
+            app_launcher = app_dir / 'polyfi-ranked.exe'
+            app_launcher.write_text('', encoding='utf-8')
+            # No console launcher and no Scripts launcher present
+
+            with patch.object(sys, 'executable', str(app_launcher)):
+                executable, arguments, working_directory = resolve_runtime_launch_target(
+                    prefer_windowless=False
+                )
+
+            self.assertEqual(executable, app_launcher)
+            self.assertEqual(arguments, [])
+            self.assertEqual(working_directory, app_dir)
+
     def test_windowless_launch_prefers_packaged_app_launcher(self) -> None:
         with TemporaryDirectory() as tmp_dir:
             app_dir = Path(tmp_dir) / 'app'

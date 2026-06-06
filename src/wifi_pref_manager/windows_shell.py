@@ -21,6 +21,7 @@ import subprocess
 import sys
 
 from wifi_pref_manager.icon_assets import write_app_icon_file
+from wifi_pref_manager.launcher_names import PACKAGED_APP_EXE_NAME, PACKAGED_CONSOLE_EXE_NAME
 from wifi_pref_manager.paths import APP_NAME, AppPaths
 
 
@@ -36,9 +37,9 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
         ``(executable, arguments, working_directory)``.
     """
     executable = Path(sys.executable)
-    packaged_launcher = executable.parent / 'polyfi-ranked.exe'
-    packaged_console_launcher = executable.parent / 'polyfi-ranked-console.exe'
-    scripts_launcher = executable.parent / 'Scripts' / 'polyfi-ranked.exe'
+    packaged_launcher = executable.parent / PACKAGED_APP_EXE_NAME
+    packaged_console_launcher = executable.parent / PACKAGED_CONSOLE_EXE_NAME
+    scripts_launcher = executable.parent / 'Scripts' / PACKAGED_APP_EXE_NAME
 
     if prefer_windowless:
         pythonw = executable.with_name('pythonw.exe')
