@@ -10,7 +10,7 @@ File:
 
 Description:
     Shared constants for the Windows packaged launcher executable names.
-    Centralised here so that build scripts and runtime code reference a single
+    Centralized here so that build scripts and runtime code reference a single
     source of truth.
 """
 
