@@ -601,12 +601,6 @@ class WiFiPreferenceService:
         if not self._wifi_manually_disconnected_by_ethernet:
             return
 
-        def _shutdown_restore_blocked(exc: BaseException) -> bool:
-            return (
-                reason == 'application exit'
-                and NetshWiFiApi.is_windows_shutdown_process_start_error(exc)
-            )
-
         previous_modes = self._wifi_profiles_autoconnect_before_ethernet or {}
         for profile_name, auto_connect_enabled in previous_modes.items():
             try:
@@ -616,7 +610,7 @@ class WiFiPreferenceService:
                     interface_name=self.interface_name,
                 )
             except (NetshError, OSError) as exc:
-                if _shutdown_restore_blocked(exc):
+                if self._shutdown_restore_blocked(exc, reason=reason):
                     self.logger.debug(
                         'Skipping auto-connect restore for %r during Windows shutdown: %s',
                         profile_name,
@@ -633,7 +627,7 @@ class WiFiPreferenceService:
         try:
             current_ssid = self.wifi_api.get_current_ssid()
         except (NetshError, OSError) as exc:
-            if _shutdown_restore_blocked(exc):
+            if self._shutdown_restore_blocked(exc, reason=reason):
                 self.logger.debug('Skipping Wi-Fi state restore during Windows shutdown: %s', exc)
                 current_ssid = None
             else:
@@ -646,7 +640,7 @@ class WiFiPreferenceService:
                     try:
                         self.wifi_api.disconnect(self.interface_name)
                     except (NetshError, OSError) as exc:
-                        if _shutdown_restore_blocked(exc):
+                        if self._shutdown_restore_blocked(exc, reason=reason):
                             self.logger.debug('Skipping Wi-Fi disconnect during Windows shutdown: %s', exc)
                         else:
                             self.logger.warning(
@@ -661,7 +655,7 @@ class WiFiPreferenceService:
                         timeout=self.config.connect_timeout,
                     )
                 except (NetshError, OSError) as exc:
-                    if _shutdown_restore_blocked(exc):
+                    if self._shutdown_restore_blocked(exc, reason=reason):
                         self.logger.debug(
                             'Skipping pre-Ethernet SSID reconnect during Windows shutdown: %s',
                             exc,
@@ -677,7 +671,7 @@ class WiFiPreferenceService:
             try:
                 self.wifi_api.disconnect(self.interface_name)
             except (NetshError, OSError) as exc:
-                if _shutdown_restore_blocked(exc):
+                if self._shutdown_restore_blocked(exc, reason=reason):
                     self.logger.debug('Skipping disconnected Wi-Fi restore during Windows shutdown: %s', exc)
                 else:
                     self.logger.warning(
@@ -689,6 +683,19 @@ class WiFiPreferenceService:
         self._wifi_manually_disconnected_by_ethernet = False
         self._wifi_profiles_autoconnect_before_ethernet = None
         self._wifi_ssid_before_ethernet = None
+
+    @staticmethod
+    def _shutdown_restore_blocked(exc: BaseException, *, reason: str | None = None) -> bool:
+        if reason is not None and reason != 'application exit':
+            return False
+        return NetshWiFiApi.is_windows_shutdown_process_start_error(exc)
+
+    def _log_exit_restore_error(self, message: str, *args: object) -> None:
+        exc = args[-1] if args and isinstance(args[-1], BaseException) else None
+        if exc is not None and self._shutdown_restore_blocked(exc, reason='application exit'):
+            self.logger.debug(message, *args)
+        else:
+            self.logger.error(message, *args)
 
     def _notify_wifi_network_changed(
         self,
@@ -784,13 +791,6 @@ class WiFiPreferenceService:
         calling exit machinery (e.g. easy-exit-calls) does not raise a crash
         dialog on Windows shutdown or restart.
         """
-        def _log_exit_restore_error(message: str, *args: object) -> None:
-            exc = args[-1] if args and isinstance(args[-1], BaseException) else None
-            if exc is not None and NetshWiFiApi.is_windows_shutdown_process_start_error(exc):
-                self.logger.debug(message, *args)
-            else:
-                self.logger.error(message, *args)
-
         try:
             self._restore_wifi_state_after_ethernet(reason='application exit')
 
@@ -802,7 +802,7 @@ class WiFiPreferenceService:
             try:
                 current_adapter_enabled = self.wifi_api.is_interface_enabled(self.interface_name)
             except (NetshError, OSError) as exc:
-                _log_exit_restore_error(
+                self._log_exit_restore_error(
                     'Could not determine current Wi-Fi adapter state during exit restore: %s',
                     exc,
                 )
@@ -813,7 +813,7 @@ class WiFiPreferenceService:
                 try:
                     self.enable_wifi_adapter()
                 except (NetshError, OSError) as exc:
-                    _log_exit_restore_error(
+                    self._log_exit_restore_error(
                         'Failed to re-enable Wi-Fi adapter during exit restore: %s',
                         exc,
                     )
@@ -823,7 +823,7 @@ class WiFiPreferenceService:
                 try:
                     self.wifi_api.disable_wifi_adapter(self.interface_name)
                 except (NetshError, OSError) as exc:
-                    _log_exit_restore_error(
+                    self._log_exit_restore_error(
                         'Failed to disable Wi-Fi adapter during exit restore: %s',
                         exc,
                     )
@@ -835,7 +835,7 @@ class WiFiPreferenceService:
             try:
                 current_ssid = self.wifi_api.get_current_ssid()
             except (NetshError, OSError) as exc:
-                _log_exit_restore_error(
+                self._log_exit_restore_error(
                     'Could not determine current Wi-Fi SSID during exit restore: %s',
                     exc,
                 )
@@ -855,7 +855,7 @@ class WiFiPreferenceService:
                         timeout=self.config.connect_timeout,
                     )
                 except (NetshError, OSError) as exc:
-                    _log_exit_restore_error(
+                    self._log_exit_restore_error(
                         'Failed to restore startup SSID %r: %s',
                         self._startup_ssid,
                         exc,
@@ -865,9 +865,9 @@ class WiFiPreferenceService:
                 try:
                     self.wifi_api.disconnect(self.interface_name)
                 except (NetshError, OSError) as exc:
-                    _log_exit_restore_error('Failed to restore startup disconnected state: %s', exc)
+                    self._log_exit_restore_error('Failed to restore startup disconnected state: %s', exc)
         except Exception as exc:  # noqa: BLE001
-            if NetshWiFiApi.is_windows_shutdown_process_start_error(exc):
+            if self._shutdown_restore_blocked(exc, reason='application exit'):
                 self.logger.debug(
                     'Startup network state restore skipped during Windows shutdown: %s',
                     exc,

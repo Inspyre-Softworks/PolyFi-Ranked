@@ -56,6 +56,7 @@ from wifi_pref_manager.paths import APPDATA_ROOT_ENV_VAR, APP_NAME, APP_SLUG, AP
 from wifi_pref_manager.scheduler import (
     TASK_NAME,
     TaskSchedulerInstaller,
+    persist_scheduled_logon_task_state,
     update_scheduled_logon_task_preference,
 )
 from wifi_pref_manager.service import WiFiPreferenceService
@@ -699,6 +700,22 @@ class Application:
             create_if_missing=create_if_missing,
         )
 
+    def persist_scheduled_logon_task_state(
+        self,
+        config_path: str | Path | None,
+        enabled: bool,
+        *,
+        create_if_missing: bool,
+    ) -> Path | None:
+        """
+        Persist scheduled-logon-task config and install-record state together.
+        """
+        return persist_scheduled_logon_task_state(
+            config_path,
+            enabled,
+            create_if_missing=create_if_missing,
+        )
+
     def sync_scheduled_logon_task_preference(self, config, logger) -> None:
         """
         Install or remove the scheduled logon task to match the config.
@@ -1272,25 +1289,18 @@ class Application:
             messages.append(f'Installed scheduled logon task: {task_name}')
 
         try:
-            config_file = self.update_scheduled_logon_task_preference(
+            config_file = self.persist_scheduled_logon_task_state(
                 config_path,
                 True,
                 create_if_missing=True,
             )
-        except (ConfigError, OSError) as exc:
+        except ConfigError as exc:
             errors.append(f'Could not enable add_scheduled_logon_task in config: {exc}')
+        except OSError as exc:
+            errors.append(f'Install record error: {exc}')
         else:
             if config_file is not None:
                 messages.append(f'Enabled add_scheduled_logon_task in config: {config_file}')
-
-        if not errors:
-            try:
-                self.sync_install_record_state(
-                    config_path,
-                    feature_updates={'scheduled_logon_task': True},
-                )
-            except OSError as exc:
-                errors.append(f'Install record error: {exc}')
 
         for message in messages:
             print(message)
@@ -1322,25 +1332,18 @@ class Application:
                 messages.append(f'No scheduled logon task found: {task_name}')
 
         try:
-            config_file = self.update_scheduled_logon_task_preference(
+            config_file = self.persist_scheduled_logon_task_state(
                 config_path,
                 False,
                 create_if_missing=False,
             )
-        except (ConfigError, OSError) as exc:
+        except ConfigError as exc:
             errors.append(f'Could not disable add_scheduled_logon_task in config: {exc}')
+        except OSError as exc:
+            errors.append(f'Install record error: {exc}')
         else:
             if config_file is not None:
                 messages.append(f'Disabled add_scheduled_logon_task in config: {config_file}')
-
-        if not errors:
-            try:
-                self.sync_install_record_state(
-                    config_path,
-                    feature_updates={'scheduled_logon_task': False},
-                )
-            except OSError as exc:
-                errors.append(f'Install record error: {exc}')
 
         for message in messages:
             print(message)

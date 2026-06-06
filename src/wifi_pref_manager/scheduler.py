@@ -237,6 +237,39 @@ def update_scheduled_logon_task_preference(
     return loader.config_path
 
 
+def persist_scheduled_logon_task_state(
+    config_path: str | Path | None,
+    enabled: bool,
+    *,
+    create_if_missing: bool,
+) -> Path | None:
+    """
+    Persist scheduled-logon-task config and install-record state together.
+    """
+    config_file = update_scheduled_logon_task_preference(
+        config_path,
+        enabled,
+        create_if_missing=create_if_missing,
+    )
+
+    app_paths = AppPaths()
+    resolved_config_path = Path(config_path).expanduser() if config_path else app_paths.config_file
+    record_path = default_install_record_path(
+        resolved_config_path.parent if config_path else app_paths.app_data_root
+    )
+    upsert_install_record(
+        record_path,
+        path_updates={
+            'app_data_root': record_path.parent,
+            'command_dir': Path(sys.executable).parent,
+            'command_path': Path(sys.executable),
+            'config_path': resolved_config_path,
+        },
+        feature_updates={'scheduled_logon_task': enabled},
+    )
+    return config_file
+
+
 def main(argv: list[str] | None = None) -> int:
     """
     CLI entry point for scheduled task installation.
@@ -253,27 +286,13 @@ def main(argv: list[str] | None = None) -> int:
         task_name=args.task_name,
         config_path=args.config,
     )
-    app_paths = AppPaths()
-    resolved_config_path = Path(args.config).expanduser() if args.config else app_paths.config_file
-    record_path = default_install_record_path(resolved_config_path.parent if args.config else app_paths.app_data_root)
-    record_paths = {
-        'app_data_root': record_path.parent,
-        'command_dir': Path(sys.executable).parent,
-        'command_path': Path(sys.executable),
-        'config_path': resolved_config_path,
-    }
     try:
         if args.uninstall:
             removed = installer.uninstall()
-            update_scheduled_logon_task_preference(
+            persist_scheduled_logon_task_state(
                 args.config,
                 False,
                 create_if_missing=False,
-            )
-            upsert_install_record(
-                record_path,
-                path_updates=record_paths,
-                feature_updates={'scheduled_logon_task': False},
             )
             if removed:
                 print(f'Removed scheduled task: {args.task_name}')
@@ -281,15 +300,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f'No scheduled task found: {args.task_name}')
         else:
             installer.install()
-            update_scheduled_logon_task_preference(
+            persist_scheduled_logon_task_state(
                 args.config,
                 True,
                 create_if_missing=True,
-            )
-            upsert_install_record(
-                record_path,
-                path_updates=record_paths,
-                feature_updates={'scheduled_logon_task': True},
             )
     except (ConfigError, OSError) as exc:
         print(f'Scheduled task error: {exc}', file=sys.stderr)
