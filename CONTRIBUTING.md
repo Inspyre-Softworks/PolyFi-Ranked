@@ -62,7 +62,8 @@ poetry run sphinx-build -W -b html docs docs/_build/local-html
 ```
 
 Read the Docs is configured to install the Poetry `docs` group and build from
-`docs/conf.py`, so local Sphinx changes should be verified before pushing.
+`docs/conf.py`, and CI now runs the same `sphinx-build -W` command on Linux, so
+local Sphinx changes should be verified before pushing.
 
 ## Building Windows Packages
 
