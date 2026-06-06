@@ -37,12 +37,30 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
-exe = EXE(
+app_exe = EXE(
     pyz,
     a.scripts,
     [],
     exclude_binaries=True,
     name='polyfi-ranked',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=False,
+    disable_windowed_traceback=True,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=str(icon_path),
+)
+console_exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name='polyfi-ranked-console',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -56,7 +74,8 @@ exe = EXE(
     icon=str(icon_path),
 )
 coll = COLLECT(
-    exe,
+    app_exe,
+    console_exe,
     a.binaries,
     a.datas,
     strip=False,

@@ -7,6 +7,27 @@ versions so packaging, docs, and support paths stay aligned.
 
 ## [Unreleased]
 
+## [1.0.0-dev.18] - 2026-06-05
+
+### Added
+
+- Added config-backed scheduled logon task management so PolyFi can start earlier after sign-in through
+  Windows Task Scheduler, including a new Settings checkbox and `polyfi-ranked windows logon-task`
+  install/remove commands.
+- Added an optional Inno Setup component for the scheduled logon task and a Start Menu shortcut that
+  uninstalls the Wi-Fi helper scheduled tasks.
+- Added tray update support: automatic update checks, manual "Check for Updates", GitHub Release
+  installer download/launch, and an About dialog with documentation, GitHub, PolyFi, and Python details.
+
+### Fixed
+
+- Built the Windows app launcher as a windowless executable and kept a separate
+  `polyfi-ranked-console.exe` launcher for command-line sessions, preventing
+  Start Menu, Startup Programs, and scheduled logon launches from opening a
+  terminal window before the tray app starts.
+- Downgraded Windows-shutdown `netsh` process creation failures during exit-time Wi-Fi restoration so
+  shutdown does not surface a noisy error when Windows is already refusing new processes.
+
 ## [1.0.0-dev.17] - 2026-06-04
 
 ### Added

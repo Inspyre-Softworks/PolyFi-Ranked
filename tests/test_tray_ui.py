@@ -30,6 +30,18 @@ class FakeTrayIcon:
 
 
 class TrayUiTests(unittest.TestCase):
+    @patch('wifi_pref_manager.ui.tray.show_custom_dialog_async')
+    def test_about_opens_about_dialog(self, mock_show_custom_dialog_async: Mock) -> None:
+        tray = TrayApplication(service=Mock(), logger=Mock())
+
+        tray.on_about(Mock(), Mock())
+
+        mock_show_custom_dialog_async.assert_called_once()
+        call_kwargs = mock_show_custom_dialog_async.call_args.kwargs
+        self.assertIn('About', call_kwargs['title'])
+        self.assertIn('PolyFi: Ranked version', call_kwargs['message'])
+        self.assertIn('Python version', call_kwargs['message'])
+
     @patch('wifi_pref_manager.ui.tray.threading.Thread')
     def test_manage_networks_uses_existing_settings_window_directly(
         self,
@@ -53,6 +65,7 @@ class TrayUiTests(unittest.TestCase):
         mock_sleep: Mock,
     ) -> None:
         service = Mock()
+        service.config.auto_check_for_updates = False
         logger = Mock()
         tray = TrayApplication(service=service, logger=logger)
         first_icon = FakeTrayIcon()
@@ -78,6 +91,7 @@ class TrayUiTests(unittest.TestCase):
         mock_sleep: Mock,
     ) -> None:
         service = Mock()
+        service.config.auto_check_for_updates = False
         logger = Mock()
         tray = TrayApplication(service=service, logger=logger)
         tray._TRAY_UNEXPECTED_EXIT_MAX_RETRIES = 1

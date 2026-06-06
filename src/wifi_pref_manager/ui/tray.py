@@ -33,13 +33,16 @@ from __future__ import annotations
 from dataclasses import replace
 import logging
 from pathlib import Path
+import sys
 import threading
 import time
 from typing import TYPE_CHECKING, Callable
+import webbrowser
 
 from PIL import Image
 import pystray
 
+from wifi_pref_manager import __version__
 from wifi_pref_manager.config import save_config
 from wifi_pref_manager.icon_assets import create_app_icon_image
 from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
@@ -47,6 +50,13 @@ from wifi_pref_manager.paths import APP_NAME
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.startup_trace import append_startup_trace_line
 from wifi_pref_manager.ui.dialogs import show_custom_dialog_async, show_dialog_async, show_native_message_box
+from wifi_pref_manager.updates import (
+    DOCS_URL,
+    GITHUB_REPOSITORY_URL,
+    UpdateError,
+    UpdateInfo,
+    UpdateManager,
+)
 
 if TYPE_CHECKING:
     from wifi_pref_manager.ui.settings import SettingsWindow
@@ -90,6 +100,9 @@ class TrayApplication:
         self._settings_window: SettingsWindow | None = None
         self._icon_ready_event: threading.Event | None = None
         self._icon_run_done_event: threading.Event | None = None
+        self._update_check_lock = threading.Lock()
+        self._update_check_in_progress = False
+        self.update_manager = UpdateManager()
         self._quit_requested = False
         self.service.set_status_changed_callback(self.refresh_menu)
         self.service.set_runtime_warning_callback(self.show_runtime_warning)
@@ -231,6 +244,140 @@ class TrayApplication:
         self.logger.info('Showing the buffered output console from the tray.')
         self.show_output_console_callback()
 
+    def on_check_for_updates(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        """
+        Start a manual update check.
+        """
+        del icon, item
+        self.check_for_updates(auto=False)
+
+    def check_for_updates(self, *, auto: bool) -> None:
+        """
+        Check GitHub Releases for a newer PolyFi installer.
+        """
+        with self._update_check_lock:
+            if self._update_check_in_progress:
+                if not auto:
+                    show_dialog_async(
+                        'info',
+                        'Update Check',
+                        'An update check is already running.',
+                    )
+                return
+            self._update_check_in_progress = True
+
+        threading.Thread(
+            target=self._run_update_check,
+            kwargs={'auto': auto},
+            daemon=True,
+            name='polyfi-update-check',
+        ).start()
+
+    def _run_update_check(self, *, auto: bool) -> None:
+        try:
+            update = self.update_manager.check_for_update(__version__)
+        except UpdateError as exc:
+            self.logger.warning('Update check failed: %s', exc)
+            if not auto:
+                show_dialog_async(
+                    'error',
+                    'Update Check Failed',
+                    f'Could not check for updates:\n\n{exc}',
+                )
+            return
+        finally:
+            with self._update_check_lock:
+                self._update_check_in_progress = False
+
+        if update is None:
+            self.logger.info('No PolyFi update available.')
+            if not auto:
+                show_dialog_async(
+                    'info',
+                    'PolyFi Is Up To Date',
+                    f'{APP_NAME} {__version__} is the latest available release.',
+                )
+            return
+
+        self.logger.info('PolyFi update available: %s', update.version)
+        self._show_update_available_dialog(update)
+
+    def _show_update_available_dialog(self, update: UpdateInfo) -> None:
+        message = (
+            f'{APP_NAME} {update.version} is available.\n\n'
+            f'Current version: {__version__}\n'
+            f'Release: {update.release_url}'
+        )
+        buttons: tuple[tuple[str, Callable[[], None] | None], ...]
+        if update.installer_asset is not None:
+            buttons = (
+                ('Later', None),
+                ('Open Release Page', lambda: webbrowser.open(update.release_url)),
+                ('Download and Install', lambda: self.download_and_install_update(update)),
+            )
+        else:
+            buttons = (
+                ('Later', None),
+                ('Open Release Page', lambda: webbrowser.open(update.release_url)),
+            )
+
+        show_custom_dialog_async(
+            title='PolyFi Update Available',
+            message=message,
+            buttons=buttons,
+        )
+
+    def download_and_install_update(self, update: UpdateInfo) -> None:
+        """
+        Download an available installer and launch it.
+        """
+        threading.Thread(
+            target=self._download_and_install_update,
+            args=(update,),
+            daemon=True,
+            name='polyfi-update-install',
+        ).start()
+
+    def _download_and_install_update(self, update: UpdateInfo) -> None:
+        try:
+            installer_path = self.update_manager.download_installer(update)
+            self.update_manager.launch_installer(installer_path)
+        except UpdateError as exc:
+            self.logger.warning('Update install failed: %s', exc)
+            show_dialog_async(
+                'error',
+                'Update Install Failed',
+                f'Could not download or start the update installer:\n\n{exc}',
+            )
+            return
+
+        self.logger.info('Launched PolyFi update installer: %s', installer_path)
+        show_dialog_async(
+            'info',
+            'Update Installer Started',
+            f'The {APP_NAME} {update.version} installer has been downloaded and started.\n\n'
+            f'Installer path:\n{installer_path}',
+        )
+
+    def on_about(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        """
+        Show product and runtime version details.
+        """
+        del icon, item
+        show_custom_dialog_async(
+            title=f'About {APP_NAME}',
+            message=(
+                f'{APP_NAME}\n\n'
+                f'PolyFi: Ranked version: {__version__}\n'
+                f'Python version: {sys.version.split()[0]}'
+            ),
+            buttons=(
+                ('Close', None),
+                ('Docs', lambda: webbrowser.open(DOCS_URL)),
+                ('GitHub', lambda: webbrowser.open(GITHUB_REPOSITORY_URL)),
+            ),
+        )
+
     def on_quit(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         """
         Stop the service and exit the tray app.
@@ -270,6 +417,8 @@ class TrayApplication:
                     self.on_show_output_console,
                     enabled=lambda item: self.show_output_console_callback is not None,
                 ),
+                pystray.MenuItem('Check for Updates', self.on_check_for_updates),
+                pystray.MenuItem('About PolyFi: Ranked...', self.on_about),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem('Quit', self.on_quit),
             ),
@@ -523,4 +672,7 @@ class TrayApplication:
                 daemon=True,
                 name='polyfi-post-icon-setup',
             ).start()
+
+        if getattr(self.service.config, 'auto_check_for_updates', True):
+            self.check_for_updates(auto=True)
 

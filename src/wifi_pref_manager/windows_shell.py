@@ -37,6 +37,7 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
     """
     executable = Path(sys.executable)
     packaged_launcher = executable.parent / 'polyfi-ranked.exe'
+    packaged_console_launcher = executable.parent / 'polyfi-ranked-console.exe'
     scripts_launcher = executable.parent / 'Scripts' / 'polyfi-ranked.exe'
 
     if prefer_windowless:
@@ -47,6 +48,8 @@ def resolve_runtime_launch_target(*, prefer_windowless: bool) -> tuple[Path, lis
             return packaged_launcher, [], packaged_launcher.parent
 
     else:
+        if packaged_console_launcher.exists():
+            return packaged_console_launcher, [], packaged_console_launcher.parent
         if packaged_launcher.exists():
             return packaged_launcher, [], packaged_launcher.parent
         if scripts_launcher.exists():
@@ -158,10 +161,10 @@ class WindowsShortcutManager:
         """
         Resolve the shell launcher target.
 
-        Shell shortcuts intentionally avoid ``pythonw.exe`` so PolyFi can stay
-        in the current process and hide its own console window after startup.
+        Shell shortcuts prefer a windowless launcher so Windows can start
+        PolyFi without creating a terminal window first.
         """
-        return resolve_runtime_launch_target(prefer_windowless=False)
+        return resolve_runtime_launch_target(prefer_windowless=True)
 
     def _create_shortcut(self, spec: ShortcutSpec) -> None:
         """

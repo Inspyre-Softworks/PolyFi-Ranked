@@ -84,6 +84,10 @@ class FakeWiFiApi:
         del interface_name, ssids
 
 
+class ShutdownOSError(OSError):
+    winerror = 1115
+
+
 class EthernetWiFiModeStateTests(unittest.TestCase):
     def _build_config(self) -> AppConfig:
         return AppConfig(
@@ -142,6 +146,26 @@ class EthernetWiFiModeStateTests(unittest.TestCase):
         service.wifi_api.get_current_ssid = Mock(side_effect=OSError('netsh unavailable'))  # type: ignore[method-assign]
 
         service.restore_startup_network_state()
+
+    def test_exit_restore_downgrades_windows_shutdown_netsh_start_failure(self) -> None:
+        api = FakeWiFiApi()
+        logger = Mock()
+        service = WiFiPreferenceService(
+            config=self._build_config(),
+            wifi_api=api,
+            logger=logger,
+        )
+        service.wifi_api.get_current_ssid = Mock(  # type: ignore[method-assign]
+            side_effect=ShutdownOSError('A system shutdown is in progress.')
+        )
+
+        service.restore_startup_network_state()
+
+        logger.error.assert_not_called()
+        logger.debug.assert_any_call(
+            'Could not determine current Wi-Fi SSID during exit restore: %s',
+            service.wifi_api.get_current_ssid.side_effect,
+        )
 
 
 if __name__ == '__main__':

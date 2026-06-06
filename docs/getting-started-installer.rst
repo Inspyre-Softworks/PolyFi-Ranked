@@ -38,10 +38,13 @@ The wizard steps are:
    - *Start Menu shortcuts* — adds a PolyFi: Ranked entry to the Windows
      Start Menu.
    - *Desktop shortcut* — adds a shortcut to your desktop.
-   - *Add to PATH* — makes the ``polyfi-ranked`` command available in any
-     terminal window (recommended).
+   - *Add to PATH* — makes ``polyfi-ranked`` and
+     ``polyfi-ranked-console`` available in any terminal window (recommended).
    - *Startup Programs shortcut* — launches PolyFi automatically in tray mode
      when you log in.
+   - *Scheduled logon task* — launches PolyFi in tray mode through Task
+     Scheduler, which can start earlier after sign-in than the Startup Programs
+     shortcut.
    - *Wi-Fi helper scheduled tasks* — installs the ``PolyFi-DisableWiFi`` and
      ``PolyFi-EnableWiFi`` elevated tasks that power the ``disable_adapter``
      Ethernet mode.  Windows will show a User Account Control (UAC) prompt to
@@ -139,25 +142,50 @@ it from the Start Menu shortcut or by running:
 
    polyfi-ranked --tray
 
+The installed ``polyfi-ranked.exe`` app launcher is windowless so shortcuts do
+not flash a terminal window.  Use ``polyfi-ranked-console.exe`` when you need
+interactive command output from the installed bundle.
+
 Windows Startup Integration
 ----------------------------
 
 To have PolyFi launch automatically at logon you can:
 
 - Enable the **Startup Programs shortcut** option in the installer wizard, or
+- Enable the **Scheduled logon task** option in the installer wizard, or
 - Open the settings window from the tray icon and turn on
-  *Start with Windows*, or
+  *Run at Windows startup* or *Start earlier with Task Scheduler*, or
 - Register a Windows Task Scheduler logon task with:
 
   .. code-block:: text
 
-     polyfi-ranked-install-task
+     polyfi-ranked windows logon-task install
 
   Remove it again with:
 
   .. code-block:: text
 
+     polyfi-ranked windows logon-task remove
+
+  The standalone helper remains available for console-script installs:
+
+  .. code-block:: text
+
+     polyfi-ranked-install-task
+
+  Remove the helper-installed task with:
+
+  .. code-block:: text
+
      polyfi-ranked-install-task --uninstall
+
+Update Checks
+-------------
+
+The tray menu includes **Check for Updates** and **About PolyFi: Ranked**.  If
+automatic update checks are enabled in Settings, PolyFi checks GitHub Releases
+after the tray icon starts.  When a newer release includes a Windows installer
+asset, PolyFi can download the installer under local app-data and launch it.
 
 Uninstalling
 ------------

@@ -9,7 +9,8 @@ param(
     [switch]$InstallAll,
     [switch]$InstallWifiTasks,
     [switch]$InstallStartMenu,
-    [switch]$InstallStartup
+    [switch]$InstallStartup,
+    [switch]$InstallLogonTask
 )
 
 $ErrorActionPreference = 'Stop'
@@ -273,11 +274,13 @@ try {
     $installWifiTasksWasSpecified = $PSBoundParameters.ContainsKey('InstallWifiTasks')
     $installStartMenuWasSpecified = $PSBoundParameters.ContainsKey('InstallStartMenu')
     $installStartupWasSpecified = $PSBoundParameters.ContainsKey('InstallStartup')
+    $installLogonTaskWasSpecified = $PSBoundParameters.ContainsKey('InstallLogonTask')
 
     if ($InstallAll) {
         $InstallWifiTasks = $true
         $InstallStartMenu = $true
         $InstallStartup = $true
+        $InstallLogonTask = $true
     }
 
     $platformDefaultAppDataRoot = Get-NormalizedPath -PathValue (
@@ -337,6 +340,12 @@ try {
             -WasSpecified $installStartupWasSpecified `
             -SpecifiedValue $InstallStartup
 
+        $InstallLogonTask = Resolve-YesNoChoice `
+            -Prompt 'Install the scheduled logon task?' `
+            -Default $false `
+            -WasSpecified $installLogonTaskWasSpecified `
+            -SpecifiedValue $InstallLogonTask
+
         $InstallWifiTasks = Resolve-YesNoChoice `
             -Prompt 'Install the Wi-Fi helper scheduled tasks?' `
             -Default $false `
@@ -346,6 +355,7 @@ try {
     else {
         $InstallStartMenu = $true
         $InstallStartup = $true
+        $InstallLogonTask = $true
         $InstallWifiTasks = $true
     }
 
@@ -366,6 +376,7 @@ try {
     Write-Host "Install package now: $shouldInstallPackage"
     Write-Host "Install Start Menu shortcut: $InstallStartMenu"
     Write-Host "Install Startup shortcut: $InstallStartup"
+    Write-Host "Install scheduled logon task: $InstallLogonTask"
     Write-Host "Install Wi-Fi helper tasks: $InstallWifiTasks"
 
     if ($selectedAppDataRoot -ieq $defaultAppDataRoot) {
@@ -423,6 +434,13 @@ try {
         )
     }
 
+    if ($InstallLogonTask) {
+        Invoke-PolyFiCommand -Arguments @(
+            'windows', 'logon-task', 'install',
+            '--config', $configPath
+        )
+    }
+
     $commandPath = Get-PolyFiCommandPath -CommandName 'polyfi-ranked'
     $installMode = if ($Dev) { 'poetry-dev' } else { 'pip' }
     Write-PolyFiInstallRecord -Parameters @{
@@ -435,7 +453,7 @@ try {
         StartMenu = $InstallStartMenu
         StartupShortcut = $InstallStartup
         WifiTasks = $InstallWifiTasks
-        ScheduledLogonTask = $false
+        ScheduledLogonTask = $InstallLogonTask
         AddToPath = $false
         DesktopShortcut = $false
     }

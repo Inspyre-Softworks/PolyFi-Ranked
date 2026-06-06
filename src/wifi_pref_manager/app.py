@@ -53,7 +53,11 @@ from wifi_pref_manager.logging_utils import configure_logging
 from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
 from wifi_pref_manager.paths import APPDATA_ROOT_ENV_VAR, APP_NAME, APP_SLUG, APP_USER_MODEL_ID, AppPaths
-from wifi_pref_manager.scheduler import TASK_NAME, TaskSchedulerInstaller
+from wifi_pref_manager.scheduler import (
+    TASK_NAME,
+    TaskSchedulerInstaller,
+    update_scheduled_logon_task_preference,
+)
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
 from wifi_pref_manager.startup_trace import append_startup_trace_line
@@ -282,6 +286,45 @@ class Application:
         )
         startup_path_parser.set_defaults(handler=self.handle_startup_path_command)
 
+        logon_task_parser = windows_subparsers.add_parser(
+            'logon-task',
+            help='Manage the Windows Task Scheduler logon task.',
+        )
+        logon_task_subparsers = logon_task_parser.add_subparsers(dest='logon_task_command')
+        logon_task_subparsers.required = True
+
+        logon_task_install_parser = logon_task_subparsers.add_parser(
+            'install',
+            help='Install a scheduled logon task that launches PolyFi in tray mode at logon.',
+        )
+        logon_task_install_parser.add_argument(
+            '--config',
+            default=None,
+            help='Optional path to the TOML configuration file used by the scheduled task.',
+        )
+        logon_task_install_parser.add_argument(
+            '--task-name',
+            default=TASK_NAME,
+            help='Scheduled logon task name. Defaults to "PolyFi Ranked".',
+        )
+        logon_task_install_parser.set_defaults(handler=self.handle_logon_task_install_command)
+
+        logon_task_remove_parser = logon_task_subparsers.add_parser(
+            'remove',
+            help='Remove the scheduled logon task.',
+        )
+        logon_task_remove_parser.add_argument(
+            '--config',
+            default=None,
+            help='Optional path to the TOML configuration file whose scheduled-task preference should be disabled.',
+        )
+        logon_task_remove_parser.add_argument(
+            '--task-name',
+            default=TASK_NAME,
+            help='Scheduled logon task name to remove. Defaults to "PolyFi Ranked".',
+        )
+        logon_task_remove_parser.set_defaults(handler=self.handle_logon_task_remove_command)
+
         windows_uninstall_parser = windows_subparsers.add_parser(
             'uninstall',
             help='Remove PolyFi Windows shortcuts and scheduled tasks.',
@@ -417,6 +460,7 @@ class Application:
         if self.console_output_manager is not None:
             self.console_output_manager.attach_logger(logger)
         self.sync_startup_programs_preference(config, logger)
+        self.sync_scheduled_logon_task_preference(config, logger)
         return logger
 
     def apply_runtime_overrides(self, config) -> None:
@@ -638,6 +682,52 @@ class Application:
                 logger.info('Removed Startup Programs shortcut: %s', shortcut_path)
         except (FileExistsError, OSError) as exc:
             logger.warning('Could not synchronize the Windows Startup Programs shortcut: %s', exc)
+
+    def update_scheduled_logon_task_preference(
+        self,
+        config_path: str | Path | None,
+        enabled: bool,
+        *,
+        create_if_missing: bool,
+    ) -> Path | None:
+        """
+        Persist the scheduled-logon-task preference when a config file is available.
+        """
+        return update_scheduled_logon_task_preference(
+            config_path,
+            enabled,
+            create_if_missing=create_if_missing,
+        )
+
+    def sync_scheduled_logon_task_preference(self, config, logger) -> None:
+        """
+        Install or remove the scheduled logon task to match the config.
+        """
+        enabled = getattr(config, 'add_scheduled_logon_task', None)
+        if enabled is None:
+            logger.debug(
+                'Skipping scheduled logon task synchronization because the active config '
+                'does not declare add_scheduled_logon_task.'
+            )
+            return
+
+        try:
+            if enabled:
+                installer = TaskSchedulerInstaller.for_current_runtime(
+                    task_name=TASK_NAME,
+                    config_path=self.active_config_path,
+                )
+                installer.install(emit_message=False)
+                logger.debug('Installed scheduled logon task: %s', TASK_NAME)
+            else:
+                installer = TaskSchedulerInstaller(
+                    launch_executable=Path(sys.executable),
+                    task_name=TASK_NAME,
+                )
+                if installer.uninstall():
+                    logger.info('Removed scheduled logon task: %s', TASK_NAME)
+        except OSError as exc:
+            logger.warning('Could not synchronize the Windows scheduled logon task: %s', exc)
 
     @staticmethod
     def _delete_file_if_exists(path: Path) -> bool:
@@ -1161,6 +1251,103 @@ class Application:
         print(self.paths.startup_programs_shortcut_file)
         return 0
 
+    def handle_logon_task_install_command(self, args: argparse.Namespace) -> int:
+        """
+        Install the user's scheduled logon task.
+        """
+        messages: list[str] = []
+        errors: list[str] = []
+        config_path = getattr(args, 'config', None)
+        task_name = getattr(args, 'task_name', TASK_NAME)
+
+        installer = TaskSchedulerInstaller.for_current_runtime(
+            task_name=task_name,
+            config_path=config_path,
+        )
+        try:
+            installer.install(emit_message=False)
+        except OSError as exc:
+            errors.append(f'Scheduled task error: {exc}')
+        else:
+            messages.append(f'Installed scheduled logon task: {task_name}')
+
+        try:
+            config_file = self.update_scheduled_logon_task_preference(
+                config_path,
+                True,
+                create_if_missing=True,
+            )
+        except (ConfigError, OSError) as exc:
+            errors.append(f'Could not enable add_scheduled_logon_task in config: {exc}')
+        else:
+            if config_file is not None:
+                messages.append(f'Enabled add_scheduled_logon_task in config: {config_file}')
+
+        if not errors:
+            try:
+                self.sync_install_record_state(
+                    config_path,
+                    feature_updates={'scheduled_logon_task': True},
+                )
+            except OSError as exc:
+                errors.append(f'Install record error: {exc}')
+
+        for message in messages:
+            print(message)
+        for error in errors:
+            print(error, file=sys.stderr)
+        return 1 if errors else 0
+
+    def handle_logon_task_remove_command(self, args: argparse.Namespace) -> int:
+        """
+        Remove the user's scheduled logon task.
+        """
+        messages: list[str] = []
+        errors: list[str] = []
+        config_path = getattr(args, 'config', None)
+        task_name = getattr(args, 'task_name', TASK_NAME)
+
+        installer = TaskSchedulerInstaller(
+            launch_executable=Path(sys.executable),
+            task_name=task_name,
+        )
+        try:
+            removed = installer.uninstall()
+        except OSError as exc:
+            errors.append(f'Scheduled task error: {exc}')
+        else:
+            if removed:
+                messages.append(f'Removed scheduled logon task: {task_name}')
+            else:
+                messages.append(f'No scheduled logon task found: {task_name}')
+
+        try:
+            config_file = self.update_scheduled_logon_task_preference(
+                config_path,
+                False,
+                create_if_missing=False,
+            )
+        except (ConfigError, OSError) as exc:
+            errors.append(f'Could not disable add_scheduled_logon_task in config: {exc}')
+        else:
+            if config_file is not None:
+                messages.append(f'Disabled add_scheduled_logon_task in config: {config_file}')
+
+        if not errors:
+            try:
+                self.sync_install_record_state(
+                    config_path,
+                    feature_updates={'scheduled_logon_task': False},
+                )
+            except OSError as exc:
+                errors.append(f'Install record error: {exc}')
+
+        for message in messages:
+            print(message)
+        for error in errors:
+            print(error, file=sys.stderr)
+        return 1 if errors else 0
+
     def handle_windows_uninstall_command(self, args: argparse.Namespace) -> int:
         """
         Remove PolyFi Windows shell integrations and optional local data.
@@ -1186,6 +1373,18 @@ class Application:
         else:
             if config_file is not None:
                 messages.append(f'Disabled add_to_startup_programs in config: {config_file}')
+
+        try:
+            config_file = self.update_scheduled_logon_task_preference(
+                getattr(args, 'config', None),
+                False,
+                create_if_missing=False,
+            )
+        except (ConfigError, OSError) as exc:
+            errors.append(f'Could not clear add_scheduled_logon_task in config: {exc}')
+        else:
+            if config_file is not None:
+                messages.append(f'Disabled add_scheduled_logon_task in config: {config_file}')
 
         start_menu_manager = StartMenuShortcutManager(paths=self.paths)
         startup_manager = StartupProgramsShortcutManager(paths=self.paths)
@@ -1431,6 +1630,7 @@ class Application:
             self.console_output_manager.attach_logger(logger)
         self.set_windows_app_user_model_id()
         self.sync_startup_programs_preference(config, logger)
+        self.sync_scheduled_logon_task_preference(config, logger)
         logger.info('Using config file: %s', config_path)
         logger.info('Effective log level: %s', effective_log_level)
 

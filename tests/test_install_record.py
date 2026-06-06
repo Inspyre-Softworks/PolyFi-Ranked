@@ -96,6 +96,35 @@ class InstallRecordTests(unittest.TestCase):
             feature_updates={'startup_shortcut': False},
         )
 
+    @patch.object(Application, 'sync_install_record_state')
+    @patch.object(Application, 'update_scheduled_logon_task_preference', return_value=None)
+    @patch('wifi_pref_manager.app.TaskSchedulerInstaller')
+    def test_logon_task_install_updates_install_record(
+        self,
+        mock_installer_type: Mock,
+        mock_update_scheduled_logon_task_preference: Mock,
+        mock_sync_install_record_state: Mock,
+    ) -> None:
+        del mock_update_scheduled_logon_task_preference
+        app = Application()
+        args = app.argument_parser.parse_args(['windows', 'logon-task', 'install'])
+
+        result = app.handle_logon_task_install_command(args)
+
+        self.assertEqual(result, 0)
+        mock_installer_type.for_current_runtime.assert_called_once_with(
+            task_name='PolyFi Ranked',
+            config_path=None,
+        )
+        mock_installer_type.for_current_runtime.return_value.install.assert_called_once_with(
+            emit_message=False
+        )
+        mock_sync_install_record_state.assert_called_once_with(
+            None,
+            feature_updates={'scheduled_logon_task': True},
+        )
+
+    @patch('wifi_pref_manager.scheduler.update_scheduled_logon_task_preference')
     @patch('wifi_pref_manager.scheduler.upsert_install_record')
     @patch('wifi_pref_manager.scheduler.AppPaths')
     @patch('wifi_pref_manager.scheduler.TaskSchedulerInstaller.for_current_runtime')
@@ -104,15 +133,25 @@ class InstallRecordTests(unittest.TestCase):
         mock_for_current_runtime: Mock,
         mock_app_paths_type: Mock,
         mock_upsert_install_record: Mock,
+        mock_update_scheduled_logon_task_preference: Mock,
     ) -> None:
         installer = Mock()
         mock_for_current_runtime.return_value = installer
-        mock_app_paths_type.return_value = SimpleNamespace(app_data_root=Path(r'C:\PolyFiData'))
+        mock_app_paths_type.return_value = SimpleNamespace(
+            app_data_root=Path(r'C:\PolyFiData'),
+            config_file=Path(r'C:\PolyFiData\config.toml'),
+        )
 
         result = scheduler_module.main([])
 
         self.assertEqual(result, 0)
+        mock_for_current_runtime.assert_called_once_with(task_name='PolyFi Ranked', config_path=None)
         installer.install.assert_called_once_with()
+        mock_update_scheduled_logon_task_preference.assert_called_once_with(
+            None,
+            True,
+            create_if_missing=True,
+        )
         mock_upsert_install_record.assert_called_once()
         self.assertEqual(
             mock_upsert_install_record.call_args.kwargs['feature_updates'],
