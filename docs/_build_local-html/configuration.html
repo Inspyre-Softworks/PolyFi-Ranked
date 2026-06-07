@@ -1,0 +1,219 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuration Guide &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Config Reference" href="config-reference.html" />
+    <link rel="prev" title="Runtime Features" href="runtime-features.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-layout">Configuration Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-polyfi-uses-it">How PolyFi Uses It</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#practical-notes">Practical Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config-reference.html">Config Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Command-Line-Interface-%28CLI%29-Reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Configuration Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/configuration.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="configuration-guide">
+<h1>Configuration Guide<a class="headerlink" href="#configuration-guide" title="Link to this heading"></a></h1>
+<p>PolyFi stores its main configuration in a TOML file. On Windows, the default
+path is:</p>
+<p><code class="docutils literal notranslate"><span class="pre">%LOCALAPPDATA%\Inspyre-Softworks\PolyFi-Ranked\config.toml</span></code></p>
+<p>If the file does not exist yet, PolyFi creates it automatically on first run.
+The app also keeps an example file at:</p>
+<p><code class="docutils literal notranslate"><span class="pre">%LOCALAPPDATA%\Inspyre-Softworks\PolyFi-Ranked\config.example.toml</span></code></p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">POLYFI_APPDATA_ROOT</span></code> user environment variable is set, PolyFi uses
+that directory as its app-data root instead. The main config file becomes
+<code class="docutils literal notranslate"><span class="pre">&lt;POLYFI_APPDATA_ROOT&gt;\config.toml</span></code> and the default log directory becomes
+<code class="docutils literal notranslate"><span class="pre">&lt;POLYFI_APPDATA_ROOT&gt;\Logs\</span></code>.</p>
+<section id="configuration-layout">
+<h2>Configuration Layout<a class="headerlink" href="#configuration-layout" title="Link to this heading"></a></h2>
+<p>The file has two main sections:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">[general]</span></code></dt><dd><p>App-wide behavior such as scan timing, logging, Ethernet handling, and
+automatic speed tests.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">[[networks]]</span></code></dt><dd><p>Your ordered Wi-Fi preference list. The first matching visible network wins.</p>
+</dd>
+</dl>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[general]</span>
+<span class="n">scan_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+<span class="n">connect_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+<span class="n">sync_profile_order_on_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">log_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;INFO&#39;</span>
+<span class="n">log_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span>
+<span class="n">interface_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span>
+<span class="n">start_minimized_to_tray</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<span class="n">auto_disable_wifi_on_ethernet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">add_to_startup_programs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<span class="n">add_scheduled_logon_task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<span class="n">auto_check_for_updates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">show_wifi_disabled_dialog</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">enable_speed_tests</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<span class="n">speed_test_on_new_connection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">speed_test_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1800</span>
+
+<span class="k">[[networks]]</span>
+<span class="n">ssid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;MyBestWiFi&#39;</span>
+<span class="n">auto_switch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">min_db</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-72</span>
+
+<span class="k">[[networks]]</span>
+<span class="n">ssid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;MySecondChoice&#39;</span>
+<span class="n">auto_switch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</pre></div>
+</div>
+</section>
+<section id="how-polyfi-uses-it">
+<h2>How PolyFi Uses It<a class="headerlink" href="#how-polyfi-uses-it" title="Link to this heading"></a></h2>
+<p>PolyFi reads the file at startup and watches it for changes while running.
+Most settings can be updated live without restarting the app.</p>
+<p>The service uses the <code class="docutils literal notranslate"><span class="pre">[[networks]]</span></code> list from top to bottom:</p>
+<ol class="arabic simple">
+<li><p>Scan for visible SSIDs.</p></li>
+<li><p>Find the highest-priority configured SSID that is currently visible.</p></li>
+<li><p>Switch to it if it is more preferred than the current Wi-Fi connection.</p></li>
+</ol>
+</section>
+<section id="practical-notes">
+<h2>Practical Notes<a class="headerlink" href="#practical-notes" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">interface_name</span> <span class="pre">=</span> <span class="pre">''</span></code> means “auto-detect the Wi-Fi adapter.”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">log_file</span> <span class="pre">=</span> <span class="pre">''</span></code> means “use the default log path.”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_to_startup_programs</span> <span class="pre">=</span> <span class="pre">true</span></code> means “keep a tray-launch shortcut in the
+Windows Startup Programs folder.”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_scheduled_logon_task</span> <span class="pre">=</span> <span class="pre">true</span></code> means “keep a Windows Task Scheduler
+logon task registered for earlier startup after sign-in.”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">auto_check_for_updates</span> <span class="pre">=</span> <span class="pre">true</span></code> means “check GitHub Releases for a newer
+installer after the tray icon starts.”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">speed_test_interval</span></code> is measured in seconds.</p></li>
+<li><p>Every <code class="docutils literal notranslate"><span class="pre">[[networks]]</span></code> entry must have a non-empty <code class="docutils literal notranslate"><span class="pre">ssid</span></code>.</p></li>
+<li><p>If a network has <code class="docutils literal notranslate"><span class="pre">auto_switch</span> <span class="pre">=</span> <span class="pre">false</span></code>, it stays in the list but will not
+be selected automatically.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">min_db</span></code> is set on a network, PolyFi treats that network as
+unavailable when the observed signal is weaker than the configured threshold.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="runtime-features.html" class="btn btn-neutral float-left" title="Runtime Features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="config-reference.html" class="btn btn-neutral float-right" title="Config Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

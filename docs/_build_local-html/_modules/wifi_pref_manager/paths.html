@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wifi_pref_manager.paths &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config-reference.html">Config Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Command-Line-Interface-%28CLI%29-Reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wifi_pref_manager.paths</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wifi_pref_manager.paths</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Author:</span>
+<span class="sd">    Inspyre Softworks</span>
+
+<span class="sd">Project:</span>
+<span class="sd">    PolyFi: Ranked</span>
+
+<span class="sd">File:</span>
+<span class="sd">    paths.py</span>
+
+<span class="sd">Description:</span>
+<span class="sd">    Helpers for resolving platform-appropriate application directories.</span>
+
+<span class="sd">Functions:</span>
+<span class="sd">    None.</span>
+
+<span class="sd">Constants:</span>
+<span class="sd">    APP_AUTHOR:</span>
+<span class="sd">        Project author string used for directory naming.</span>
+<span class="sd">    APP_NAME:</span>
+<span class="sd">        User-facing application name.</span>
+<span class="sd">    APP_SLUG:</span>
+<span class="sd">        Filesystem-friendly application slug.</span>
+
+<span class="sd">Dependencies:</span>
+<span class="sd">    pathlib</span>
+<span class="sd">    platformdirs</span>
+
+<span class="sd">Example Usage:</span>
+<span class="sd">    from wifi_pref_manager.paths import AppPaths</span>
+<span class="sd">    paths = AppPaths()</span>
+<span class="sd">    print(paths.config_file)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">platformdirs</span><span class="w"> </span><span class="kn">import</span> <span class="n">PlatformDirs</span>
+
+
+<span class="n">APP_AUTHOR</span> <span class="o">=</span> <span class="s1">&#39;Inspyre-Softworks&#39;</span>
+<span class="n">APP_NAME</span> <span class="o">=</span> <span class="s1">&#39;PolyFi-Ranked&#39;</span>
+<span class="n">APP_SLUG</span> <span class="o">=</span> <span class="s1">&#39;polyfi_ranked&#39;</span>
+<span class="n">APP_USER_MODEL_ID</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">APP_AUTHOR</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">APP_NAME</span><span class="si">}</span><span class="s1">&#39;</span>
+<span class="n">APPDATA_ROOT_ENV_VAR</span> <span class="o">=</span> <span class="s1">&#39;POLYFI_APPDATA_ROOT&#39;</span>
+
+
+<div class="viewcode-block" id="AppPaths">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.paths.AppPaths">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AppPaths</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Resolve platform-appropriate application paths.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        ensure_directories:</span>
+<span class="sd">            Create required directories.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">platform_dirs</span> <span class="o">=</span> <span class="n">PlatformDirs</span><span class="p">(</span><span class="n">appname</span><span class="o">=</span><span class="n">APP_NAME</span><span class="p">,</span> <span class="n">appauthor</span><span class="o">=</span><span class="n">APP_AUTHOR</span><span class="p">)</span>
+        <span class="n">configured_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">APPDATA_ROOT_ENV_VAR</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">custom_appdata_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">configured_root</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span> <span class="k">if</span> <span class="n">configured_root</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_appdata_root</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">app_data_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_appdata_root</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_appdata_root</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">local_data_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_appdata_root</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_appdata_root</span> <span class="o">/</span> <span class="s1">&#39;Logs&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platform_dirs</span><span class="o">.</span><span class="n">user_config_dir</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">local_data_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platform_dirs</span><span class="o">.</span><span class="n">user_data_dir</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platform_dirs</span><span class="o">.</span><span class="n">user_log_dir</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">app_data_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_dir</span> <span class="o">/</span> <span class="s1">&#39;config.toml&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">example_config_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_dir</span> <span class="o">/</span> <span class="s1">&#39;config.example.toml&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span> <span class="o">/</span> <span class="s1">&#39;polyfi_ranked.log&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">managed_interface_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_data_dir</span> <span class="o">/</span> <span class="s1">&#39;managed_wifi_interface.json&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed_test_history_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_data_dir</span> <span class="o">/</span> <span class="s1">&#39;speedtest_history.jsonl&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shortcut_icon_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_data_dir</span> <span class="o">/</span> <span class="s1">&#39;polyfi_ranked.ico&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_menu_icon_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shortcut_icon_file</span>
+
+        <span class="n">roaming_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;APPDATA&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_dir</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_menu_programs_dir</span> <span class="o">=</span> <span class="n">roaming_root</span> <span class="o">/</span> <span class="s1">&#39;Microsoft&#39;</span> <span class="o">/</span> <span class="s1">&#39;Windows&#39;</span> <span class="o">/</span> <span class="s1">&#39;Start Menu&#39;</span> <span class="o">/</span> <span class="s1">&#39;Programs&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_start_menu_folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_menu_programs_dir</span> <span class="o">/</span> <span class="n">APP_AUTHOR</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_start_menu_shortcut_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy_start_menu_folder</span> <span class="o">/</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">APP_NAME</span><span class="si">}</span><span class="s1">.lnk&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_menu_folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_menu_programs_dir</span> <span class="o">/</span> <span class="n">APP_NAME</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_menu_shortcut_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_menu_folder</span> <span class="o">/</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">APP_NAME</span><span class="si">}</span><span class="s1">.lnk&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_programs_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_menu_programs_dir</span> <span class="o">/</span> <span class="s1">&#39;Startup&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">startup_programs_shortcut_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">startup_programs_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">APP_NAME</span><span class="si">}</span><span class="s1">.lnk&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_tray_start_marker_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_data_dir</span> <span class="o">/</span> <span class="s1">&#39;tray_started.flag&#39;</span>
+
+        <span class="n">legacy_roaming_root</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s1">&#39;AppData&#39;</span> <span class="o">/</span> <span class="s1">&#39;Roaming&#39;</span>
+        <span class="n">legacy_local_root</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s1">&#39;AppData&#39;</span> <span class="o">/</span> <span class="s1">&#39;Local&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_config_dir</span> <span class="o">=</span> <span class="n">legacy_roaming_root</span> <span class="o">/</span> <span class="n">APP_SLUG</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_local_dir</span> <span class="o">=</span> <span class="n">legacy_local_root</span> <span class="o">/</span> <span class="n">APP_SLUG</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_log_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy_local_dir</span> <span class="o">/</span> <span class="s1">&#39;logs&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_config_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy_config_dir</span> <span class="o">/</span> <span class="s1">&#39;wifi_preferences.toml&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_example_config_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy_config_dir</span> <span class="o">/</span> <span class="s1">&#39;wifi_preferences.example.toml&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_log_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy_log_dir</span> <span class="o">/</span> <span class="s1">&#39;polyfi_ranked.log&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_managed_interface_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy_local_dir</span> <span class="o">/</span> <span class="s1">&#39;managed_wifi_interface.json&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">legacy_speed_test_history_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">legacy_local_dir</span> <span class="o">/</span> <span class="s1">&#39;speedtest_history.jsonl&#39;</span>
+
+<div class="viewcode-block" id="AppPaths.migrate_legacy_files">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.paths.AppPaths.migrate_legacy_files">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">migrate_legacy_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Move legacy app-data files into the current PlatformDirs layout.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">migrations</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">legacy_config_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_file</span><span class="p">),</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">legacy_example_config_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">example_config_file</span><span class="p">),</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">legacy_log_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="p">),</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">legacy_managed_interface_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">managed_interface_file</span><span class="p">),</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">legacy_speed_test_history_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_test_history_file</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">legacy_path</span><span class="p">,</span> <span class="n">new_path</span> <span class="ow">in</span> <span class="n">migrations</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">new_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">legacy_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">continue</span>
+            <span class="n">new_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">legacy_path</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">new_path</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="AppPaths.ensure_directories">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.paths.AppPaths.ensure_directories">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ensure_directories</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create required application directories.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">migrate_legacy_files</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_data_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

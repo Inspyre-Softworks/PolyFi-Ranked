@@ -1,0 +1,575 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLI Reference &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Contributing Docs" href="Contributing-Docs.html" />
+    <link rel="prev" title="PolyFi: Ranked" href="Home.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config-reference.html">Config Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api-reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CLI Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#table-of-contents">Table of Contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#common-commands">Common Commands</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#top-level-flags">Top-Level Flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#paths"><code class="docutils literal notranslate"><span class="pre">paths</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#when-to-use-it">When to use it</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#config"><code class="docutils literal notranslate"><span class="pre">config</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#config-init"><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">init</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#write-to-a-custom-location">Write to a Custom Location</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#overwrite-an-existing-config">Overwrite an Existing Config</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#windows"><code class="docutils literal notranslate"><span class="pre">windows</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#windows-start-menu-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">start-menu</span> <span class="pre">install</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id8">Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#result">Result</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#windows-startup-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">startup</span> <span class="pre">install</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id10">Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id11">Result</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#windows-logon-task-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">logon-task</span> <span class="pre">install</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#install-the-task">Install the Task</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#remove-the-task">Remove the Task</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">Result</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#windows-uninstall"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">uninstall</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#remove-windows-integrations">Remove Windows Integrations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#remove-windows-integrations-and-app-data">Remove Windows Integrations and App Data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#task-scheduler-entry-points">Task Scheduler Entry Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#polyfi-ranked-install-task"><code class="docutils literal notranslate"><span class="pre">polyfi-ranked-install-task</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id17">Install the Task</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id18">Remove the Task</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#reference-links">Reference Links</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">CLI Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/wiki/Command-Line-Interface-(CLI)-Reference.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cli-reference">
+<span id="polyfi-ranked-cli-reference"></span><h1>CLI Reference<a class="headerlink" href="#cli-reference" title="Link to this heading"></a></h1>
+<p>PolyFi: Ranked provides command-line tools for launching the app, inspecting resolved paths, generating configuration files, and managing Windows integration.</p>
+<blockquote>
+<div><p>[!NOTE]
+These examples assume <code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span></code> is available on your <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.<br />
+When working from a Poetry checkout, prefix commands with <code class="docutils literal notranslate"><span class="pre">poetry</span> <span class="pre">run</span></code>.</p>
+</div></blockquote>
+<hr class="docutils" />
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="#quick-start">Quick Start</a></p></li>
+<li><p><a class="reference internal" href="#top-level-flags">Top-Level Flags</a></p></li>
+<li><p><a class="reference internal" href="#paths"><code class="docutils literal notranslate"><span class="pre">paths</span></code></a></p></li>
+<li><p><a class="reference internal" href="#config"><code class="docutils literal notranslate"><span class="pre">config</span></code></a></p>
+<ul>
+<li><p><a class="reference internal" href="#config-init"><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">init</span></code></a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#windows"><code class="docutils literal notranslate"><span class="pre">windows</span></code></a></p>
+<ul>
+<li><p><a class="reference internal" href="#windows-start-menu-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">start-menu</span> <span class="pre">install</span></code></a></p></li>
+<li><p><a class="reference internal" href="#windows-startup-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">startup</span> <span class="pre">install</span></code></a></p></li>
+<li><p><a class="reference internal" href="#windows-logon-task-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">logon-task</span> <span class="pre">install</span></code></a></p></li>
+<li><p><a class="reference internal" href="#windows-uninstall"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">uninstall</span></code></a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#task-scheduler-entry-points">Task Scheduler Entry Points</a></p>
+<ul>
+<li><p><a class="reference internal" href="#polyfi-ranked-install-task"><code class="docutils literal notranslate"><span class="pre">polyfi-ranked-install-task</span></code></a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#reference-links">Reference Links</a></p></li>
+</ul>
+<hr class="docutils" />
+</section>
+<section id="quick-start">
+<span id="id1"></span><h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<p>Install the package with either <code class="docutils literal notranslate"><span class="pre">pip</span></code> or Poetry:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="p">.</span>
+</pre></div>
+</div>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">install</span>
+</pre></div>
+</div>
+<p>Run the main command:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span>
+</pre></div>
+</div>
+<p>Or, from a Poetry development environment:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">run</span> <span class="n">polyfi-ranked</span>
+</pre></div>
+</div>
+<section id="common-commands">
+<h3>Common Commands<a class="headerlink" href="#common-commands" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Task</p></th>
+<th class="head"><p>Command</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Show installed version</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--version</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Start in tray mode</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--tray</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Print resolved paths</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">paths</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Generate a config file</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">config</span> <span class="pre">init</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Install Start Menu shortcut</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">windows</span> <span class="pre">start-menu</span> <span class="pre">install</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Install Startup shortcut</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">windows</span> <span class="pre">startup</span> <span class="pre">install</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Remove Windows integrations</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">windows</span> <span class="pre">uninstall</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Fully remove integrations and app data</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">windows</span> <span class="pre">uninstall</span> <span class="pre">--purge-data</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+</section>
+</section>
+<section id="top-level-flags">
+<span id="id2"></span><h2>Top-Level Flags<a class="headerlink" href="#top-level-flags" title="Link to this heading"></a></h2>
+<p>Top-level flags are passed directly to <code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span></code>.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Flag</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--version</span></code>, <code class="docutils literal notranslate"><span class="pre">-V</span></code></p></td>
+<td><p>Print the installed PolyFi: Ranked version and exit.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--version</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--tray</span></code></p></td>
+<td><p>Start PolyFi: Ranked minimized to the system tray.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--tray</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-l</span> <span class="pre">&lt;LEVEL&gt;</span></code></p></td>
+<td><p>Override the log level for the current run.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">-l</span> <span class="pre">DEBUG</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--show-splash</span></code></p></td>
+<td><p>Force the startup splash screen to show for this run.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--show-splash</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--no-splash</span></code></p></td>
+<td><p>Disable the startup splash screen for this run.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--no-splash</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--save-speed-test-history</span></code></p></td>
+<td><p>Enable speed-test history saving for this run.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--save-speed-test-history</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--no-save-speed-test-history</span></code></p></td>
+<td><p>Disable speed-test history saving for this run.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--no-save-speed-test-history</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--speed-test-history-file</span> <span class="pre">&lt;PATH&gt;</span></code></p></td>
+<td><p>Override the speed-test history file path for this run.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">--speed-test-history-file</span> <span class="pre">C:\path\to\history.json</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>Supported log levels include:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>DEBUG
+INFO
+WARNING
+ERROR
+CRITICAL
+</pre></div>
+</div>
+<blockquote>
+<div><p>[!NOTE]
+The older <code class="docutils literal notranslate"><span class="pre">--print-paths</span></code> flag is still accepted for compatibility, but <a class="reference internal" href="#paths"><code class="docutils literal notranslate"><span class="pre">polyfi-ranked</span> <span class="pre">paths</span></code></a> is the preferred command.</p>
+</div></blockquote>
+<hr class="docutils" />
+</section>
+<section id="paths">
+<span id="id3"></span><h2><code class="docutils literal notranslate"><span class="pre">paths</span></code><a class="headerlink" href="#paths" title="Link to this heading"></a></h2>
+<p>Print all resolved PolyFi: Ranked file paths, including config, log, state, and runtime paths.</p>
+<section id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">paths</span>
+</pre></div>
+</div>
+</section>
+<section id="when-to-use-it">
+<h3>When to use it<a class="headerlink" href="#when-to-use-it" title="Link to this heading"></a></h3>
+<p>Use this when you need to confirm where PolyFi: Ranked is reading or writing files.</p>
+<p>Examples include checking:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File Type</p></th>
+<th class="head"><p>Why It Matters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Config path</p></td>
+<td><p>Confirms which config file is active.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Log path</p></td>
+<td><p>Helps when debugging or collecting issue reports.</p></td>
+</tr>
+<tr class="row-even"><td><p>State path</p></td>
+<td><p>Shows where runtime state is stored.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Speed-test history path</p></td>
+<td><p>Confirms where speed-test history is saved.</p></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+</section>
+</section>
+<section id="config">
+<span id="id4"></span><h2><code class="docutils literal notranslate"><span class="pre">config</span></code><a class="headerlink" href="#config" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">config</span></code> command group manages PolyFi: Ranked configuration files.</p>
+<hr class="docutils" />
+</section>
+<section id="config-init">
+<span id="id5"></span><h2><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">init</span></code><a class="headerlink" href="#config-init" title="Link to this heading"></a></h2>
+<p>Generate a complete config file containing every supported setting and its default value.</p>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">config</span> <span class="n">init</span>
+</pre></div>
+</div>
+</section>
+<section id="write-to-a-custom-location">
+<h3>Write to a Custom Location<a class="headerlink" href="#write-to-a-custom-location" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">config</span> <span class="n">init</span> <span class="p">-</span><span class="n">-config</span> <span class="n">C</span><span class="p">:\</span><span class="n">path</span><span class="p">\</span><span class="n">to</span><span class="p">\</span><span class="n">config</span><span class="p">.</span><span class="n">toml</span>
+</pre></div>
+</div>
+</section>
+<section id="overwrite-an-existing-config">
+<h3>Overwrite an Existing Config<a class="headerlink" href="#overwrite-an-existing-config" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">config</span> <span class="n">init</span> <span class="p">-</span><span class="n">-config</span> <span class="n">C</span><span class="p">:\</span><span class="n">path</span><span class="p">\</span><span class="n">to</span><span class="p">\</span><span class="n">config</span><span class="p">.</span><span class="n">toml</span> <span class="p">-</span><span class="n">-force</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>[!TIP]
+Use <code class="docutils literal notranslate"><span class="pre">--force</span></code> only when you intentionally want to replace an existing config file.<br />
+Tiny flag, big consequences. Classic.</p>
+</div></blockquote>
+<hr class="docutils" />
+</section>
+</section>
+<section id="windows">
+<span id="id6"></span><h2><code class="docutils literal notranslate"><span class="pre">windows</span></code><a class="headerlink" href="#windows" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">windows</span></code> command group manages Windows-specific integrations.</p>
+<p>This includes:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Integration</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Start Menu shortcut</p></td>
+<td><p>Adds an easy launcher for PolyFi: Ranked.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Startup Programs shortcut</p></td>
+<td><p>Starts PolyFi: Ranked when the user logs in.</p></td>
+</tr>
+<tr class="row-even"><td><p>Scheduled task cleanup</p></td>
+<td><p>Removes task-based startup integration.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Optional data purge</p></td>
+<td><p>Removes config, logs, and state files.</p></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+</section>
+<section id="windows-start-menu-install">
+<span id="id7"></span><h2><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">start-menu</span> <span class="pre">install</span></code><a class="headerlink" href="#windows-start-menu-install" title="Link to this heading"></a></h2>
+<p>Install a Start Menu shortcut that launches PolyFi: Ranked in tray mode.</p>
+<section id="id8">
+<h3>Usage<a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">windows</span> <span class="nb">start-menu</span> <span class="n">install</span>
+</pre></div>
+</div>
+</section>
+<section id="result">
+<h3>Result<a class="headerlink" href="#result" title="Link to this heading"></a></h3>
+<p>After installation, PolyFi: Ranked should appear in the Windows Start Menu.</p>
+<hr class="docutils" />
+</section>
+</section>
+<section id="windows-startup-install">
+<span id="id9"></span><h2><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">startup</span> <span class="pre">install</span></code><a class="headerlink" href="#windows-startup-install" title="Link to this heading"></a></h2>
+<p>Install a Startup Programs shortcut that launches PolyFi: Ranked in tray mode when the user logs in.</p>
+<section id="id10">
+<h3>Usage<a class="headerlink" href="#id10" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">windows</span> <span class="n">startup</span> <span class="n">install</span>
+</pre></div>
+</div>
+</section>
+<section id="id11">
+<h3>Result<a class="headerlink" href="#id11" title="Link to this heading"></a></h3>
+<p>PolyFi: Ranked will start automatically on user login.</p>
+<hr class="docutils" />
+</section>
+</section>
+<section id="windows-logon-task-install">
+<span id="id12"></span><h2><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">logon-task</span> <span class="pre">install</span></code><a class="headerlink" href="#windows-logon-task-install" title="Link to this heading"></a></h2>
+<p>Install a Windows Task Scheduler logon task that launches PolyFi: Ranked in tray mode when the user logs in.</p>
+<section id="install-the-task">
+<h3>Install the Task<a class="headerlink" href="#install-the-task" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">windows</span> <span class="n">logon-task</span> <span class="n">install</span>
+</pre></div>
+</div>
+</section>
+<section id="remove-the-task">
+<h3>Remove the Task<a class="headerlink" href="#remove-the-task" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">windows</span> <span class="n">logon-task</span> <span class="n">remove</span>
+</pre></div>
+</div>
+</section>
+<section id="id13">
+<h3>Result<a class="headerlink" href="#id13" title="Link to this heading"></a></h3>
+<p>PolyFi: Ranked can start earlier after sign-in than the Startup Programs shortcut path.</p>
+<hr class="docutils" />
+</section>
+</section>
+<section id="windows-uninstall">
+<span id="id14"></span><h2><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">uninstall</span></code><a class="headerlink" href="#windows-uninstall" title="Link to this heading"></a></h2>
+<p>Remove PolyFi: Ranked shortcuts and scheduled tasks.</p>
+<section id="remove-windows-integrations">
+<h3>Remove Windows Integrations<a class="headerlink" href="#remove-windows-integrations" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">windows</span> <span class="n">uninstall</span>
+</pre></div>
+</div>
+</section>
+<section id="remove-windows-integrations-and-app-data">
+<h3>Remove Windows Integrations and App Data<a class="headerlink" href="#remove-windows-integrations-and-app-data" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked</span> <span class="n">windows</span> <span class="n">uninstall</span> <span class="p">-</span><span class="n">-purge-data</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>[!WARNING]
+<code class="docutils literal notranslate"><span class="pre">--purge-data</span></code> removes PolyFi: Ranked config, log, and state files.<br />
+Use it for a full cleanup, not a casual uninstall.</p>
+</div></blockquote>
+<hr class="docutils" />
+</section>
+</section>
+<section id="task-scheduler-entry-points">
+<span id="id15"></span><h2>Task Scheduler Entry Points<a class="headerlink" href="#task-scheduler-entry-points" title="Link to this heading"></a></h2>
+<p>PolyFi: Ranked also provides a dedicated Task Scheduler helper command.</p>
+<p>This is mainly useful when you want to manage the scheduled logon task directly.</p>
+<hr class="docutils" />
+</section>
+<section id="polyfi-ranked-install-task">
+<span id="id16"></span><h2><code class="docutils literal notranslate"><span class="pre">polyfi-ranked-install-task</span></code><a class="headerlink" href="#polyfi-ranked-install-task" title="Link to this heading"></a></h2>
+<p>Register or remove a Windows Task Scheduler logon task that starts PolyFi: Ranked in tray mode.</p>
+<section id="id17">
+<h3>Install the Task<a class="headerlink" href="#id17" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked-install-task</span>
+</pre></div>
+</div>
+</section>
+<section id="id18">
+<h3>Remove the Task<a class="headerlink" href="#id18" title="Link to this heading"></a></h3>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">polyfi-ranked-install-task</span> <span class="p">-</span><span class="n">-uninstall</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+</section>
+</section>
+<section id="reference-links">
+<span id="id19"></span><h2>Reference Links<a class="headerlink" href="#reference-links" title="Link to this heading"></a></h2>
+<p>Use these links to jump to sections on this page.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Target</p></th>
+<th class="head"><p>Link</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>CLI Reference</p></td>
+<td><p><a class="reference internal" href="#polyfi-ranked-cli-reference">CLI Reference</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Quick Start</p></td>
+<td><p><a class="reference internal" href="#quick-start">Quick Start</a></p></td>
+</tr>
+<tr class="row-even"><td><p>Top-Level Flags</p></td>
+<td><p><a class="reference internal" href="#top-level-flags">Top-Level Flags</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">paths</span></code></p></td>
+<td><p><a class="reference internal" href="#paths"><code class="docutils literal notranslate"><span class="pre">paths</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">config</span></code></p></td>
+<td><p><a class="reference internal" href="#config"><code class="docutils literal notranslate"><span class="pre">config</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">init</span></code></p></td>
+<td><p><a class="reference internal" href="#config-init"><code class="docutils literal notranslate"><span class="pre">config</span> <span class="pre">init</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">windows</span></code></p></td>
+<td><p><a class="reference internal" href="#windows"><code class="docutils literal notranslate"><span class="pre">windows</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">start-menu</span> <span class="pre">install</span></code></p></td>
+<td><p><a class="reference internal" href="#windows-start-menu-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">start-menu</span> <span class="pre">install</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">startup</span> <span class="pre">install</span></code></p></td>
+<td><p><a class="reference internal" href="#windows-startup-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">startup</span> <span class="pre">install</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">logon-task</span> <span class="pre">install</span></code></p></td>
+<td><p><a class="reference internal" href="#windows-logon-task-install"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">logon-task</span> <span class="pre">install</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">uninstall</span></code></p></td>
+<td><p><a class="reference internal" href="#windows-uninstall"><code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">uninstall</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Task Scheduler Entry Points</p></td>
+<td><p><a class="reference internal" href="#task-scheduler-entry-points">Task Scheduler Entry Points</a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">polyfi-ranked-install-task</span></code></p></td>
+<td><p><a class="reference internal" href="#polyfi-ranked-install-task"><code class="docutils literal notranslate"><span class="pre">polyfi-ranked-install-task</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Home.html" class="btn btn-neutral float-left" title="PolyFi: Ranked" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Contributing-Docs.html" class="btn btn-neutral float-right" title="Contributing Docs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

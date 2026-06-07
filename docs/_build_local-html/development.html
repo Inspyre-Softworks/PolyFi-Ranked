@@ -1,0 +1,246 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Development &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Building the Windows Installer" href="building-windows-installer.html" />
+    <link rel="prev" title="API Reference" href="api-reference.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config-reference.html">Config Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api-reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-the-contributor-environment">Setting Up the Contributor Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-tests">Running Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gui-development-notes">GUI Development Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-sphinx-documentation">Building Sphinx Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#windows-packaging">Windows Packaging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#github-releases">GitHub Releases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#release-hygiene">Release Hygiene</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Command-Line-Interface-%28CLI%29-Reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Development</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/development.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="development">
+<h1>Development<a class="headerlink" href="#development" title="Link to this heading"></a></h1>
+<nav class="contents local" id="on-this-page">
+<p class="topic-title">On this page</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#setting-up-the-contributor-environment" id="id1">Setting Up the Contributor Environment</a></p></li>
+<li><p><a class="reference internal" href="#running-tests" id="id2">Running Tests</a></p></li>
+<li><p><a class="reference internal" href="#gui-development-notes" id="id3">GUI Development Notes</a></p></li>
+<li><p><a class="reference internal" href="#building-sphinx-documentation" id="id4">Building Sphinx Documentation</a></p></li>
+<li><p><a class="reference internal" href="#windows-packaging" id="id5">Windows Packaging</a></p></li>
+<li><p><a class="reference internal" href="#github-releases" id="id6">GitHub Releases</a></p></li>
+<li><p><a class="reference internal" href="#release-hygiene" id="id7">Release Hygiene</a></p></li>
+</ul>
+</nav>
+<section id="setting-up-the-contributor-environment">
+<h2><a class="toc-backref" href="#id1" role="doc-backlink">Setting Up the Contributor Environment</a><a class="headerlink" href="#setting-up-the-contributor-environment" title="Link to this heading"></a></h2>
+<p>PolyFi: Ranked uses <a class="reference external" href="https://python-poetry.org/">Poetry</a> for dependency and
+environment management.  Install the full development environment with:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">install</span> <span class="p">-</span><span class="n">-with</span> <span class="n">dev</span> <span class="p">-</span><span class="n">-no-interaction</span>
+</pre></div>
+</div>
+</section>
+<section id="running-tests">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Running Tests</a><a class="headerlink" href="#running-tests" title="Link to this heading"></a></h2>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">run</span> <span class="n">pytest</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The full test suite requires Windows because several modules depend on
+<code class="docutils literal notranslate"><span class="pre">ctypes.WinDLL</span></code> and the GUI components require a display.  On Linux or
+macOS, run targeted tests that do not touch Windows-only or GUI code.</p>
+</div>
+</section>
+<section id="gui-development-notes">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">GUI Development Notes</a><a class="headerlink" href="#gui-development-notes" title="Link to this heading"></a></h2>
+<p>When changing the tray or Tkinter GUI:</p>
+<ul class="simple">
+<li><p>Keep all Tk work on the shared UI thread.</p></li>
+<li><p>Prefer targeted regression tests for splash, launcher, and tray-fallback
+behavior.</p></li>
+</ul>
+</section>
+<section id="building-sphinx-documentation">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Building Sphinx Documentation</a><a class="headerlink" href="#building-sphinx-documentation" title="Link to this heading"></a></h2>
+<p>Sphinx and Read the Docs dependencies live in the Poetry <code class="docutils literal notranslate"><span class="pre">docs</span></code> group:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">install</span> <span class="p">-</span><span class="n">-with</span> <span class="n">docs</span> <span class="p">-</span><span class="n">-no-interaction</span>
+<span class="n">poetry</span> <span class="n">run</span> <span class="n">sphinx-build</span> <span class="n">-W</span> <span class="n">-b</span> <span class="n">html</span> <span class="n">docs</span> <span class="n">docs</span><span class="p">/</span><span class="n">_build</span><span class="p">/</span><span class="n">local-html</span>
+</pre></div>
+</div>
+</section>
+<section id="windows-packaging">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Windows Packaging</a><a class="headerlink" href="#windows-packaging" title="Link to this heading"></a></h2>
+<p>Install the packaging toolchain with:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">install</span> <span class="p">-</span><span class="n">-with</span> <span class="n">packaging</span> <span class="p">-</span><span class="n">-no-interaction</span>
+</pre></div>
+</div>
+<p>Build the PyInstaller app folder and, when Inno Setup 6 is installed, the
+installer <code class="docutils literal notranslate"><span class="pre">.exe</span></code>:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">powershell</span> <span class="n">-ExecutionPolicy</span> <span class="n">Bypass</span> <span class="o">-File</span> <span class="p">.\</span><span class="n">scripts</span><span class="p">\</span><span class="n">build_windows_installer</span><span class="p">.</span><span class="n">ps1</span>
+</pre></div>
+</div>
+<p>The underlying Python driver is also available directly:</p>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">run</span> <span class="n">python</span> <span class="n">scripts</span><span class="p">/</span><span class="n">build_windows_artifacts</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>Default build outputs:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dist\pyinstaller\polyfi-ranked\polyfi-ranked.exe</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dist\pyinstaller\polyfi-ranked\polyfi-ranked-console.exe</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dist\installer\polyfi-ranked-setup-&lt;version&gt;.exe</span></code></p></li>
+</ul>
+<p>See <a class="reference internal" href="building-windows-installer.html"><span class="doc">Building the Windows Installer</span></a> for full build documentation.</p>
+</section>
+<section id="github-releases">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">GitHub Releases</a><a class="headerlink" href="#github-releases" title="Link to this heading"></a></h2>
+<p><strong>Automatic (push to</strong> <code class="docutils literal notranslate"><span class="pre">main</span></code> <strong>):</strong> <code class="docutils literal notranslate"><span class="pre">auto-release.yml</span></code> fires on every push
+to <code class="docutils literal notranslate"><span class="pre">main</span></code>.  When it detects a version increment in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> with no
+matching tag yet:</p>
+<ul class="simple">
+<li><p>Builds the wheel and source distribution.</p></li>
+<li><p>Publishes prerelease versions to TestPyPI; non-prerelease versions to PyPI.</p></li>
+<li><p>Creates the <code class="docutils literal notranslate"><span class="pre">v&lt;version&gt;</span></code> git tag and a GitHub Release with the built
+distributions attached.</p></li>
+</ul>
+<p>The workflow is idempotent — repeated pushes with the same version are no-ops.</p>
+<p><strong>Manual (tag push):</strong> Pushing a tag matching <code class="docutils literal notranslate"><span class="pre">v&lt;version&gt;</span></code> runs
+<code class="docutils literal notranslate"><span class="pre">release.yml</span></code>.  That workflow additionally builds the Windows installer and
+zipped PyInstaller bundle and attaches them to the GitHub Release.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ci.yml</span></code> uploads the Python wheel and source distribution as workflow
+artifacts on every push so builds are retained without a full release.</p>
+<p>PyPI and TestPyPI publishing use trusted publishing, so both <code class="docutils literal notranslate"><span class="pre">auto-release.yml</span></code>
+and <code class="docutils literal notranslate"><span class="pre">release.yml</span></code> must be trusted by the registries.</p>
+</section>
+<section id="release-hygiene">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Release Hygiene</a><a class="headerlink" href="#release-hygiene" title="Link to this heading"></a></h2>
+<p>PRs that change non-exempt source files must also update:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CHANGELOG.md</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (version)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src/wifi_pref_manager/__init__.py</span></code> (version)</p></li>
+</ul>
+<p>This is enforced by <code class="docutils literal notranslate"><span class="pre">scripts/check_release_hygiene.py</span></code> and the
+<code class="docutils literal notranslate"><span class="pre">release-hygiene.yml</span></code> workflow.  Files under <code class="docutils literal notranslate"><span class="pre">docs/</span></code>, <code class="docutils literal notranslate"><span class="pre">README.md</span></code>,
+<code class="docutils literal notranslate"><span class="pre">AGENTS.md</span></code>, <code class="docutils literal notranslate"><span class="pre">CONTRIBUTING.md</span></code>, and a few others are exempt from this
+requirement.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api-reference.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="building-windows-installer.html" class="btn btn-neutral float-right" title="Building the Windows Installer" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

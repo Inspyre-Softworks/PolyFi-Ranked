@@ -1,0 +1,1023 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wifi_pref_manager.netsh_wifi &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config-reference.html">Config Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Command-Line-Interface-%28CLI%29-Reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wifi_pref_manager.netsh_wifi</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wifi_pref_manager.netsh_wifi</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Author:</span>
+<span class="sd">    Inspyre Softworks</span>
+
+<span class="sd">Project:</span>
+<span class="sd">    WiFi Preference Manager</span>
+
+<span class="sd">File:</span>
+<span class="sd">    netsh_wifi.py</span>
+
+<span class="sd">Description:</span>
+<span class="sd">    Windows `netsh` wrapper used to query and control Wi-Fi interfaces.</span>
+
+<span class="sd">Functions:</span>
+<span class="sd">    None.</span>
+
+<span class="sd">Constants:</span>
+<span class="sd">    None.</span>
+
+<span class="sd">Dependencies:</span>
+<span class="sd">    logging</span>
+<span class="sd">    re</span>
+<span class="sd">    subprocess</span>
+<span class="sd">    time</span>
+
+<span class="sd">Example Usage:</span>
+<span class="sd">    api = NetshWiFiApi(logger)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xml.etree.ElementTree</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ET</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.subprocess_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">hidden_subprocess_kwargs</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.wifi_adapter_tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">WifiAdapterTaskManager</span>
+
+
+<div class="viewcode-block" id="NetshError">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NetshError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a netsh operation fails.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="NetshWiFiApi">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NetshWiFiApi</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simple wrapper around Windows `netsh wlan`.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        detect_wifi_interface:</span>
+<span class="sd">            Detect a wireless interface name.</span>
+<span class="sd">        get_current_ssid:</span>
+<span class="sd">            Get the currently connected SSID.</span>
+<span class="sd">        get_visible_network_signals:</span>
+<span class="sd">            Get visible SSIDs with their strongest observed signal levels.</span>
+<span class="sd">        get_visible_ssids:</span>
+<span class="sd">            Get visible SSIDs.</span>
+<span class="sd">        get_saved_profiles:</span>
+<span class="sd">            Get saved Windows Wi-Fi profiles.</span>
+<span class="sd">        connect:</span>
+<span class="sd">            Connect to a saved Wi-Fi profile.</span>
+<span class="sd">        disconnect:</span>
+<span class="sd">            Disconnect current Wi-Fi.</span>
+<span class="sd">        get_profiles_autoconnect_modes:</span>
+<span class="sd">            Get auto/manual connect state for saved profiles.</span>
+<span class="sd">        set_profiles_autoconnect:</span>
+<span class="sd">            Set auto/manual connect state for saved profiles.</span>
+<span class="sd">        disable_wifi_adapter:</span>
+<span class="sd">            Disable the Wi-Fi adapter (turn off the radio).</span>
+<span class="sd">        enable_wifi_adapter:</span>
+<span class="sd">            Enable the Wi-Fi adapter (turn on the radio).</span>
+<span class="sd">        sync_profile_order:</span>
+<span class="sd">            Set Windows profile order.</span>
+<span class="sd">        get_active_ethernet_interfaces:</span>
+<span class="sd">            Return active Ethernet interface names.</span>
+<span class="sd">        is_ethernet_connected:</span>
+<span class="sd">            Check whether a physical Ethernet interface is currently connected.</span>
+<span class="sd">        _run_powershell:</span>
+<span class="sd">            Run a PowerShell one-liner and return its output.</span>
+<span class="sd">        _get_known_wireless_interface_names:</span>
+<span class="sd">            Return Wi-Fi interface names even when currently disabled.</span>
+<span class="sd">        _get_all_wireless_interface_names:</span>
+<span class="sd">            Return the names of every WLAN adapter detected by Windows.</span>
+<span class="sd">        _get_active_ethernet_interfaces_netsh:</span>
+<span class="sd">            Netsh-based fallback for Ethernet detection.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">task_manager</span><span class="p">:</span> <span class="n">WifiAdapterTaskManager</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span> <span class="ow">or</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_manager</span> <span class="o">=</span> <span class="n">task_manager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ethernet_exclusion_terms</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s1">&#39;bluetooth&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;loopback&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;npcap&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;vethernet&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;virtual&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;vmware&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;wireless&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;wi-fi&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;wifi&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;wlan&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_hidden_subprocess_kwargs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return Windows-specific subprocess flags that suppress console windows.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Keyword arguments safe to splat into ``subprocess.run``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">hidden_subprocess_kwargs</span><span class="p">()</span>
+
+<div class="viewcode-block" id="NetshWiFiApi.is_elevation_required_error">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_elevation_required_error">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_elevation_required_error</span><span class="p">(</span><span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine whether a command failure indicates missing administrator rights.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            exc:</span>
+<span class="sd">                Raised exception to inspect.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True when the error text matches a common elevation-required failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s1">&#39;requires elevation&#39;</span> <span class="ow">in</span> <span class="n">message</span>
+            <span class="ow">or</span> <span class="s1">&#39;run as administrator&#39;</span> <span class="ow">in</span> <span class="n">message</span>
+            <span class="ow">or</span> <span class="s1">&#39;requested operation requires elevation&#39;</span> <span class="ow">in</span> <span class="n">message</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.is_windows_shutdown_process_start_error">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_windows_shutdown_process_start_error">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_windows_shutdown_process_start_error</span><span class="p">(</span><span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine whether Windows is rejecting process creation during shutdown.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">winerror</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="s1">&#39;winerror&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">winerror</span> <span class="o">==</span> <span class="mi">1115</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s1">&#39;shutdown is in progress&#39;</span> <span class="ow">in</span> <span class="n">message</span> <span class="ow">or</span> <span class="s1">&#39;system shutdown is in progress&#39;</span> <span class="ow">in</span> <span class="n">message</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.run_netsh">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.run_netsh">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_netsh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run a netsh command.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            args:</span>
+<span class="sd">                Arguments after the `netsh` executable.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Standard output text.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NetshError:</span>
+<span class="sd">                If the command fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;netsh&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">command</span><span class="p">,</span>
+            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">,</span>
+            <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span>
+            <span class="n">shell</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hidden_subprocess_kwargs</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NetshError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Command failed: </span><span class="si">{</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">command</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;stdout:</span><span class="se">\n</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;stderr:</span><span class="se">\n</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_powershell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run a PowerShell one-liner and return its stripped stdout.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            script:</span>
+<span class="sd">                PowerShell script to execute.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Stripped standard output from PowerShell.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            OSError:</span>
+<span class="sd">                If the ``powershell`` executable is not found.</span>
+<span class="sd">            subprocess.SubprocessError:</span>
+<span class="sd">                If the subprocess cannot be started or exits with a non-zero</span>
+<span class="sd">                return code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;powershell&#39;</span><span class="p">,</span> <span class="s1">&#39;-NoProfile&#39;</span><span class="p">,</span> <span class="s1">&#39;-NonInteractive&#39;</span><span class="p">,</span> <span class="s1">&#39;-Command&#39;</span><span class="p">,</span> <span class="n">script</span><span class="p">],</span>
+            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">,</span>
+            <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span>
+            <span class="n">shell</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hidden_subprocess_kwargs</span><span class="p">(),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;PowerShell exited with code </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s1">.</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;stderr:</span><span class="se">\n</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+<div class="viewcode-block" id="NetshWiFiApi.detect_wifi_interface">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.detect_wifi_interface">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">detect_wifi_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Detect the first Wi-Fi interface name.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Interface name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;wlan&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;interfaces&#39;</span><span class="p">])</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^\s*Name\s*:\s*(.+?)\s*$&#39;</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="n">candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_known_wireless_interface_names</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;No active WLAN interface reported by netsh; falling back to known Wi-Fi interface </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span>
+                <span class="n">candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">raise</span> <span class="n">NetshError</span><span class="p">(</span><span class="s1">&#39;Could not detect a wireless interface.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.get_current_ssid">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_current_ssid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_current_ssid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the currently connected SSID.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            SSID string or None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;wlan&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;interfaces&#39;</span><span class="p">])</span>
+        <span class="n">state_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^\s*State\s*:\s*(.+?)\s*$&#39;</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">state_match</span> <span class="ow">or</span> <span class="n">state_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;connected&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">ssid_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^\s*SSID\s*:\s*(.+?)\s*$&#39;</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ssid_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">ssid_match</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.get_visible_ssids">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_visible_ssids">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_visible_ssids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get visible SSIDs from a scan.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Unique list of SSIDs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_visible_network_signals</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.signal_percent_to_dbm">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.signal_percent_to_dbm">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">signal_percent_to_dbm</span><span class="p">(</span><span class="n">signal_percent</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert Windows Wi-Fi signal quality percent to an approximate dBm value.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            signal_percent:</span>
+<span class="sd">                Windows-reported signal quality percentage.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Approximate dBm reading, where values closer to zero are stronger.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">clamped</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">signal_percent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">((</span><span class="n">clamped</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">100</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.get_visible_network_signals">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_visible_network_signals">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_visible_network_signals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get visible SSIDs and their strongest observed signal strengths.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Mapping of SSID to strongest approximate dBm reading observed in the</span>
+<span class="sd">            current scan.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;wlan&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;networks&#39;</span><span class="p">,</span> <span class="s1">&#39;mode=bssid&#39;</span><span class="p">])</span>
+        <span class="n">networks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">current_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="n">ssid_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[ \t]*SSID\s+\d+[ \t]*:[ \t]*(.*?)[ \t]*$&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ssid_match</span><span class="p">:</span>
+                <span class="n">ssid</span> <span class="o">=</span> <span class="n">ssid_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">current_ssid</span> <span class="o">=</span> <span class="n">ssid</span> <span class="ow">or</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">current_ssid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">networks</span><span class="p">:</span>
+                    <span class="n">networks</span><span class="p">[</span><span class="n">current_ssid</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">100</span>
+                <span class="k">continue</span>
+
+            <span class="n">signal_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[ \t]*Signal\s*:\s*(\d+)%\s*$&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">signal_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">signal_dbm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_percent_to_dbm</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">signal_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="n">signal_dbm</span> <span class="o">&gt;</span> <span class="n">networks</span><span class="p">[</span><span class="n">current_ssid</span><span class="p">]:</span>
+                <span class="n">networks</span><span class="p">[</span><span class="n">current_ssid</span><span class="p">]</span> <span class="o">=</span> <span class="n">signal_dbm</span>
+
+        <span class="k">return</span> <span class="n">networks</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.get_saved_profiles">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_saved_profiles">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_saved_profiles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get saved Windows Wi-Fi profile names.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of saved profile names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;wlan&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;profiles&#39;</span><span class="p">])</span>
+        <span class="n">profiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s1">&#39;^\s*(?:All User Profile|Current User Profile)\s*:\s*(.+?)\s*$&#39;</span><span class="p">,</span>
+            <span class="n">output</span><span class="p">,</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">profiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">profiles</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">profiles</span>
+
+        <span class="k">if</span> <span class="s1">&#39;there is no wireless interface on the system&#39;</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="n">fallback_profiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_saved_profiles_from_wlan_store</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">fallback_profiles</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s1">&#39;Falling back to the Windows WLAN profile store because netsh reported no wireless interface.&#39;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">fallback_profiles</span>
+
+        <span class="k">return</span> <span class="n">profiles</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_saved_profiles_from_wlan_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read saved Wi-Fi profile names directly from the Windows WLAN profile store.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Sorted unique profile names discovered in the XML profile store.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">profile_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;C:\ProgramData\Microsoft\Wlansvc\Profiles\Interfaces&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">profile_root</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="n">profiles</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">xml_path</span> <span class="ow">in</span> <span class="n">profile_root</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s1">&#39;*.xml&#39;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">root</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">xml_path</span><span class="p">)</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">ET</span><span class="o">.</span><span class="n">ParseError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Skipping unreadable WLAN profile XML: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">xml_path</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">name_node</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;{http://www.microsoft.com/networking/WLAN/profile/v1}name&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name_node</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">name_node</span><span class="o">.</span><span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">profile_name</span> <span class="o">=</span> <span class="n">name_node</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">profile_name</span><span class="p">:</span>
+                <span class="n">profiles</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">profile_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">profiles</span><span class="p">)</span>
+
+<div class="viewcode-block" id="NetshWiFiApi.connect">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.connect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ssid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Connect to a saved Wi-Fi profile.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wireless interface name.</span>
+<span class="sd">            ssid:</span>
+<span class="sd">                Saved profile name.</span>
+<span class="sd">            timeout:</span>
+<span class="sd">                Seconds to wait before verifying the result.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if connected to the requested SSID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Attempting connection to </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">ssid</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span>
+            <span class="s1">&#39;wlan&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;connect&#39;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s1">&#39;name=</span><span class="si">{</span><span class="n">ssid</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s1">&#39;ssid=</span><span class="si">{</span><span class="n">ssid</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s1">&#39;interface=</span><span class="si">{</span><span class="n">interface_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+        <span class="p">])</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_current_ssid</span><span class="p">()</span> <span class="o">==</span> <span class="n">ssid</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.disconnect">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.disconnect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Disconnect Wi-Fi from the specified interface.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wireless interface name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;wlan&#39;</span><span class="p">,</span> <span class="s1">&#39;disconnect&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;interface=</span><span class="si">{</span><span class="n">interface_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.set_profile_autoconnect">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.set_profile_autoconnect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_profile_autoconnect</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">profile_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set whether a profile should auto-connect.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            profile_name:</span>
+<span class="sd">                Saved Wi-Fi profile name.</span>
+<span class="sd">            enabled:</span>
+<span class="sd">                True for automatic connect, False for manual connect.</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Optional interface name to scope the update.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span> <span class="k">if</span> <span class="n">enabled</span> <span class="k">else</span> <span class="s1">&#39;manual&#39;</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wlan&#39;</span><span class="p">,</span> <span class="s1">&#39;set&#39;</span><span class="p">,</span> <span class="s1">&#39;profileparameter&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;name=</span><span class="si">{</span><span class="n">profile_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;connectionmode=</span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">interface_name</span><span class="p">:</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;interface=</span><span class="si">{</span><span class="n">interface_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.get_profiles_autoconnect_modes">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_profiles_autoconnect_modes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_profiles_autoconnect_modes</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">profiles</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get auto/manual connect state for Wi-Fi profiles.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Optional interface name used when querying profiles.</span>
+<span class="sd">            profiles:</span>
+<span class="sd">                Optional explicit profile list. Defaults to all saved profiles.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Mapping of profile name to True (auto-connect) or False (manual).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">profile_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">profiles</span><span class="p">)</span> <span class="k">if</span> <span class="n">profiles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_saved_profiles</span><span class="p">()</span>
+        <span class="n">modes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">profile_name</span> <span class="ow">in</span> <span class="n">profile_names</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;wlan&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;profile&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;name=</span><span class="si">{</span><span class="n">profile_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">interface_name</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;interface=</span><span class="si">{</span><span class="n">interface_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^\s*Connection mode\s*:\s*(.+?)\s*$&#39;</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">NetshError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;Could not determine connection mode for profile </span><span class="si">{</span><span class="n">profile_name</span><span class="si">!r}</span><span class="s1">.&#39;</span>
+                <span class="p">)</span>
+            <span class="n">mode_text</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s1">&#39;manual&#39;</span> <span class="ow">in</span> <span class="n">mode_text</span><span class="p">:</span>
+                <span class="n">modes</span><span class="p">[</span><span class="n">profile_name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="s1">&#39;auto&#39;</span> <span class="ow">in</span> <span class="n">mode_text</span> <span class="ow">or</span> <span class="s1">&#39;automatically&#39;</span> <span class="ow">in</span> <span class="n">mode_text</span><span class="p">:</span>
+                <span class="n">modes</span><span class="p">[</span><span class="n">profile_name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">NetshError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;Unrecognized connection mode for profile </span><span class="si">{</span><span class="n">profile_name</span><span class="si">!r}</span><span class="s1">: </span><span class="si">{</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">!r}</span><span class="s1">&#39;</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">modes</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.set_profiles_autoconnect">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.set_profiles_autoconnect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_profiles_autoconnect</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">profiles</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set auto/manual connect behavior for multiple profiles.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            enabled:</span>
+<span class="sd">                True to enable auto-connect, False to require manual connect.</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Optional interface name used when applying profile updates.</span>
+<span class="sd">            profiles:</span>
+<span class="sd">                Optional explicit profile list. Defaults to all saved profiles.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">profile_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">profiles</span><span class="p">)</span> <span class="k">if</span> <span class="n">profiles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_saved_profiles</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">profile_name</span> <span class="ow">in</span> <span class="n">profile_names</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_profile_autoconnect</span><span class="p">(</span>
+                <span class="n">profile_name</span><span class="p">,</span>
+                <span class="n">enabled</span><span class="o">=</span><span class="n">enabled</span><span class="p">,</span>
+                <span class="n">interface_name</span><span class="o">=</span><span class="n">interface_name</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.is_interface_enabled">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_interface_enabled">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_interface_enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check whether an interface is administratively enabled.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Interface name to inspect.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True when the interface admin state is enabled.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NetshError:</span>
+<span class="sd">                If the interface cannot be found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;interface&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;interface&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">admin_state</span><span class="p">,</span> <span class="n">_state</span><span class="p">,</span> <span class="n">_iface_type</span><span class="p">,</span> <span class="n">iface_name</span> <span class="o">=</span> <span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">iface_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">interface_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">admin_state</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;enabled&#39;</span>
+
+        <span class="k">raise</span> <span class="n">NetshError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Could not determine admin state for interface </span><span class="si">{</span><span class="n">interface_name</span><span class="si">!r}</span><span class="s1">.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.disable_wifi_adapter">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.disable_wifi_adapter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disable_wifi_adapter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Disable the Wi-Fi adapter (turn off the radio).</span>
+
+<span class="sd">        This is equivalent to pressing the WiFi button in Windows Quick Settings,</span>
+<span class="sd">        completely disabling the wireless radio while leaving Ethernet active.</span>
+
+<span class="sd">        When a task manager is configured and the corresponding scheduled task</span>
+<span class="sd">        is installed, the command is executed via ``schtasks /run`` so no</span>
+<span class="sd">        process elevation is needed.  The adapter state is verified afterwards;</span>
+<span class="sd">        if still enabled the method falls back to a direct ``netsh`` call.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wireless interface name to disable.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NetshError:</span>
+<span class="sd">                If the command fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Disabling Wi-Fi adapter: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_manager</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.wifi_adapter_tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">WifiAdapterTaskError</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">task_manager</span><span class="o">.</span><span class="n">disable_wifi</span><span class="p">()</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_interface_enabled</span><span class="p">(</span><span class="n">interface_name</span><span class="p">):</span>
+                        <span class="k">return</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s1">&#39;Wi-Fi adapter </span><span class="si">%r</span><span class="s1"> still enabled after task trigger; &#39;</span>
+                        <span class="s1">&#39;falling back to direct netsh.&#39;</span><span class="p">,</span>
+                        <span class="n">interface_name</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="n">NetshError</span><span class="p">:</span>
+                    <span class="k">pass</span>  <span class="c1"># Cannot verify — fall through to direct netsh.</span>
+            <span class="k">except</span> <span class="n">WifiAdapterTaskError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s1">&#39;Scheduled-task Wi-Fi disable failed (</span><span class="si">%s</span><span class="s1">); &#39;</span>
+                    <span class="s1">&#39;falling back to direct netsh.&#39;</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;interface&#39;</span><span class="p">,</span> <span class="s1">&#39;set&#39;</span><span class="p">,</span> <span class="s1">&#39;interface&#39;</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">,</span> <span class="s1">&#39;admin=disabled&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.enable_wifi_adapter">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.enable_wifi_adapter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_wifi_adapter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Enable the Wi-Fi adapter (turn on the radio).</span>
+
+<span class="sd">        This re-enables a previously disabled wireless adapter, allowing it to</span>
+<span class="sd">        scan for and connect to networks.</span>
+
+<span class="sd">        When a task manager is configured and the corresponding scheduled task</span>
+<span class="sd">        is installed, the command is executed via ``schtasks /run`` so no</span>
+<span class="sd">        process elevation is needed.  The adapter state is verified afterwards;</span>
+<span class="sd">        if still disabled the method falls back to a direct ``netsh`` call.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wireless interface name to enable.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NetshError:</span>
+<span class="sd">                If the command fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Enabling Wi-Fi adapter: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_manager</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.wifi_adapter_tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">WifiAdapterTaskError</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">task_manager</span><span class="o">.</span><span class="n">enable_wifi</span><span class="p">()</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_interface_enabled</span><span class="p">(</span><span class="n">interface_name</span><span class="p">):</span>
+                        <span class="k">return</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s1">&#39;Wi-Fi adapter </span><span class="si">%r</span><span class="s1"> still disabled after task trigger; &#39;</span>
+                        <span class="s1">&#39;falling back to direct netsh.&#39;</span><span class="p">,</span>
+                        <span class="n">interface_name</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="n">NetshError</span><span class="p">:</span>
+                    <span class="k">pass</span>  <span class="c1"># Cannot verify — fall through to direct netsh.</span>
+            <span class="k">except</span> <span class="n">WifiAdapterTaskError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s1">&#39;Scheduled-task Wi-Fi enable failed (</span><span class="si">%s</span><span class="s1">); &#39;</span>
+                    <span class="s1">&#39;falling back to direct netsh.&#39;</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;interface&#39;</span><span class="p">,</span> <span class="s1">&#39;set&#39;</span><span class="p">,</span> <span class="s1">&#39;interface&#39;</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">,</span> <span class="s1">&#39;admin=enabled&#39;</span><span class="p">])</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_all_wireless_interface_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the lower-cased names of every WLAN adapter detected by Windows.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Set of lower-cased wireless interface names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;wlan&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;interfaces&#39;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="n">NetshError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="k">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^\s*Name\s*:\s*(.+?)\s*$&#39;</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_known_wireless_interface_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return Wi-Fi interface names, even if they are currently disabled.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Ordered list of candidate Wi-Fi interface names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_powershell</span><span class="p">(</span>
+                <span class="s1">&#39;Get-NetAdapter |&#39;</span>
+                <span class="s1">&#39; Where-Object { $_.InterfaceType -eq 71 } |&#39;</span>
+                <span class="s1">&#39; Select-Object -ExpandProperty Name&#39;</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;PowerShell Wi-Fi interface fallback unavailable.&#39;</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_probable_ethernet_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine whether an interface name/description looks like real Ethernet.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            name:</span>
+<span class="sd">                Interface name or description.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True when the text does not match a known non-Ethernet exclusion.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">name_lower</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">term</span> <span class="ow">in</span> <span class="n">name_lower</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ethernet_exclusion_terms</span><span class="p">)</span>
+
+<div class="viewcode-block" id="NetshWiFiApi.get_active_ethernet_interfaces">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_active_ethernet_interfaces">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_active_ethernet_interfaces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wifi_interface_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the names of active wired Ethernet interfaces.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            wifi_interface_name:</span>
+<span class="sd">                Optional wireless interface name to exclude in the fallback path.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of interface names that look like real, active Ethernet links.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_active_ethernet_interfaces_netsh_strict</span><span class="p">(</span><span class="n">wifi_interface_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">NetshError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;Netsh Ethernet detection unavailable; falling back to PowerShell.&#39;</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_active_ethernet_interfaces_powershell</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;PowerShell Ethernet detection unavailable.&#39;</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="NetshWiFiApi.is_ethernet_connected">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_ethernet_connected">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_ethernet_connected</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wifi_interface_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check whether a physical Ethernet interface is currently connected.</span>
+
+<span class="sd">        Uses the active-Ethernet interface list generated by</span>
+<span class="sd">        ``get_active_ethernet_interfaces``. The PowerShell path requires a</span>
+<span class="sd">        connected type-6 adapter whose physical media type is ``802.3``, then</span>
+<span class="sd">        filters out loopback, Wi-Fi, Bluetooth, and other known non-Ethernet</span>
+<span class="sd">        names. Falls back to a ``netsh``-based heuristic if PowerShell is</span>
+<span class="sd">        unavailable or returns a non-zero exit code.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            wifi_interface_name:</span>
+<span class="sd">                Ignored when PowerShell detection succeeds; forwarded to the</span>
+<span class="sd">                netsh fallback for backwards compatibility.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ``True`` when at least one candidate active Ethernet interface is</span>
+<span class="sd">            detected.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_active_ethernet_interfaces</span><span class="p">(</span><span class="n">wifi_interface_name</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_active_ethernet_interfaces_powershell</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return active Ethernet interfaces using PowerShell as a fallback.</span>
+
+<span class="sd">        This path is intentionally kept out of the normal polling loop because</span>
+<span class="sd">        starting PowerShell every few seconds is noticeably heavier than the</span>
+<span class="sd">        ``netsh`` interface query.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_powershell</span><span class="p">(</span>
+            <span class="s1">&#39;$adapters = Get-NetAdapter -Physical | Where-Object {&#39;</span>
+            <span class="s1">&#39; $_.InterfaceType -eq 6&#39;</span>
+            <span class="s1">&#39; -and $_.Status -eq &quot;Up&quot;&#39;</span>
+            <span class="s1">&#39; -and $_.MediaConnectionState -eq &quot;Connected&quot;&#39;</span>
+            <span class="s1">&#39; -and $_.PhysicalMediaType -eq &quot;802.3&quot;&#39;</span>
+            <span class="s1">&#39; -and $_.ComponentID -ne &quot;*msloop&quot;&#39;</span>
+            <span class="s1">&#39; } | Select-Object Name, InterfaceDescription;&#39;</span>
+            <span class="s1">&#39; if ($adapters) { $adapters | ConvertTo-Json -Compress } else { &quot;[]&quot; }&#39;</span>
+        <span class="p">)</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">output</span> <span class="ow">or</span> <span class="s1">&#39;[]&#39;</span><span class="p">)</span>
+        <span class="n">adapters</span> <span class="o">=</span> <span class="n">parsed</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parsed</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">parsed</span><span class="p">]</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">adapter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Name&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">adapter</span> <span class="ow">in</span> <span class="n">adapters</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_probable_ethernet_name</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">adapter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Name&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)))</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_probable_ethernet_name</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">adapter</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;InterfaceDescription&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)))</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;PowerShell Ethernet candidates: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="k">if</span> <span class="n">names</span> <span class="k">else</span> <span class="s1">&#39;[none]&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">names</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_active_ethernet_interfaces_netsh_strict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">wifi_interface_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Netsh-based Ethernet detection that lets command failures propagate.</span>
+
+<span class="sd">        Checks ``netsh interface show interface`` for any enabled, connected,</span>
+<span class="sd">        Dedicated interface that is not a known wireless adapter and does not</span>
+<span class="sd">        have the ``vEthernet`` virtual-adapter prefix.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            wifi_interface_name:</span>
+<span class="sd">                Optional extra wireless interface name to exclude.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of candidate Ethernet interface names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span><span class="s1">&#39;interface&#39;</span><span class="p">,</span> <span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="s1">&#39;interface&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Collect *all* wireless interface names so we can exclude them.</span>
+        <span class="n">wireless_names</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_wireless_interface_names</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">wifi_interface_name</span><span class="p">:</span>
+            <span class="n">wireless_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">wifi_interface_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+
+        <span class="n">connected_interfaces</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">admin_state</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">iface_type</span><span class="p">,</span> <span class="n">iface_name</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">)</span>
+            <span class="n">iface_name_lower</span> <span class="o">=</span> <span class="n">iface_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">admin_state</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;enabled&#39;</span>
+                <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;connected&#39;</span>
+                <span class="ow">and</span> <span class="n">iface_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;dedicated&#39;</span>
+                <span class="ow">and</span> <span class="n">iface_name_lower</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wireless_names</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">iface_name_lower</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;vethernet&#39;</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_probable_ethernet_name</span><span class="p">(</span><span class="n">iface_name</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">connected_interfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iface_name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Netsh Ethernet candidates: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">connected_interfaces</span><span class="p">)</span> <span class="k">if</span> <span class="n">connected_interfaces</span> <span class="k">else</span> <span class="s1">&#39;[none]&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">connected_interfaces</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_active_ethernet_interfaces_netsh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wifi_interface_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Netsh-based fallback for Ethernet detection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_active_ethernet_interfaces_netsh_strict</span><span class="p">(</span><span class="n">wifi_interface_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">NetshError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="NetshWiFiApi.sync_profile_order">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.netsh_wifi.NetshWiFiApi.sync_profile_order">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sync_profile_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ssids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sync Windows profile order to match preference order.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wireless interface name.</span>
+<span class="sd">            ssids:</span>
+<span class="sd">                Ordered list of profile names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">saved_profiles</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_saved_profiles</span><span class="p">())</span>
+        <span class="n">priority</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">ssid</span> <span class="ow">in</span> <span class="n">ssids</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ssid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">saved_profiles</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Skipping missing saved profile: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">ssid</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_netsh</span><span class="p">([</span>
+                <span class="s1">&#39;wlan&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;set&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;profileorder&#39;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s1">&#39;name=</span><span class="si">{</span><span class="n">ssid</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s1">&#39;interface=</span><span class="si">{</span><span class="n">interface_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s1">&#39;priority=</span><span class="si">{</span><span class="n">priority</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="p">])</span>
+            <span class="n">priority</span> <span class="o">+=</span> <span class="mi">1</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

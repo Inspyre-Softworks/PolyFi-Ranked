@@ -1,0 +1,1747 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Reference &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Development" href="development.html" />
+    <link rel="prev" title="Config Reference" href="config-reference.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config-reference.html">Config Reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-wifi_pref_manager">Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-wifi_pref_manager.models">Configuration and Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.models.WiFiProfilePreference"><code class="docutils literal notranslate"><span class="pre">WiFiProfilePreference</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.models.AppConfig"><code class="docutils literal notranslate"><span class="pre">AppConfig</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.models.SpeedTestResult"><code class="docutils literal notranslate"><span class="pre">SpeedTestResult</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.config.ConfigError"><code class="docutils literal notranslate"><span class="pre">ConfigError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.config.ConfigLoader"><code class="docutils literal notranslate"><span class="pre">ConfigLoader</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.config.ConfigLoader.ensure_default_config"><code class="docutils literal notranslate"><span class="pre">ConfigLoader.ensure_default_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.config.ConfigLoader.write_default_config"><code class="docutils literal notranslate"><span class="pre">ConfigLoader.write_default_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.config.ConfigLoader.get_mtime_ns"><code class="docutils literal notranslate"><span class="pre">ConfigLoader.get_mtime_ns()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.config.ConfigLoader.has_changed"><code class="docutils literal notranslate"><span class="pre">ConfigLoader.has_changed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.config.ConfigLoader.mark_loaded"><code class="docutils literal notranslate"><span class="pre">ConfigLoader.mark_loaded()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.config.ConfigLoader.load"><code class="docutils literal notranslate"><span class="pre">ConfigLoader.load()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.config.save_config"><code class="docutils literal notranslate"><span class="pre">save_config()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.paths.AppPaths"><code class="docutils literal notranslate"><span class="pre">AppPaths</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.paths.AppPaths.migrate_legacy_files"><code class="docutils literal notranslate"><span class="pre">AppPaths.migrate_legacy_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.paths.AppPaths.ensure_directories"><code class="docutils literal notranslate"><span class="pre">AppPaths.ensure_directories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.managed_interface_state.ManagedInterfaceState"><code class="docutils literal notranslate"><span class="pre">ManagedInterfaceState</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore"><code class="docutils literal notranslate"><span class="pre">ManagedInterfaceStateStore</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore.load"><code class="docutils literal notranslate"><span class="pre">ManagedInterfaceStateStore.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore.save"><code class="docutils literal notranslate"><span class="pre">ManagedInterfaceStateStore.save()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-wifi_pref_manager.netsh_wifi">Runtime Services</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshError"><code class="docutils literal notranslate"><span class="pre">NetshError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_elevation_required_error"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.is_elevation_required_error()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_windows_shutdown_process_start_error"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.is_windows_shutdown_process_start_error()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.run_netsh"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.run_netsh()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.detect_wifi_interface"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.detect_wifi_interface()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_current_ssid"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.get_current_ssid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_visible_ssids"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.get_visible_ssids()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.signal_percent_to_dbm"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.signal_percent_to_dbm()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_visible_network_signals"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.get_visible_network_signals()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_saved_profiles"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.get_saved_profiles()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.connect"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.connect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.disconnect"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.disconnect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.set_profile_autoconnect"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.set_profile_autoconnect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_profiles_autoconnect_modes"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.get_profiles_autoconnect_modes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.set_profiles_autoconnect"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.set_profiles_autoconnect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_interface_enabled"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.is_interface_enabled()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.disable_wifi_adapter"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.disable_wifi_adapter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.enable_wifi_adapter"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.enable_wifi_adapter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_active_ethernet_interfaces"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.get_active_ethernet_interfaces()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_ethernet_connected"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.is_ethernet_connected()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.sync_profile_order"><code class="docutils literal notranslate"><span class="pre">NetshWiFiApi.sync_profile_order()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.interface_name"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.interface_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.start"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.stop"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.stop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.preference_index"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.preference_index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.best_available_ssid"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.best_available_ssid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.reload_config"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.reload_config()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.set_status_changed_callback"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.set_status_changed_callback()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.set_runtime_warning_callback"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.set_runtime_warning_callback()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.set_wifi_adapter_disabled_callback"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.set_wifi_adapter_disabled_callback()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.set_wifi_network_changed_callback"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.set_wifi_network_changed_callback()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.restore_startup_network_state"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.restore_startup_network_state()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.get_speed_test_status_text"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.get_speed_test_status_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.set_auto_disable_wifi_on_ethernet"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.set_auto_disable_wifi_on_ethernet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.enable_wifi_adapter"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.enable_wifi_adapter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.reload_config_if_needed"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.reload_config_if_needed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.evaluate_and_switch"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.evaluate_and_switch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.service.WiFiPreferenceService.run_forever"><code class="docutils literal notranslate"><span class="pre">WiFiPreferenceService.run_forever()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.speedtest_history.SpeedTestHistoryWriter"><code class="docutils literal notranslate"><span class="pre">SpeedTestHistoryWriter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.speedtest_history.SpeedTestHistoryWriter.append"><code class="docutils literal notranslate"><span class="pre">SpeedTestHistoryWriter.append()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.speedtest_runner.SpeedTestRunner"><code class="docutils literal notranslate"><span class="pre">SpeedTestRunner</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.speedtest_runner.SpeedTestRunner.run"><code class="docutils literal notranslate"><span class="pre">SpeedTestRunner.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-wifi_pref_manager.scheduler">Windows Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller"><code class="docutils literal notranslate"><span class="pre">TaskSchedulerInstaller</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.for_current_runtime"><code class="docutils literal notranslate"><span class="pre">TaskSchedulerInstaller.for_current_runtime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.build_command"><code class="docutils literal notranslate"><span class="pre">TaskSchedulerInstaller.build_command()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.build_uninstall_command"><code class="docutils literal notranslate"><span class="pre">TaskSchedulerInstaller.build_uninstall_command()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.install"><code class="docutils literal notranslate"><span class="pre">TaskSchedulerInstaller.install()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.uninstall"><code class="docutils literal notranslate"><span class="pre">TaskSchedulerInstaller.uninstall()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.scheduler.build_argument_parser"><code class="docutils literal notranslate"><span class="pre">build_argument_parser()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.scheduler.update_scheduled_logon_task_preference"><code class="docutils literal notranslate"><span class="pre">update_scheduled_logon_task_preference()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.scheduler.persist_scheduled_logon_task_state"><code class="docutils literal notranslate"><span class="pre">persist_scheduled_logon_task_state()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.scheduler.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.windows_shell.resolve_runtime_launch_target"><code class="docutils literal notranslate"><span class="pre">resolve_runtime_launch_target()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.windows_shell.ShortcutSpec"><code class="docutils literal notranslate"><span class="pre">ShortcutSpec</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager"><code class="docutils literal notranslate"><span class="pre">WindowsShortcutManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager.get_shortcut_path"><code class="docutils literal notranslate"><span class="pre">WindowsShortcutManager.get_shortcut_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager.get_icon_path"><code class="docutils literal notranslate"><span class="pre">WindowsShortcutManager.get_icon_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager.install"><code class="docutils literal notranslate"><span class="pre">WindowsShortcutManager.install()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager.remove"><code class="docutils literal notranslate"><span class="pre">WindowsShortcutManager.remove()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.windows_shell.StartMenuShortcutManager"><code class="docutils literal notranslate"><span class="pre">StartMenuShortcutManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.windows_shell.StartMenuShortcutManager.get_shortcut_path"><code class="docutils literal notranslate"><span class="pre">StartMenuShortcutManager.get_shortcut_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.windows_shell.StartMenuShortcutManager.install"><code class="docutils literal notranslate"><span class="pre">StartMenuShortcutManager.install()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.windows_shell.StartMenuShortcutManager.remove"><code class="docutils literal notranslate"><span class="pre">StartMenuShortcutManager.remove()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.windows_shell.StartupProgramsShortcutManager"><code class="docutils literal notranslate"><span class="pre">StartupProgramsShortcutManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.windows_shell.StartupProgramsShortcutManager.get_shortcut_path"><code class="docutils literal notranslate"><span class="pre">StartupProgramsShortcutManager.get_shortcut_path()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskError"><code class="docutils literal notranslate"><span class="pre">WifiAdapterTaskError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager"><code class="docutils literal notranslate"><span class="pre">WifiAdapterTaskManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.are_installed"><code class="docutils literal notranslate"><span class="pre">WifiAdapterTaskManager.are_installed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install"><code class="docutils literal notranslate"><span class="pre">WifiAdapterTaskManager.install()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install_and_wait"><code class="docutils literal notranslate"><span class="pre">WifiAdapterTaskManager.install_and_wait()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.uninstall"><code class="docutils literal notranslate"><span class="pre">WifiAdapterTaskManager.uninstall()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.disable_wifi"><code class="docutils literal notranslate"><span class="pre">WifiAdapterTaskManager.disable_wifi()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.enable_wifi"><code class="docutils literal notranslate"><span class="pre">WifiAdapterTaskManager.enable_wifi()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Command-Line-Interface-%28CLI%29-Reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wiki/Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api-reference.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
+<p>This section is built with Sphinx autodoc so Read the Docs can render the
+public Python surface directly from the source tree.</p>
+<section id="module-wifi_pref_manager">
+<span id="package"></span><h2>Package<a class="headerlink" href="#module-wifi_pref_manager" title="Link to this heading"></a></h2>
+<p>PolyFi: Ranked package.</p>
+</section>
+<section id="module-wifi_pref_manager.models">
+<span id="configuration-and-models"></span><h2>Configuration and Models<a class="headerlink" href="#module-wifi_pref_manager.models" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>models.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Data models for runtime configuration and Wi-Fi preference entries.</p>
+</dd>
+<dt>Functions:</dt><dd><p>None.</p>
+</dd>
+<dt>Constants:</dt><dd><p>None.</p>
+</dd>
+<dt>Dependencies:</dt><dd><p>dataclasses
+typing</p>
+</dd>
+<dt>Example Usage:</dt><dd><p>from wifi_pref_manager.models import AppConfig</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.models.WiFiProfilePreference">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.models.</span></span><span class="sig-name descname"><span class="pre">WiFiProfilePreference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ssid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_switch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/models.html#WiFiProfilePreference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.models.WiFiProfilePreference" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents a preferred Wi-Fi network.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>ssid:</dt><dd><p>Saved Windows Wi-Fi profile name / SSID.</p>
+</dd>
+<dt>auto_switch:</dt><dd><p>Whether the manager may automatically switch to this network.</p>
+</dd>
+<dt>min_db:</dt><dd><p>Optional minimum signal threshold. When set, the network is treated
+as unavailable if the observed signal is weaker than this value.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.models.AppConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.models.</span></span><span class="sig-name descname"><span class="pre">AppConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preferred_networks=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interface_name=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scan_interval=10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connect_timeout=8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sync_profile_order_on_start=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_level='INFO'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_file=''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_minimized_to_tray=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_disable_wifi_on_ethernet=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ethernet_wifi_mode='disconnect_and_disable_autoconnect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_wifi_disabled_dialog=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_to_startup_programs=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_scheduled_logon_task=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_startup_splash=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splash_image_path=''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splash_fade_in_ms=280</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splash_hold_ms=1100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">splash_fade_out_ms=280</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_speed_tests=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_test_on_new_connection=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_test_interval=1800</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_speed_test_history=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_test_history_file=''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_check_for_updates=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/models.html#AppConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.models.AppConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Stores runtime configuration for the application.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>preferred_networks:</dt><dd><p>Ordered list of Wi-Fi preferences, highest priority first.</p>
+</dd>
+<dt>interface_name:</dt><dd><p>Optional Wi-Fi interface name. If blank, auto-detect is used.</p>
+</dd>
+<dt>scan_interval:</dt><dd><p>Number of seconds between scan cycles.</p>
+</dd>
+<dt>connect_timeout:</dt><dd><p>Number of seconds to wait after a connect attempt.</p>
+</dd>
+<dt>sync_profile_order_on_start:</dt><dd><p>Whether to sync Windows profile order at startup.</p>
+</dd>
+<dt>log_level:</dt><dd><p>Logging level string.</p>
+</dd>
+<dt>log_file:</dt><dd><p>Path to the application log file.</p>
+</dd>
+<dt>start_minimized_to_tray:</dt><dd><p>Whether the tray app should start minimized.</p>
+</dd>
+<dt>auto_disable_wifi_on_ethernet:</dt><dd><p>Automatically disconnect Wi-Fi when an Ethernet connection is detected.</p>
+</dd>
+<dt>ethernet_wifi_mode:</dt><dd><p>Action taken when Ethernet is active and auto-disable is enabled.
+<code class="docutils literal notranslate"><span class="pre">disconnect_and_disable_autoconnect</span></code> disconnects Wi-Fi and sets all
+saved profiles to manual connect until Ethernet disconnects (or app exit).
+<code class="docutils literal notranslate"><span class="pre">disable_adapter</span></code> turns the Wi-Fi adapter fully off.</p>
+</dd>
+<dt>show_wifi_disabled_dialog:</dt><dd><p>Whether to show a dialog when PolyFi disables the Wi-Fi adapter.</p>
+</dd>
+<dt>add_to_startup_programs:</dt><dd><p>Whether PolyFi should keep a tray-launch shortcut in the user’s
+Windows Startup Programs folder.</p>
+</dd>
+<dt>add_scheduled_logon_task:</dt><dd><p>Whether PolyFi should keep a Windows Task Scheduler logon task
+registered for earlier tray startup after sign-in. <code class="docutils literal notranslate"><span class="pre">None</span></code> means
+the active config predates this setting and the task should not be
+managed automatically until the setting is saved explicitly.</p>
+</dd>
+<dt>show_startup_splash:</dt><dd><p>Whether to show the startup splash screen.</p>
+</dd>
+<dt>splash_image_path:</dt><dd><p>Optional splash image path. Blank uses built-in default lookup paths.</p>
+</dd>
+<dt>splash_fade_in_ms:</dt><dd><p>Legacy splash fade-in duration in milliseconds. Retained for config compatibility.</p>
+</dd>
+<dt>splash_hold_ms:</dt><dd><p>Splash display duration in milliseconds.</p>
+</dd>
+<dt>splash_fade_out_ms:</dt><dd><p>Legacy splash fade-out duration in milliseconds. Retained for config compatibility.</p>
+</dd>
+<dt>enable_speed_tests:</dt><dd><p>Whether automatic speed tests are enabled.</p>
+</dd>
+<dt>speed_test_on_new_connection:</dt><dd><p>Whether to run a speed test when connecting to a new Wi-Fi network.</p>
+</dd>
+<dt>speed_test_interval:</dt><dd><p>Seconds between repeated speed tests while staying on the same Wi-Fi network.</p>
+</dd>
+<dt>save_speed_test_history:</dt><dd><p>Whether completed speed-test results should be appended to a history file.</p>
+</dd>
+<dt>speed_test_history_file:</dt><dd><p>Path to the speed-test history file. Blank uses the default local app-data path.</p>
+</dd>
+<dt>auto_check_for_updates:</dt><dd><p>Whether the tray app should check GitHub Releases for an update
+after startup.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.models.SpeedTestResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.models.</span></span><span class="sig-name descname"><span class="pre">SpeedTestResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">download_mbps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upload_mbps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ping_ms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tested_at</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_ip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">public_ip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/models.html#SpeedTestResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.models.SpeedTestResult" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Stores the latest automatic speed-test state/result.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>status:</dt><dd><p>Current state such as disabled, waiting, running, success, or error.</p>
+</dd>
+<dt>ssid:</dt><dd><p>SSID associated with the test or wait state.</p>
+</dd>
+<dt>download_mbps:</dt><dd><p>Measured download throughput in Mbps.</p>
+</dd>
+<dt>upload_mbps:</dt><dd><p>Measured upload throughput in Mbps.</p>
+</dd>
+<dt>ping_ms:</dt><dd><p>Measured latency in milliseconds.</p>
+</dd>
+<dt>message:</dt><dd><p>Short human-readable summary.</p>
+</dd>
+<dt>tested_at:</dt><dd><p>Unix timestamp for the last completed attempt.</p>
+</dd>
+<dt>local_ip:</dt><dd><p>Local IP address observed at the time of the test, if available.</p>
+</dd>
+<dt>public_ip:</dt><dd><p>Public IP address observed at the time of the test, if available.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="simple" id="module-wifi_pref_manager.config">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>config.py</p>
+</dd>
+<dt>Description:</dt><dd><p>TOML-backed configuration loading for PolyFi: Ranked.</p>
+</dd>
+<dt>Functions:</dt><dd><dl class="simple">
+<dt>save_config:</dt><dd><p>Persist an AppConfig instance to a TOML file.</p>
+</dd>
+</dl>
+</dd>
+<dt>Constants:</dt><dd><dl class="simple">
+<dt>DEFAULT_CONFIG_TEMPLATE:</dt><dd><p>First-run configuration file contents.</p>
+</dd>
+</dl>
+</dd>
+<dt>Dependencies:</dt><dd><p>pathlib
+tomllib
+wifi_pref_manager.models
+wifi_pref_manager.paths</p>
+</dd>
+<dt>Example Usage:</dt><dd><p>loader = ConfigLoader()
+config = loader.load()</p>
+</dd>
+</dl>
+<dl class="py exception">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.ConfigError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.config.</span></span><span class="sig-name descname"><span class="pre">ConfigError</span></span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#ConfigError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.ConfigError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></p>
+<p>Raised when configuration is invalid or missing.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.ConfigLoader">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.config.</span></span><span class="sig-name descname"><span class="pre">ConfigLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#ConfigLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.ConfigLoader" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Loads and validates TOML configuration.</p>
+<dl class="simple">
+<dt>Methods:</dt><dd><dl class="simple">
+<dt>load:</dt><dd><p>Load an AppConfig from disk.</p>
+</dd>
+<dt>write_default_config:</dt><dd><p>Write the current default configuration template to disk.</p>
+</dd>
+<dt>ensure_default_config:</dt><dd><p>Create a default configuration file if one does not exist.</p>
+</dd>
+<dt>has_changed:</dt><dd><p>Determine whether the configuration file has changed.</p>
+</dd>
+</dl>
+</dd>
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>config_path:</dt><dd><p>Optional custom configuration path.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.ConfigLoader.ensure_default_config">
+<span class="sig-name descname"><span class="pre">ensure_default_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#ConfigLoader.ensure_default_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.ConfigLoader.ensure_default_config" title="Link to this definition"></a></dt>
+<dd><p>Ensure a usable configuration file exists.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Path to the active configuration file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.ConfigLoader.write_default_config">
+<span class="sig-name descname"><span class="pre">write_default_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#ConfigLoader.write_default_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.ConfigLoader.write_default_config" title="Link to this definition"></a></dt>
+<dd><p>Write the default configuration template to the active config path.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>overwrite:</dt><dd><p>Whether an existing file may be replaced.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Path to the written configuration file.</p>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>ConfigError:</dt><dd><p>If the destination already exists and overwrite is False.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.ConfigLoader.get_mtime_ns">
+<span class="sig-name descname"><span class="pre">get_mtime_ns</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#ConfigLoader.get_mtime_ns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.ConfigLoader.get_mtime_ns" title="Link to this definition"></a></dt>
+<dd><p>Get the current file modification timestamp.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Nanosecond mtime value or None if the file is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.ConfigLoader.has_changed">
+<span class="sig-name descname"><span class="pre">has_changed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#ConfigLoader.has_changed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.ConfigLoader.has_changed" title="Link to this definition"></a></dt>
+<dd><p>Determine whether the configuration file has changed.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>True when the file timestamp differs from the cached value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.ConfigLoader.mark_loaded">
+<span class="sig-name descname"><span class="pre">mark_loaded</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#ConfigLoader.mark_loaded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.ConfigLoader.mark_loaded" title="Link to this definition"></a></dt>
+<dd><p>Cache the current file timestamp as the loaded version.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.ConfigLoader.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#ConfigLoader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.ConfigLoader.load" title="Link to this definition"></a></dt>
+<dd><p>Load the application configuration.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Parsed AppConfig instance.</p>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>ConfigError:</dt><dd><p>If the file is missing or invalid.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wifi_pref_manager.config.save_config">
+<span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.config.</span></span><span class="sig-name descname"><span class="pre">save_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/config.html#save_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.config.save_config" title="Link to this definition"></a></dt>
+<dd><p>Persist an AppConfig to a TOML file.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>config:</dt><dd><p>Application configuration to write.</p>
+</dd>
+<dt>config_path:</dt><dd><p>Destination path for the TOML file.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="simple" id="module-wifi_pref_manager.paths">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>paths.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Helpers for resolving platform-appropriate application directories.</p>
+</dd>
+<dt>Functions:</dt><dd><p>None.</p>
+</dd>
+<dt>Constants:</dt><dd><dl class="simple">
+<dt>APP_AUTHOR:</dt><dd><p>Project author string used for directory naming.</p>
+</dd>
+<dt>APP_NAME:</dt><dd><p>User-facing application name.</p>
+</dd>
+<dt>APP_SLUG:</dt><dd><p>Filesystem-friendly application slug.</p>
+</dd>
+</dl>
+</dd>
+<dt>Dependencies:</dt><dd><p>pathlib
+platformdirs</p>
+</dd>
+<dt>Example Usage:</dt><dd><p>from wifi_pref_manager.paths import AppPaths
+paths = AppPaths()
+print(paths.config_file)</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.paths.AppPaths">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.paths.</span></span><span class="sig-name descname"><span class="pre">AppPaths</span></span><a class="reference internal" href="_modules/wifi_pref_manager/paths.html#AppPaths"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.paths.AppPaths" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Resolve platform-appropriate application paths.</p>
+<dl class="simple">
+<dt>Methods:</dt><dd><dl class="simple">
+<dt>ensure_directories:</dt><dd><p>Create required directories.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.paths.AppPaths.migrate_legacy_files">
+<span class="sig-name descname"><span class="pre">migrate_legacy_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/paths.html#AppPaths.migrate_legacy_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.paths.AppPaths.migrate_legacy_files" title="Link to this definition"></a></dt>
+<dd><p>Move legacy app-data files into the current PlatformDirs layout.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.paths.AppPaths.ensure_directories">
+<span class="sig-name descname"><span class="pre">ensure_directories</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/paths.html#AppPaths.ensure_directories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.paths.AppPaths.ensure_directories" title="Link to this definition"></a></dt>
+<dd><p>Create required application directories.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="simple" id="module-wifi_pref_manager.managed_interface_state">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>managed_interface_state.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Persistence for the last managed Wi-Fi interface so it can be recovered on
+a later launch even when the adapter is currently disabled.</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.managed_interface_state.ManagedInterfaceState">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.managed_interface_state.</span></span><span class="sig-name descname"><span class="pre">ManagedInterfaceState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saved_at</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/managed_interface_state.html#ManagedInterfaceState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.managed_interface_state.ManagedInterfaceState" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Persisted Wi-Fi interface metadata.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Name of the Wi-Fi interface the app should manage.</p>
+</dd>
+<dt>saved_at:</dt><dd><p>Unix timestamp for when the state file was last refreshed.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.managed_interface_state.</span></span><span class="sig-name descname"><span class="pre">ManagedInterfaceStateStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/managed_interface_state.html#ManagedInterfaceStateStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Read and write the persisted managed Wi-Fi interface state.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/managed_interface_state.html#ManagedInterfaceStateStore.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore.load" title="Link to this definition"></a></dt>
+<dd><p>Load the last saved interface state, if available.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/managed_interface_state.html#ManagedInterfaceStateStore.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.managed_interface_state.ManagedInterfaceStateStore.save" title="Link to this definition"></a></dt>
+<dd><p>Persist the managed Wi-Fi interface name to disk.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-wifi_pref_manager.netsh_wifi">
+<span id="runtime-services"></span><h2>Runtime Services<a class="headerlink" href="#module-wifi_pref_manager.netsh_wifi" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>WiFi Preference Manager</p>
+</dd>
+<dt>File:</dt><dd><p>netsh_wifi.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Windows <cite>netsh</cite> wrapper used to query and control Wi-Fi interfaces.</p>
+</dd>
+<dt>Functions:</dt><dd><p>None.</p>
+</dd>
+<dt>Constants:</dt><dd><p>None.</p>
+</dd>
+<dt>Dependencies:</dt><dd><p>logging
+re
+subprocess
+time</p>
+</dd>
+<dt>Example Usage:</dt><dd><p>api = NetshWiFiApi(logger)</p>
+</dd>
+</dl>
+<dl class="py exception">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.netsh_wifi.</span></span><span class="sig-name descname"><span class="pre">NetshError</span></span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></p>
+<p>Raised when a netsh operation fails.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.netsh_wifi.</span></span><span class="sig-name descname"><span class="pre">NetshWiFiApi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Simple wrapper around Windows <cite>netsh wlan</cite>.</p>
+<dl class="simple">
+<dt>Methods:</dt><dd><dl class="simple">
+<dt>detect_wifi_interface:</dt><dd><p>Detect a wireless interface name.</p>
+</dd>
+<dt>get_current_ssid:</dt><dd><p>Get the currently connected SSID.</p>
+</dd>
+<dt>get_visible_network_signals:</dt><dd><p>Get visible SSIDs with their strongest observed signal levels.</p>
+</dd>
+<dt>get_visible_ssids:</dt><dd><p>Get visible SSIDs.</p>
+</dd>
+<dt>get_saved_profiles:</dt><dd><p>Get saved Windows Wi-Fi profiles.</p>
+</dd>
+<dt>connect:</dt><dd><p>Connect to a saved Wi-Fi profile.</p>
+</dd>
+<dt>disconnect:</dt><dd><p>Disconnect current Wi-Fi.</p>
+</dd>
+<dt>get_profiles_autoconnect_modes:</dt><dd><p>Get auto/manual connect state for saved profiles.</p>
+</dd>
+<dt>set_profiles_autoconnect:</dt><dd><p>Set auto/manual connect state for saved profiles.</p>
+</dd>
+<dt>disable_wifi_adapter:</dt><dd><p>Disable the Wi-Fi adapter (turn off the radio).</p>
+</dd>
+<dt>enable_wifi_adapter:</dt><dd><p>Enable the Wi-Fi adapter (turn on the radio).</p>
+</dd>
+<dt>sync_profile_order:</dt><dd><p>Set Windows profile order.</p>
+</dd>
+<dt>get_active_ethernet_interfaces:</dt><dd><p>Return active Ethernet interface names.</p>
+</dd>
+<dt>is_ethernet_connected:</dt><dd><p>Check whether a physical Ethernet interface is currently connected.</p>
+</dd>
+<dt>_run_powershell:</dt><dd><p>Run a PowerShell one-liner and return its output.</p>
+</dd>
+<dt>_get_known_wireless_interface_names:</dt><dd><p>Return Wi-Fi interface names even when currently disabled.</p>
+</dd>
+<dt>_get_all_wireless_interface_names:</dt><dd><p>Return the names of every WLAN adapter detected by Windows.</p>
+</dd>
+<dt>_get_active_ethernet_interfaces_netsh:</dt><dd><p>Netsh-based fallback for Ethernet detection.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_elevation_required_error">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_elevation_required_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.is_elevation_required_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_elevation_required_error" title="Link to this definition"></a></dt>
+<dd><p>Determine whether a command failure indicates missing administrator rights.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>exc:</dt><dd><p>Raised exception to inspect.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>True when the error text matches a common elevation-required failure.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_windows_shutdown_process_start_error">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_windows_shutdown_process_start_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.is_windows_shutdown_process_start_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_windows_shutdown_process_start_error" title="Link to this definition"></a></dt>
+<dd><p>Determine whether Windows is rejecting process creation during shutdown.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.run_netsh">
+<span class="sig-name descname"><span class="pre">run_netsh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.run_netsh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.run_netsh" title="Link to this definition"></a></dt>
+<dd><p>Run a netsh command.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>args:</dt><dd><p>Arguments after the <cite>netsh</cite> executable.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Standard output text.</p>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>NetshError:</dt><dd><p>If the command fails.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.detect_wifi_interface">
+<span class="sig-name descname"><span class="pre">detect_wifi_interface</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.detect_wifi_interface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.detect_wifi_interface" title="Link to this definition"></a></dt>
+<dd><p>Detect the first Wi-Fi interface name.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Interface name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_current_ssid">
+<span class="sig-name descname"><span class="pre">get_current_ssid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.get_current_ssid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_current_ssid" title="Link to this definition"></a></dt>
+<dd><p>Get the currently connected SSID.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>SSID string or None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_visible_ssids">
+<span class="sig-name descname"><span class="pre">get_visible_ssids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.get_visible_ssids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_visible_ssids" title="Link to this definition"></a></dt>
+<dd><p>Get visible SSIDs from a scan.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Unique list of SSIDs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.signal_percent_to_dbm">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">signal_percent_to_dbm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal_percent</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.signal_percent_to_dbm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.signal_percent_to_dbm" title="Link to this definition"></a></dt>
+<dd><p>Convert Windows Wi-Fi signal quality percent to an approximate dBm value.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>signal_percent:</dt><dd><p>Windows-reported signal quality percentage.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Approximate dBm reading, where values closer to zero are stronger.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_visible_network_signals">
+<span class="sig-name descname"><span class="pre">get_visible_network_signals</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.get_visible_network_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_visible_network_signals" title="Link to this definition"></a></dt>
+<dd><p>Get visible SSIDs and their strongest observed signal strengths.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Mapping of SSID to strongest approximate dBm reading observed in the
+current scan.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_saved_profiles">
+<span class="sig-name descname"><span class="pre">get_saved_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.get_saved_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_saved_profiles" title="Link to this definition"></a></dt>
+<dd><p>Get saved Windows Wi-Fi profile names.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>List of saved profile names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.connect">
+<span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.connect" title="Link to this definition"></a></dt>
+<dd><p>Connect to a saved Wi-Fi profile.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Wireless interface name.</p>
+</dd>
+<dt>ssid:</dt><dd><p>Saved profile name.</p>
+</dd>
+<dt>timeout:</dt><dd><p>Seconds to wait before verifying the result.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>True if connected to the requested SSID.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.disconnect">
+<span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.disconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.disconnect" title="Link to this definition"></a></dt>
+<dd><p>Disconnect Wi-Fi from the specified interface.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Wireless interface name.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.set_profile_autoconnect">
+<span class="sig-name descname"><span class="pre">set_profile_autoconnect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile_name</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interface_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.set_profile_autoconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.set_profile_autoconnect" title="Link to this definition"></a></dt>
+<dd><p>Set whether a profile should auto-connect.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>profile_name:</dt><dd><p>Saved Wi-Fi profile name.</p>
+</dd>
+<dt>enabled:</dt><dd><p>True for automatic connect, False for manual connect.</p>
+</dd>
+<dt>interface_name:</dt><dd><p>Optional interface name to scope the update.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_profiles_autoconnect_modes">
+<span class="sig-name descname"><span class="pre">get_profiles_autoconnect_modes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">interface_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.get_profiles_autoconnect_modes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_profiles_autoconnect_modes" title="Link to this definition"></a></dt>
+<dd><p>Get auto/manual connect state for Wi-Fi profiles.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Optional interface name used when querying profiles.</p>
+</dd>
+<dt>profiles:</dt><dd><p>Optional explicit profile list. Defaults to all saved profiles.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Mapping of profile name to True (auto-connect) or False (manual).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.set_profiles_autoconnect">
+<span class="sig-name descname"><span class="pre">set_profiles_autoconnect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interface_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.set_profiles_autoconnect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.set_profiles_autoconnect" title="Link to this definition"></a></dt>
+<dd><p>Set auto/manual connect behavior for multiple profiles.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>enabled:</dt><dd><p>True to enable auto-connect, False to require manual connect.</p>
+</dd>
+<dt>interface_name:</dt><dd><p>Optional interface name used when applying profile updates.</p>
+</dd>
+<dt>profiles:</dt><dd><p>Optional explicit profile list. Defaults to all saved profiles.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_interface_enabled">
+<span class="sig-name descname"><span class="pre">is_interface_enabled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.is_interface_enabled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_interface_enabled" title="Link to this definition"></a></dt>
+<dd><p>Check whether an interface is administratively enabled.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Interface name to inspect.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>True when the interface admin state is enabled.</p>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>NetshError:</dt><dd><p>If the interface cannot be found.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.disable_wifi_adapter">
+<span class="sig-name descname"><span class="pre">disable_wifi_adapter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.disable_wifi_adapter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.disable_wifi_adapter" title="Link to this definition"></a></dt>
+<dd><p>Disable the Wi-Fi adapter (turn off the radio).</p>
+<p>This is equivalent to pressing the WiFi button in Windows Quick Settings,
+completely disabling the wireless radio while leaving Ethernet active.</p>
+<p>When a task manager is configured and the corresponding scheduled task
+is installed, the command is executed via <code class="docutils literal notranslate"><span class="pre">schtasks</span> <span class="pre">/run</span></code> so no
+process elevation is needed.  The adapter state is verified afterwards;
+if still enabled the method falls back to a direct <code class="docutils literal notranslate"><span class="pre">netsh</span></code> call.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Wireless interface name to disable.</p>
+</dd>
+</dl>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>NetshError:</dt><dd><p>If the command fails.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.enable_wifi_adapter">
+<span class="sig-name descname"><span class="pre">enable_wifi_adapter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.enable_wifi_adapter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.enable_wifi_adapter" title="Link to this definition"></a></dt>
+<dd><p>Enable the Wi-Fi adapter (turn on the radio).</p>
+<p>This re-enables a previously disabled wireless adapter, allowing it to
+scan for and connect to networks.</p>
+<p>When a task manager is configured and the corresponding scheduled task
+is installed, the command is executed via <code class="docutils literal notranslate"><span class="pre">schtasks</span> <span class="pre">/run</span></code> so no
+process elevation is needed.  The adapter state is verified afterwards;
+if still disabled the method falls back to a direct <code class="docutils literal notranslate"><span class="pre">netsh</span></code> call.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Wireless interface name to enable.</p>
+</dd>
+</dl>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>NetshError:</dt><dd><p>If the command fails.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_active_ethernet_interfaces">
+<span class="sig-name descname"><span class="pre">get_active_ethernet_interfaces</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wifi_interface_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.get_active_ethernet_interfaces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.get_active_ethernet_interfaces" title="Link to this definition"></a></dt>
+<dd><p>Return the names of active wired Ethernet interfaces.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>wifi_interface_name:</dt><dd><p>Optional wireless interface name to exclude in the fallback path.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>List of interface names that look like real, active Ethernet links.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_ethernet_connected">
+<span class="sig-name descname"><span class="pre">is_ethernet_connected</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wifi_interface_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.is_ethernet_connected"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.is_ethernet_connected" title="Link to this definition"></a></dt>
+<dd><p>Check whether a physical Ethernet interface is currently connected.</p>
+<p>Uses the active-Ethernet interface list generated by
+<code class="docutils literal notranslate"><span class="pre">get_active_ethernet_interfaces</span></code>. The PowerShell path requires a
+connected type-6 adapter whose physical media type is <code class="docutils literal notranslate"><span class="pre">802.3</span></code>, then
+filters out loopback, Wi-Fi, Bluetooth, and other known non-Ethernet
+names. Falls back to a <code class="docutils literal notranslate"><span class="pre">netsh</span></code>-based heuristic if PowerShell is
+unavailable or returns a non-zero exit code.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>wifi_interface_name:</dt><dd><p>Ignored when PowerShell detection succeeds; forwarded to the
+netsh fallback for backwards compatibility.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> when at least one candidate active Ethernet interface is
+detected.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.netsh_wifi.NetshWiFiApi.sync_profile_order">
+<span class="sig-name descname"><span class="pre">sync_profile_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssids</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/netsh_wifi.html#NetshWiFiApi.sync_profile_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.netsh_wifi.NetshWiFiApi.sync_profile_order" title="Link to this definition"></a></dt>
+<dd><p>Sync Windows profile order to match preference order.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Wireless interface name.</p>
+</dd>
+<dt>ssids:</dt><dd><p>Ordered list of profile names.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="simple" id="module-wifi_pref_manager.service">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>service.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Core Wi-Fi preference management loop.</p>
+</dd>
+<dt>Functions:</dt><dd><p>None.</p>
+</dd>
+<dt>Constants:</dt><dd><p>None.</p>
+</dd>
+<dt>Dependencies:</dt><dd><p>logging
+threading
+time
+wifi_pref_manager.config
+wifi_pref_manager.models
+wifi_pref_manager.netsh_wifi</p>
+</dd>
+<dt>Example Usage:</dt><dd><p>service = WiFiPreferenceService(config=config, wifi_api=api, logger=logger)</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.service.</span></span><span class="sig-name descname"><span class="pre">WiFiPreferenceService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wifi_api</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_loader</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_config_reloaded</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Background service that keeps the system attached to the highest-priority
+available configured Wi-Fi network.</p>
+<dl class="simple">
+<dt>Methods:</dt><dd><dl class="simple">
+<dt>start:</dt><dd><p>Start the background thread.</p>
+</dd>
+<dt>stop:</dt><dd><p>Stop the background thread.</p>
+</dd>
+<dt>run_forever:</dt><dd><p>Run the polling loop in the current thread.</p>
+</dd>
+<dt>evaluate_and_switch:</dt><dd><p>Perform a single preference evaluation.</p>
+</dd>
+<dt>reload_config:</dt><dd><p>Apply a freshly loaded configuration at runtime.</p>
+</dd>
+</dl>
+</dd>
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>config:</dt><dd><p>Application configuration.</p>
+</dd>
+<dt>wifi_api:</dt><dd><p>Windows Wi-Fi API wrapper.</p>
+</dd>
+<dt>logger:</dt><dd><p>Application logger.</p>
+</dd>
+<dt>config_loader:</dt><dd><p>Optional configuration loader used for hot reload checks.</p>
+</dd>
+<dt>on_config_reloaded:</dt><dd><p>Optional callback invoked after config reload.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.interface_name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">interface_name</span></span><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.interface_name" title="Link to this definition"></a></dt>
+<dd><p>Return the active wireless interface name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.start" title="Link to this definition"></a></dt>
+<dd><p>Start the service in a daemon thread.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.stop" title="Link to this definition"></a></dt>
+<dd><p>Signal the service loop to stop.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.preference_index">
+<span class="sig-name descname"><span class="pre">preference_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ssid</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.preference_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.preference_index" title="Link to this definition"></a></dt>
+<dd><p>Get the configured rank for an SSID.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>ssid:</dt><dd><p>SSID to rank.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Rank index, where lower is better.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.best_available_ssid">
+<span class="sig-name descname"><span class="pre">best_available_ssid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visible_networks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.best_available_ssid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.best_available_ssid" title="Link to this definition"></a></dt>
+<dd><p>Determine the highest-priority visible SSID.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>visible_networks:</dt><dd><p>Currently visible SSIDs mapped to their strongest observed dBm values.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Best visible SSID or None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.reload_config">
+<span class="sig-name descname"><span class="pre">reload_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.reload_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.reload_config" title="Link to this definition"></a></dt>
+<dd><p>Apply a freshly loaded configuration without restarting the process.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>new_config:</dt><dd><p>New configuration object.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.set_status_changed_callback">
+<span class="sig-name descname"><span class="pre">set_status_changed_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.set_status_changed_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.set_status_changed_callback" title="Link to this definition"></a></dt>
+<dd><p>Register a callback invoked when tray-visible status changes.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>callback:</dt><dd><p>Callback to invoke after status updates.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.set_runtime_warning_callback">
+<span class="sig-name descname"><span class="pre">set_runtime_warning_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.set_runtime_warning_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.set_runtime_warning_callback" title="Link to this definition"></a></dt>
+<dd><p>Register a callback used for one-off runtime warning dialogs.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>callback:</dt><dd><p>Callback invoked with a title and message.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.set_wifi_adapter_disabled_callback">
+<span class="sig-name descname"><span class="pre">set_wifi_adapter_disabled_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.set_wifi_adapter_disabled_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.set_wifi_adapter_disabled_callback" title="Link to this definition"></a></dt>
+<dd><p>Register a callback invoked when PolyFi disables the Wi-Fi adapter.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>callback:</dt><dd><p>Callback invoked with the active Ethernet interface names.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.set_wifi_network_changed_callback">
+<span class="sig-name descname"><span class="pre">set_wifi_network_changed_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.set_wifi_network_changed_callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.set_wifi_network_changed_callback" title="Link to this definition"></a></dt>
+<dd><p>Register a callback invoked when the active Wi-Fi SSID changes.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>callback:</dt><dd><p>Callback invoked with the previous SSID, new SSID, and an
+optional reason string.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.restore_startup_network_state">
+<span class="sig-name descname"><span class="pre">restore_startup_network_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.restore_startup_network_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.restore_startup_network_state" title="Link to this definition"></a></dt>
+<dd><p>Restore the Wi-Fi adapter and SSID state captured at startup.</p>
+<p>This method is registered as an atexit handler and must never propagate
+exceptions; any failure is logged and silently swallowed so that the
+calling exit machinery (e.g. easy-exit-calls) does not raise a crash
+dialog on Windows shutdown or restart.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.get_speed_test_status_text">
+<span class="sig-name descname"><span class="pre">get_speed_test_status_text</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.get_speed_test_status_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.get_speed_test_status_text" title="Link to this definition"></a></dt>
+<dd><p>Return a compact tray-friendly summary of the latest speed-test state.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Status text for the tray context menu.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.set_auto_disable_wifi_on_ethernet">
+<span class="sig-name descname"><span class="pre">set_auto_disable_wifi_on_ethernet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.set_auto_disable_wifi_on_ethernet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.set_auto_disable_wifi_on_ethernet" title="Link to this definition"></a></dt>
+<dd><p>Update the runtime Ethernet auto-detection setting.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>enabled:</dt><dd><p>Desired auto-detection state.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.enable_wifi_adapter">
+<span class="sig-name descname"><span class="pre">enable_wifi_adapter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.enable_wifi_adapter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.enable_wifi_adapter" title="Link to this definition"></a></dt>
+<dd><p>Re-enable the managed Wi-Fi adapter and clear Ethernet-disable state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.reload_config_if_needed">
+<span class="sig-name descname"><span class="pre">reload_config_if_needed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.reload_config_if_needed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.reload_config_if_needed" title="Link to this definition"></a></dt>
+<dd><p>Reload configuration when the config file changes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.evaluate_and_switch">
+<span class="sig-name descname"><span class="pre">evaluate_and_switch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.evaluate_and_switch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.evaluate_and_switch" title="Link to this definition"></a></dt>
+<dd><p>Perform one scan/evaluation cycle.</p>
+<dl class="simple">
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>NetshError:</dt><dd><p>If netsh operations fail.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.service.WiFiPreferenceService.run_forever">
+<span class="sig-name descname"><span class="pre">run_forever</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/service.html#WiFiPreferenceService.run_forever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.service.WiFiPreferenceService.run_forever" title="Link to this definition"></a></dt>
+<dd><p>Run the monitoring loop in the current thread.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="simple" id="module-wifi_pref_manager.speedtest_history">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>speedtest_history.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Persistence helpers for saving speed-test results to disk.</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.speedtest_history.SpeedTestHistoryWriter">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.speedtest_history.</span></span><span class="sig-name descname"><span class="pre">SpeedTestHistoryWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/speedtest_history.html#SpeedTestHistoryWriter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.speedtest_history.SpeedTestHistoryWriter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Append speed-test results to a JSON Lines history file.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.speedtest_history.SpeedTestHistoryWriter.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/speedtest_history.html#SpeedTestHistoryWriter.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.speedtest_history.SpeedTestHistoryWriter.append" title="Link to this definition"></a></dt>
+<dd><p>Append one result to the configured history file.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>path:</dt><dd><p>Destination JSONL file path.</p>
+</dd>
+<dt>result:</dt><dd><p>Completed speed-test result.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="simple" id="module-wifi_pref_manager.speedtest_runner">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>speedtest_runner.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Wrapper for running network speed tests and normalizing the result.</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.speedtest_runner.SpeedTestRunner">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.speedtest_runner.</span></span><span class="sig-name descname"><span class="pre">SpeedTestRunner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/speedtest_runner.html#SpeedTestRunner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.speedtest_runner.SpeedTestRunner" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Run a speed test and convert it to the application’s result model.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.speedtest_runner.SpeedTestRunner.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/speedtest_runner.html#SpeedTestRunner.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.speedtest_runner.SpeedTestRunner.run" title="Link to this definition"></a></dt>
+<dd><p>Run a speed test for the current connection.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>connection_name:</dt><dd><p>Human-readable label for the current network connection.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Completed speed-test result.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-wifi_pref_manager.scheduler">
+<span id="windows-integration"></span><h2>Windows Integration<a class="headerlink" href="#module-wifi_pref_manager.scheduler" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>scheduler.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Installs a Windows Task Scheduler entry to launch the tray app at logon.</p>
+</dd>
+<dt>Functions:</dt><dd><dl class="simple">
+<dt>main:</dt><dd><p>Command-line entry point.</p>
+</dd>
+</dl>
+</dd>
+<dt>Constants:</dt><dd><dl class="simple">
+<dt>TASK_NAME:</dt><dd><p>Default Windows scheduled task name.</p>
+</dd>
+</dl>
+</dd>
+<dt>Dependencies:</dt><dd><p>subprocess
+sys</p>
+</dd>
+<dt>Example Usage:</dt><dd><p>poetry run polyfi-ranked-install-task</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.TaskSchedulerInstaller">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.scheduler.</span></span><span class="sig-name descname"><span class="pre">TaskSchedulerInstaller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">launch_executable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">launch_arguments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">TASK_NAME</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#TaskSchedulerInstaller"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Registers a Windows scheduled task that launches the app at logon.</p>
+<dl class="simple">
+<dt>Methods:</dt><dd><dl class="simple">
+<dt>install:</dt><dd><p>Create or update the scheduled task.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.TaskSchedulerInstaller.for_current_runtime">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">for_current_runtime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">TASK_NAME</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#TaskSchedulerInstaller.for_current_runtime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.for_current_runtime" title="Link to this definition"></a></dt>
+<dd><p>Build an installer that launches the current PolyFi runtime in tray mode.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>task_name:</dt><dd><p>Scheduled task name to create.</p>
+</dd>
+<dt>config_path:</dt><dd><p>Optional config path the task should load.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Configured installer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.TaskSchedulerInstaller.build_command">
+<span class="sig-name descname"><span class="pre">build_command</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#TaskSchedulerInstaller.build_command"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.build_command" title="Link to this definition"></a></dt>
+<dd><p>Build the <code class="docutils literal notranslate"><span class="pre">schtasks</span></code> command used to register the logon task.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Command list for <code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.TaskSchedulerInstaller.build_uninstall_command">
+<span class="sig-name descname"><span class="pre">build_uninstall_command</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#TaskSchedulerInstaller.build_uninstall_command"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.build_uninstall_command" title="Link to this definition"></a></dt>
+<dd><p>Build the <code class="docutils literal notranslate"><span class="pre">schtasks</span></code> command used to remove the logon task.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Command list for <code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.TaskSchedulerInstaller.install">
+<span class="sig-name descname"><span class="pre">install</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">emit_message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#TaskSchedulerInstaller.install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.install" title="Link to this definition"></a></dt>
+<dd><p>Create or replace the logon startup task.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.TaskSchedulerInstaller.uninstall">
+<span class="sig-name descname"><span class="pre">uninstall</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#TaskSchedulerInstaller.uninstall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.TaskSchedulerInstaller.uninstall" title="Link to this definition"></a></dt>
+<dd><p>Remove the logon startup task if it exists.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> when the task was removed, otherwise <code class="docutils literal notranslate"><span class="pre">False</span></code> when it was
+already absent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.build_argument_parser">
+<span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.scheduler.</span></span><span class="sig-name descname"><span class="pre">build_argument_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#build_argument_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.build_argument_parser" title="Link to this definition"></a></dt>
+<dd><p>Build the CLI parser for the startup-task installer.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Configured argument parser.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.update_scheduled_logon_task_preference">
+<span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.scheduler.</span></span><span class="sig-name descname"><span class="pre">update_scheduled_logon_task_preference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_if_missing</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#update_scheduled_logon_task_preference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.update_scheduled_logon_task_preference" title="Link to this definition"></a></dt>
+<dd><p>Persist the scheduled-logon-task preference when a config file is available.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.persist_scheduled_logon_task_state">
+<span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.scheduler.</span></span><span class="sig-name descname"><span class="pre">persist_scheduled_logon_task_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_if_missing</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#persist_scheduled_logon_task_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.persist_scheduled_logon_task_state" title="Link to this definition"></a></dt>
+<dd><p>Persist scheduled-logon-task config and install-record state together.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wifi_pref_manager.scheduler.main">
+<span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.scheduler.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/scheduler.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.scheduler.main" title="Link to this definition"></a></dt>
+<dd><p>CLI entry point for scheduled task installation.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>argv:</dt><dd><p>Optional CLI argument list.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Process exit code.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="simple" id="module-wifi_pref_manager.windows_shell">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>windows_shell.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Windows shell integration helpers such as Start Menu shortcut management.</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.resolve_runtime_launch_target">
+<span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.windows_shell.</span></span><span class="sig-name descname"><span class="pre">resolve_runtime_launch_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefer_windowless</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#resolve_runtime_launch_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.resolve_runtime_launch_target" title="Link to this definition"></a></dt>
+<dd><p>Resolve the preferred executable and base arguments for launching PolyFi.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>prefer_windowless:</dt><dd><p>Whether to prefer <code class="docutils literal notranslate"><span class="pre">pythonw.exe</span></code> when available.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">(executable,</span> <span class="pre">arguments,</span> <span class="pre">working_directory)</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.ShortcutSpec">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.windows_shell.</span></span><span class="sig-name descname"><span class="pre">ShortcutSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shortcut_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">working_directory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">icon_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#ShortcutSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.ShortcutSpec" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Specification for a Windows shortcut.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.WindowsShortcutManager">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.windows_shell.</span></span><span class="sig-name descname"><span class="pre">WindowsShortcutManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#WindowsShortcutManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Manage a Windows shortcut for launching PolyFi in tray mode.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.WindowsShortcutManager.get_shortcut_path">
+<span class="sig-name descname"><span class="pre">get_shortcut_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#WindowsShortcutManager.get_shortcut_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager.get_shortcut_path" title="Link to this definition"></a></dt>
+<dd><p>Return the shortcut path used by this manager.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.WindowsShortcutManager.get_icon_path">
+<span class="sig-name descname"><span class="pre">get_icon_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#WindowsShortcutManager.get_icon_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager.get_icon_path" title="Link to this definition"></a></dt>
+<dd><p>Return the icon path shared by shell shortcuts.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.WindowsShortcutManager.install">
+<span class="sig-name descname"><span class="pre">install</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">launch_arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#WindowsShortcutManager.install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager.install" title="Link to this definition"></a></dt>
+<dd><p>Create the shortcut and its icon file.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>launch_arguments:</dt><dd><p>Command-line arguments passed to the runtime launcher.</p>
+</dd>
+<dt>overwrite:</dt><dd><p>Whether an existing shortcut may be replaced.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p>Shortcut path.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.WindowsShortcutManager.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#WindowsShortcutManager.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager.remove" title="Link to this definition"></a></dt>
+<dd><p>Remove the shortcut if it exists.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>True when the shortcut was removed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.StartMenuShortcutManager">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.windows_shell.</span></span><span class="sig-name descname"><span class="pre">StartMenuShortcutManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#StartMenuShortcutManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.StartMenuShortcutManager" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager" title="wifi_pref_manager.windows_shell.WindowsShortcutManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">WindowsShortcutManager</span></code></a></p>
+<p>Manage the user’s PolyFi Start Menu shortcut.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.StartMenuShortcutManager.get_shortcut_path">
+<span class="sig-name descname"><span class="pre">get_shortcut_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#StartMenuShortcutManager.get_shortcut_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.StartMenuShortcutManager.get_shortcut_path" title="Link to this definition"></a></dt>
+<dd><p>Return the shortcut path used for the Start Menu entry.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.StartMenuShortcutManager.install">
+<span class="sig-name descname"><span class="pre">install</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">launch_arguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#StartMenuShortcutManager.install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.StartMenuShortcutManager.install" title="Link to this definition"></a></dt>
+<dd><p>Create the Start Menu shortcut and remove the legacy publisher-folder copy.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.StartMenuShortcutManager.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#StartMenuShortcutManager.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.StartMenuShortcutManager.remove" title="Link to this definition"></a></dt>
+<dd><p>Remove current and legacy Start Menu shortcuts if they exist.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.StartupProgramsShortcutManager">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.windows_shell.</span></span><span class="sig-name descname"><span class="pre">StartupProgramsShortcutManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#StartupProgramsShortcutManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.StartupProgramsShortcutManager" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#wifi_pref_manager.windows_shell.WindowsShortcutManager" title="wifi_pref_manager.windows_shell.WindowsShortcutManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">WindowsShortcutManager</span></code></a></p>
+<p>Manage the user’s PolyFi shortcut in the Windows Startup Programs folder.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.windows_shell.StartupProgramsShortcutManager.get_shortcut_path">
+<span class="sig-name descname"><span class="pre">get_shortcut_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/windows_shell.html#StartupProgramsShortcutManager.get_shortcut_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.windows_shell.StartupProgramsShortcutManager.get_shortcut_path" title="Link to this definition"></a></dt>
+<dd><p>Return the shortcut path used for Windows Startup Programs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl id="module-wifi_pref_manager.wifi_adapter_tasks">
+<dt>Author:</dt><dd><p>Inspyre Softworks</p>
+</dd>
+<dt>Project:</dt><dd><p>PolyFi: Ranked</p>
+</dd>
+<dt>File:</dt><dd><p>wifi_adapter_tasks.py</p>
+</dd>
+<dt>Description:</dt><dd><p>Windows Task Scheduler helpers that let a non-elevated process control
+the Wi-Fi adapter.  When an administrator policy prevents Python from
+running elevated (e.g. an AppLocker rule targeting <code class="docutils literal notranslate"><span class="pre">python.exe</span></code>),
+PolyFi registers two on-demand scheduled tasks that execute <code class="docutils literal notranslate"><span class="pre">netsh.exe</span></code>
+on its behalf.</p>
+<p>Tasks are created by elevating <code class="docutils literal notranslate"><span class="pre">powershell.exe</span></code> — a Microsoft-signed
+system binary not typically covered by AppLocker rules for Python — so
+the one-time setup prompt shows “Windows PowerShell” in the UAC dialog
+rather than the blocked <code class="docutils literal notranslate"><span class="pre">python.exe</span></code>.</p>
+<p>The tasks run as the currently logged-in user with <code class="docutils literal notranslate"><span class="pre">RunLevel</span> <span class="pre">Highest</span></code>.
+That lets a normal, non-elevated PolyFi tray process trigger them later
+via <code class="docutils literal notranslate"><span class="pre">schtasks</span> <span class="pre">/run</span></code> without re-prompting for UAC.</p>
+</dd>
+</dl>
+<dl class="py exception">
+<dt class="sig sig-object py" id="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.wifi_adapter_tasks.</span></span><span class="sig-name descname"><span class="pre">WifiAdapterTaskError</span></span><a class="reference internal" href="_modules/wifi_pref_manager/wifi_adapter_tasks.html#WifiAdapterTaskError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></p>
+<p>Raised when a scheduled-task trigger operation fails.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wifi_pref_manager.wifi_adapter_tasks.</span></span><span class="sig-name descname"><span class="pre">WifiAdapterTaskManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">marker_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/wifi_adapter_tasks.html#WifiAdapterTaskManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Manage Windows scheduled tasks for privileged Wi-Fi adapter control.</p>
+<p>Two on-demand scheduled tasks are registered — one to disable and one to
+enable a specific Wi-Fi interface.  They run as the interactive user with
+highest privileges so a non-elevated PolyFi tray process can trigger them
+later via <code class="docutils literal notranslate"><span class="pre">schtasks</span> <span class="pre">/run</span></code>.</p>
+<dl class="simple">
+<dt>Methods:</dt><dd><dl class="simple">
+<dt>are_installed:</dt><dd><p>Return True when both tasks exist and target the given interface.</p>
+</dd>
+<dt>install:</dt><dd><p>Launch an elevated PowerShell to create both SYSTEM tasks.</p>
+</dd>
+<dt>install_and_wait:</dt><dd><p>Install and poll until tasks appear or the timeout expires.</p>
+</dd>
+<dt>uninstall:</dt><dd><p>Delete both tasks.</p>
+</dd>
+<dt>disable_wifi:</dt><dd><p>Trigger the disable task and wait briefly for execution.</p>
+</dd>
+<dt>enable_wifi:</dt><dd><p>Trigger the enable task and wait briefly for execution.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.are_installed">
+<span class="sig-name descname"><span class="pre">are_installed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/wifi_adapter_tasks.html#WifiAdapterTaskManager.are_installed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.are_installed" title="Link to this definition"></a></dt>
+<dd><p>Return True when the current PolyFi helper marker matches the interface.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Wi-Fi interface name to verify (case-insensitive).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install">
+<span class="sig-name descname"><span class="pre">install</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/wifi_adapter_tasks.html#WifiAdapterTaskManager.install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install" title="Link to this definition"></a></dt>
+<dd><p>Launch an elevated PowerShell to create both SYSTEM tasks.</p>
+<p><code class="docutils literal notranslate"><span class="pre">powershell.exe</span></code> is a Microsoft-signed system binary.  AppLocker
+rules that block <code class="docutils literal notranslate"><span class="pre">python.exe</span></code> from elevation do not apply to it,
+so a standard UAC prompt for PowerShell will appear instead.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Wi-Fi interface name to embed in the task commands.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> when the elevation request was accepted
+(<code class="docutils literal notranslate"><span class="pre">ShellExecuteW</span></code> &gt; 32), <code class="docutils literal notranslate"><span class="pre">False</span></code> when the user cancelled the
+UAC prompt (code 1223).</p>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>OSError:</dt><dd><p>When <code class="docutils literal notranslate"><span class="pre">ShellExecuteW</span></code> returns a hard-error code.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install_and_wait">
+<span class="sig-name descname"><span class="pre">install_and_wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">_INSTALL_TIMEOUT</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/wifi_adapter_tasks.html#WifiAdapterTaskManager.install_and_wait"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install_and_wait" title="Link to this definition"></a></dt>
+<dd><p>Install tasks and poll until both appear or the timeout expires.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>interface_name:</dt><dd><p>Wi-Fi interface name passed to <a class="reference internal" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install" title="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install"><code class="xref py py-meth docutils literal notranslate"><span class="pre">install()</span></code></a>.</p>
+</dd>
+<dt>timeout:</dt><dd><p>Maximum seconds to wait for tasks to become queryable.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> when both tasks were confirmed created within
+<code class="docutils literal notranslate"><span class="pre">timeout</span></code>, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.uninstall">
+<span class="sig-name descname"><span class="pre">uninstall</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/wifi_adapter_tasks.html#WifiAdapterTaskManager.uninstall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.uninstall" title="Link to this definition"></a></dt>
+<dd><p>Delete both PolyFi Wi-Fi control tasks if they exist.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.disable_wifi">
+<span class="sig-name descname"><span class="pre">disable_wifi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_wait</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/wifi_adapter_tasks.html#WifiAdapterTaskManager.disable_wifi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.disable_wifi" title="Link to this definition"></a></dt>
+<dd><p>Trigger the disable-WiFi task and wait briefly for execution.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>post_wait:</dt><dd><p>Seconds to sleep after triggering so <code class="docutils literal notranslate"><span class="pre">netsh.exe</span></code> finishes.</p>
+</dd>
+</dl>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>WifiAdapterTaskError:</dt><dd><p>When <code class="docutils literal notranslate"><span class="pre">schtasks</span> <span class="pre">/run</span></code> exits with a non-zero code.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.enable_wifi">
+<span class="sig-name descname"><span class="pre">enable_wifi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_wait</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wifi_pref_manager/wifi_adapter_tasks.html#WifiAdapterTaskManager.enable_wifi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.enable_wifi" title="Link to this definition"></a></dt>
+<dd><p>Trigger the enable-WiFi task and wait briefly for execution.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>post_wait:</dt><dd><p>Seconds to sleep after triggering so <code class="docutils literal notranslate"><span class="pre">netsh.exe</span></code> finishes.</p>
+</dd>
+</dl>
+</dd>
+<dt>Raises:</dt><dd><dl class="simple">
+<dt>WifiAdapterTaskError:</dt><dd><p>When <code class="docutils literal notranslate"><span class="pre">schtasks</span> <span class="pre">/run</span></code> exits with a non-zero code.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="config-reference.html" class="btn btn-neutral float-left" title="Config Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="development.html" class="btn btn-neutral float-right" title="Development" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,1533 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wifi_pref_manager.service &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config-reference.html">Config Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Command-Line-Interface-%28CLI%29-Reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wifi_pref_manager.service</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wifi_pref_manager.service</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Author:</span>
+<span class="sd">    Inspyre Softworks</span>
+
+<span class="sd">Project:</span>
+<span class="sd">    PolyFi: Ranked</span>
+
+<span class="sd">File:</span>
+<span class="sd">    service.py</span>
+
+<span class="sd">Description:</span>
+<span class="sd">    Core Wi-Fi preference management loop.</span>
+
+<span class="sd">Functions:</span>
+<span class="sd">    None.</span>
+
+<span class="sd">Constants:</span>
+<span class="sd">    None.</span>
+
+<span class="sd">Dependencies:</span>
+<span class="sd">    logging</span>
+<span class="sd">    threading</span>
+<span class="sd">    time</span>
+<span class="sd">    wifi_pref_manager.config</span>
+<span class="sd">    wifi_pref_manager.models</span>
+<span class="sd">    wifi_pref_manager.netsh_wifi</span>
+
+<span class="sd">Example Usage:</span>
+<span class="sd">    service = WiFiPreferenceService(config=config, wifi_api=api, logger=logger)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+
+<span class="c1"># Prevent inspy-logger&#39;s import-time auto-start when easy-exit-calls imports it;</span>
+<span class="c1"># easy-exit-calls instantiates its own logger with no_file_logging=True.  The</span>
+<span class="c1"># installed inspy-logger version still creates a file handler, so point it at</span>
+<span class="c1"># the platform null device through its interpreter-level file-path constant.</span>
+<span class="n">BLOCK_LOGGER_START</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">INSPY_LOG_FILE_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">devnull</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">easy_exit_calls</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExitCallHandler</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>  <span class="c1"># pragma: no cover - optional dependency on Python 3.12+</span>
+    <span class="n">ExitCallHandler</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigError</span><span class="p">,</span> <span class="n">ConfigLoader</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.managed_interface_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">ManagedInterfaceStateStore</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ETHERNET_WIFI_MODE_DISABLE_ADAPTER</span><span class="p">,</span>
+    <span class="n">ETHERNET_WIFI_MODE_DISCONNECT</span><span class="p">,</span>
+    <span class="n">AppConfig</span><span class="p">,</span>
+    <span class="n">SpeedTestResult</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.netsh_wifi</span><span class="w"> </span><span class="kn">import</span> <span class="n">NetshError</span><span class="p">,</span> <span class="n">NetshWiFiApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.paths</span><span class="w"> </span><span class="kn">import</span> <span class="n">AppPaths</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.speedtest_history</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpeedTestHistoryWriter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.speedtest_runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpeedTestRunner</span>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WiFiPreferenceService</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Background service that keeps the system attached to the highest-priority</span>
+<span class="sd">    available configured Wi-Fi network.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        start:</span>
+<span class="sd">            Start the background thread.</span>
+<span class="sd">        stop:</span>
+<span class="sd">            Stop the background thread.</span>
+<span class="sd">        run_forever:</span>
+<span class="sd">            Run the polling loop in the current thread.</span>
+<span class="sd">        evaluate_and_switch:</span>
+<span class="sd">            Perform a single preference evaluation.</span>
+<span class="sd">        reload_config:</span>
+<span class="sd">            Apply a freshly loaded configuration at runtime.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">config</span><span class="p">:</span> <span class="n">AppConfig</span><span class="p">,</span>
+        <span class="n">wifi_api</span><span class="p">:</span> <span class="n">NetshWiFiApi</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span>
+        <span class="n">config_loader</span><span class="p">:</span> <span class="n">ConfigLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">on_config_reloaded</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">AppConfig</span><span class="p">],</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">            config:</span>
+<span class="sd">                Application configuration.</span>
+<span class="sd">            wifi_api:</span>
+<span class="sd">                Windows Wi-Fi API wrapper.</span>
+<span class="sd">            logger:</span>
+<span class="sd">                Application logger.</span>
+<span class="sd">            config_loader:</span>
+<span class="sd">                Optional configuration loader used for hot reload checks.</span>
+<span class="sd">            on_config_reloaded:</span>
+<span class="sd">                Optional callback invoked after config reload.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span> <span class="o">=</span> <span class="n">wifi_api</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_loader</span> <span class="o">=</span> <span class="n">config_loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_config_reloaded</span> <span class="o">=</span> <span class="n">on_config_reloaded</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paths</span> <span class="o">=</span> <span class="n">AppPaths</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">managed_interface_state_store</span> <span class="o">=</span> <span class="n">ManagedInterfaceStateStore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">managed_interface_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed_test_history_writer</span> <span class="o">=</span> <span class="n">SpeedTestHistoryWriter</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed_test_runner</span> <span class="o">=</span> <span class="n">SpeedTestRunner</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_disabled_by_ethernet</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status_changed_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runtime_warning_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_adapter_disabled_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_network_changed_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_thread</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_latest_speed_test_result</span> <span class="o">=</span> <span class="n">SpeedTestResult</span><span class="p">(</span>
+            <span class="n">status</span><span class="o">=</span><span class="s1">&#39;waiting&#39;</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Waiting for an active network connection.&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_observed_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_has_observed_connection_state</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connected_ssid_since</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_speed_test_attempt_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_speed_test_at</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_startup_wifi_adapter_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_known_wifi_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ethernet_disable_permission_warning_shown</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_manually_disconnected_by_ethernet</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_profiles_autoconnect_before_ethernet</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_ssid_before_ethernet</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">interface_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_managed_interface_name</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_history_file</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_history_file</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">speed_test_history_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_capture_startup_network_state</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_register_exit_restore_handler</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync_speed_test_state_with_config</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_ethernet_connection_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">active_ethernet_interfaces</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a human-readable speed-test label for the active Ethernet path.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            active_ethernet_interfaces:</span>
+<span class="sd">                Active Ethernet interface names.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Ethernet connection label.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Ethernet (</span><span class="si">{</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interface_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the active wireless interface name.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">interface_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NetshError</span><span class="p">(</span><span class="s1">&#39;No interface name resolved.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">interface_name</span>
+
+<div class="viewcode-block" id="WiFiPreferenceService.start">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.start">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the service in a daemon thread.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run_forever</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.stop">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Signal the service loop to stop.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stop_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.preference_index">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.preference_index">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">preference_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the configured rank for an SSID.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            ssid:</span>
+<span class="sd">                SSID to rank.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Rank index, where lower is better.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ssid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span>
+
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">preference</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">preference</span><span class="o">.</span><span class="n">ssid</span> <span class="o">==</span> <span class="n">ssid</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">index</span>
+
+        <span class="k">return</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_preference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the configured preference entry for an SSID, if any.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            ssid:</span>
+<span class="sd">                SSID to look up.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Matching preference entry, or None when the SSID is not configured.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ssid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">preference</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">preference</span><span class="o">.</span><span class="n">ssid</span> <span class="o">==</span> <span class="n">ssid</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preference</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_network_meets_signal_requirement</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">visible_networks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return whether the SSID meets its configured minimum signal threshold.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            ssid:</span>
+<span class="sd">                SSID to evaluate.</span>
+<span class="sd">            visible_networks:</span>
+<span class="sd">                Currently visible SSIDs mapped to dBm.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True when no threshold is configured, the SSID is unconfigured, the</span>
+<span class="sd">            signal is unavailable, or the observed signal meets the minimum.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">preference</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preference</span><span class="p">(</span><span class="n">ssid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">preference</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">preference</span><span class="o">.</span><span class="n">min_db</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="n">signal_dbm</span> <span class="o">=</span> <span class="n">visible_networks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">preference</span><span class="o">.</span><span class="n">ssid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">signal_dbm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;Could not verify minimum signal for </span><span class="si">%r</span><span class="s1"> because it was not present in the visible scan.&#39;</span><span class="p">,</span>
+                <span class="n">preference</span><span class="o">.</span><span class="n">ssid</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">signal_dbm</span> <span class="o">&lt;</span> <span class="n">preference</span><span class="o">.</span><span class="n">min_db</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%r</span><span class="s1"> is below its configured minimum signal: observed=</span><span class="si">%s</span><span class="s1"> dBm minimum=</span><span class="si">%s</span><span class="s1"> dBm.&#39;</span><span class="p">,</span>
+                <span class="n">preference</span><span class="o">.</span><span class="n">ssid</span><span class="p">,</span>
+                <span class="n">signal_dbm</span><span class="p">,</span>
+                <span class="n">preference</span><span class="o">.</span><span class="n">min_db</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_signal_switch_reason</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">current_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">target_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">visible_networks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a toast-friendly reason when a network is below its minimum signal.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            current_ssid:</span>
+<span class="sd">                Current SSID being evaluated.</span>
+<span class="sd">            target_ssid:</span>
+<span class="sd">                SSID PolyFi plans to move to.</span>
+<span class="sd">            visible_networks:</span>
+<span class="sd">                Currently visible SSIDs mapped to dBm.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Human-readable reason, or None when no threshold breach is available.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">preference</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preference</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">preference</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">preference</span><span class="o">.</span><span class="n">min_db</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">signal_dbm</span> <span class="o">=</span> <span class="n">visible_networks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">preference</span><span class="o">.</span><span class="n">ssid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">signal_dbm</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">signal_dbm</span> <span class="o">&gt;=</span> <span class="n">preference</span><span class="o">.</span><span class="n">min_db</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">reason</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">preference</span><span class="o">.</span><span class="n">ssid</span><span class="si">}</span><span class="s1"> fell below its minimum signal &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;(</span><span class="si">{</span><span class="n">signal_dbm</span><span class="si">}</span><span class="s1"> dBm observed, </span><span class="si">{</span><span class="n">preference</span><span class="o">.</span><span class="n">min_db</span><span class="si">}</span><span class="s1"> dBm required).&#39;</span>
+        <span class="p">)</span>
+        <span class="n">target_signal_dbm</span> <span class="o">=</span> <span class="n">visible_networks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">target_ssid</span><span class="p">)</span> <span class="k">if</span> <span class="n">target_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">target_signal_dbm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">target_ssid</span><span class="si">}</span><span class="s1"> is available at </span><span class="si">{</span><span class="n">target_signal_dbm</span><span class="si">}</span><span class="s1"> dBm.&#39;</span>
+
+        <span class="k">return</span> <span class="n">reason</span>
+
+<div class="viewcode-block" id="WiFiPreferenceService.best_available_ssid">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.best_available_ssid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">best_available_ssid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visible_networks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the highest-priority visible SSID.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            visible_networks:</span>
+<span class="sd">                Currently visible SSIDs mapped to their strongest observed dBm values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Best visible SSID or None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">preference</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">:</span>
+            <span class="n">signal_dbm</span> <span class="o">=</span> <span class="n">visible_networks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">preference</span><span class="o">.</span><span class="n">ssid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">signal_dbm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">preference</span><span class="o">.</span><span class="n">auto_switch</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">min_db</span> <span class="o">=</span> <span class="n">preference</span><span class="o">.</span><span class="n">min_db</span>
+            <span class="k">if</span> <span class="n">min_db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">signal_dbm</span> <span class="o">&lt;</span> <span class="n">min_db</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s1">&#39;Ignoring </span><span class="si">%r</span><span class="s1"> because its signal (</span><span class="si">%s</span><span class="s1"> dBm) is below the configured minimum (</span><span class="si">%s</span><span class="s1"> dBm).&#39;</span><span class="p">,</span>
+                    <span class="n">preference</span><span class="o">.</span><span class="n">ssid</span><span class="p">,</span>
+                    <span class="n">signal_dbm</span><span class="p">,</span>
+                    <span class="n">min_db</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">return</span> <span class="n">preference</span><span class="o">.</span><span class="n">ssid</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_needs_visible_network_scan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return whether the current state needs a visible-network scan.</span>
+
+<span class="sd">        ``netsh wlan show networks mode=bssid`` is one of the more expensive</span>
+<span class="sd">        commands in the steady-state tray loop.  When the machine is already on</span>
+<span class="sd">        the highest actionable preference and no signal threshold is configured</span>
+<span class="sd">        for that network, scanning cannot produce a different switching</span>
+<span class="sd">        decision, so the service can safely wait for the next cycle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="n">current_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preference_index</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">current_index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="n">current_preference</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">[</span><span class="n">current_index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">current_preference</span><span class="o">.</span><span class="n">min_db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="n">preference</span><span class="o">.</span><span class="n">auto_switch</span>
+            <span class="k">for</span> <span class="n">preference</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">[:</span><span class="n">current_index</span><span class="p">]</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="WiFiPreferenceService.reload_config">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.reload_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reload_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_config</span><span class="p">:</span> <span class="n">AppConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply a freshly loaded configuration without restarting the process.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            new_config:</span>
+<span class="sd">                New configuration object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">previous_interface_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">interface_name</span>
+        <span class="n">speed_tests_were_enabled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_speed_tests</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">new_config</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">interface_name</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">interface_name</span> <span class="o">=</span> <span class="n">previous_interface_name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_managed_interface_name</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_history_file</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_history_file</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">speed_test_history_file</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_config_reloaded</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_config_reloaded</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">speed_test_runner</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">speed_test_history_writer</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Configuration reloaded from disk.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Updated preferred SSID order: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">ssid</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync_speed_test_state_with_config</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">sync_profile_order_on_start</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Re-syncing Windows Wi-Fi profile order after config reload...&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">sync_profile_order</span><span class="p">(</span>
+                <span class="n">interface_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+                <span class="n">ssids</span><span class="o">=</span><span class="p">[</span><span class="n">entry</span><span class="o">.</span><span class="n">ssid</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">speed_tests_were_enabled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_speed_tests</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_start_immediate_speed_test_for_current_connection</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.set_status_changed_callback">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.set_status_changed_callback">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_status_changed_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register a callback invoked when tray-visible status changes.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            callback:</span>
+<span class="sd">                Callback to invoke after status updates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status_changed_callback</span> <span class="o">=</span> <span class="n">callback</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.set_runtime_warning_callback">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.set_runtime_warning_callback">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_runtime_warning_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register a callback used for one-off runtime warning dialogs.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            callback:</span>
+<span class="sd">                Callback invoked with a title and message.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runtime_warning_callback</span> <span class="o">=</span> <span class="n">callback</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.set_wifi_adapter_disabled_callback">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.set_wifi_adapter_disabled_callback">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_wifi_adapter_disabled_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register a callback invoked when PolyFi disables the Wi-Fi adapter.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            callback:</span>
+<span class="sd">                Callback invoked with the active Ethernet interface names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_adapter_disabled_callback</span> <span class="o">=</span> <span class="n">callback</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.set_wifi_network_changed_callback">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.set_wifi_network_changed_callback">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_wifi_network_changed_callback</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register a callback invoked when the active Wi-Fi SSID changes.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            callback:</span>
+<span class="sd">                Callback invoked with the previous SSID, new SSID, and an</span>
+<span class="sd">                optional reason string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_network_changed_callback</span> <span class="o">=</span> <span class="n">callback</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_capture_startup_network_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Snapshot the Wi-Fi adapter and SSID state present when the app starts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_startup_wifi_adapter_enabled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">is_interface_enabled</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_current_ssid</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_wifi_adapter_enabled</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_known_wifi_ssid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Captured startup network state: adapter_enabled=</span><span class="si">%s</span><span class="s1">, ssid=</span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_startup_wifi_adapter_enabled</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_managed_interface_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resolve the Wi-Fi interface name, falling back to persisted state.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Managed Wi-Fi interface name.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NetshError:</span>
+<span class="sd">                If no Wi-Fi interface can be resolved.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">interface_name</span><span class="p">:</span>
+            <span class="n">interface_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">interface_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">interface_name</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">managed_interface_state_store</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">interface_name</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Using configured Wi-Fi interface: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">interface_name</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">interface_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">detect_wifi_interface</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">managed_interface_state_store</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">interface_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;Detected managed Wi-Fi interface </span><span class="si">%s</span><span class="s1"> and refreshed </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span>
+                <span class="n">interface_name</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">managed_interface_file</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">interface_name</span>
+        <span class="k">except</span> <span class="n">NetshError</span><span class="p">:</span>
+            <span class="n">saved_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">managed_interface_state_store</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">saved_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s1">&#39;No active Wi-Fi interface detected. Falling back to saved managed interface </span><span class="si">%s</span><span class="s1"> from </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span>
+                <span class="n">saved_state</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">paths</span><span class="o">.</span><span class="n">managed_interface_file</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">saved_state</span><span class="o">.</span><span class="n">interface_name</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_register_exit_restore_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register the startup-state restoration callback for process exit.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ExitCallHandler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;easy-exit-calls is unavailable; exit-state restoration is disabled.&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">ExitCallHandler</span><span class="p">()</span><span class="o">.</span><span class="n">register_handler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">restore_startup_network_state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Registered startup network-state restoration with easy-exit-calls.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_notify_status_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Notify observers that tray-visible state has changed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status_changed_callback</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_status_changed_callback</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Status-changed callback failed.&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_notify_runtime_warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Notify observers about a runtime warning that should be surfaced to the user.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            title:</span>
+<span class="sd">                Short warning title.</span>
+<span class="sd">            message:</span>
+<span class="sd">                Human-readable warning details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runtime_warning_callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_runtime_warning_callback</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Runtime-warning callback failed.&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.ui.dialogs</span><span class="w"> </span><span class="kn">import</span> <span class="n">show_dialog_async</span>  <span class="c1"># noqa: PLC0415</span>
+
+            <span class="n">show_dialog_async</span><span class="p">(</span><span class="s1">&#39;warning&#39;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Fallback runtime-warning dialog failed.&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_notify_wifi_adapter_disabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">active_ethernet_interfaces</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Notify observers that Wi-Fi behavior was changed because Ethernet became active.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            active_ethernet_interfaces:</span>
+<span class="sd">                Active Ethernet interface names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_adapter_disabled_callback</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_adapter_disabled_callback</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Wi-Fi-adapter-disabled callback failed.&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_requires_adapter_control_for_ethernet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return whether Ethernet handling is configured to disable the Wi-Fi adapter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;ethernet_wifi_mode&#39;</span><span class="p">,</span> <span class="n">ETHERNET_WIFI_MODE_DISCONNECT</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mode</span> <span class="o">==</span> <span class="n">ETHERNET_WIFI_MODE_DISABLE_ADAPTER</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_soft_ethernet_wifi_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">active_ethernet_interfaces</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Disconnect Wi-Fi and disable profile auto-connect until Ethernet is gone.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            active_ethernet_interfaces:</span>
+<span class="sd">                Active Ethernet interface names.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NetshError:</span>
+<span class="sd">                If profile or disconnect operations fail.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_manually_disconnected_by_ethernet</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_ssid_before_ethernet</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_current_ssid</span><span class="p">()</span>
+        <span class="n">saved_profiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_saved_profiles</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_profiles_autoconnect_before_ethernet</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_profiles_autoconnect_modes</span><span class="p">(</span>
+            <span class="n">interface_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+            <span class="n">profiles</span><span class="o">=</span><span class="n">saved_profiles</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_ssid_before_ethernet</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">set_profiles_autoconnect</span><span class="p">(</span>
+            <span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">interface_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+            <span class="n">profiles</span><span class="o">=</span><span class="n">saved_profiles</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_manually_disconnected_by_ethernet</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">&#39;Ethernet detected on </span><span class="si">%s</span><span class="s1">. Disconnected Wi-Fi and set </span><span class="si">%d</span><span class="s1"> saved profiles to manual connect.&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span> <span class="k">if</span> <span class="n">active_ethernet_interfaces</span> <span class="k">else</span> <span class="s1">&#39;Ethernet&#39;</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">saved_profiles</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">show_wifi_disabled_dialog</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_notify_wifi_adapter_disabled</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_restore_wifi_state_after_ethernet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore Wi-Fi profile auto-connect and SSID state captured before Ethernet action.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            reason:</span>
+<span class="sd">                Human-readable reason used in log messages.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_manually_disconnected_by_ethernet</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">previous_modes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_profiles_autoconnect_before_ethernet</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">profile_name</span><span class="p">,</span> <span class="n">auto_connect_enabled</span> <span class="ow">in</span> <span class="n">previous_modes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">set_profile_autoconnect</span><span class="p">(</span>
+                    <span class="n">profile_name</span><span class="p">,</span>
+                    <span class="n">enabled</span><span class="o">=</span><span class="n">auto_connect_enabled</span><span class="p">,</span>
+                    <span class="n">interface_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_restore_blocked</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="s1">&#39;Skipping auto-connect restore for </span><span class="si">%r</span><span class="s1"> during Windows shutdown: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                        <span class="n">profile_name</span><span class="p">,</span>
+                        <span class="n">exc</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s1">&#39;Failed to restore auto-connect mode for </span><span class="si">%r</span><span class="s1"> during </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                        <span class="n">profile_name</span><span class="p">,</span>
+                        <span class="n">reason</span><span class="p">,</span>
+                        <span class="n">exc</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">current_ssid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_current_ssid</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_restore_blocked</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Skipping Wi-Fi state restore during Windows shutdown: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                <span class="n">current_ssid</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Could not read current SSID while restoring Wi-Fi state (</span><span class="si">%s</span><span class="s1">): </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                <span class="n">current_ssid</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_ssid_before_ethernet</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">current_ssid</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_ssid_before_ethernet</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_restore_blocked</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Skipping Wi-Fi disconnect during Windows shutdown: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                                <span class="s1">&#39;Failed to disconnect Wi-Fi before reconnect restore during </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                                <span class="n">reason</span><span class="p">,</span>
+                                <span class="n">exc</span><span class="p">,</span>
+                            <span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                        <span class="n">interface_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+                        <span class="n">ssid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wifi_ssid_before_ethernet</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">connect_timeout</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_restore_blocked</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="s1">&#39;Skipping pre-Ethernet SSID reconnect during Windows shutdown: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                            <span class="n">exc</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="s1">&#39;Failed to reconnect to pre-Ethernet SSID </span><span class="si">%r</span><span class="s1"> during </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_ssid_before_ethernet</span><span class="p">,</span>
+                            <span class="n">reason</span><span class="p">,</span>
+                            <span class="n">exc</span><span class="p">,</span>
+                        <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_restore_blocked</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Skipping disconnected Wi-Fi restore during Windows shutdown: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s1">&#39;Failed to restore pre-Ethernet disconnected Wi-Fi state during </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                        <span class="n">reason</span><span class="p">,</span>
+                        <span class="n">exc</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_manually_disconnected_by_ethernet</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_profiles_autoconnect_before_ethernet</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_ssid_before_ethernet</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_shutdown_restore_blocked</span><span class="p">(</span><span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reason</span> <span class="o">!=</span> <span class="s1">&#39;application exit&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">NetshWiFiApi</span><span class="o">.</span><span class="n">is_windows_shutdown_process_start_error</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_log_exit_restore_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">exc</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">args</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">exc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_restore_blocked</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;application exit&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_notify_wifi_network_changed</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">previous_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">new_ssid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Notify observers that the active Wi-Fi SSID changed.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            previous_ssid:</span>
+<span class="sd">                Previously active SSID, if any.</span>
+<span class="sd">            new_ssid:</span>
+<span class="sd">                Newly active SSID.</span>
+<span class="sd">            reason:</span>
+<span class="sd">                Optional human-readable explanation for the change.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_network_changed_callback</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_network_changed_callback</span><span class="p">(</span><span class="n">previous_ssid</span><span class="p">,</span> <span class="n">new_ssid</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Wi-Fi-network-changed callback failed.&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_track_current_wifi_network</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">current_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">notify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Track the current Wi-Fi SSID and optionally notify when it changes.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            current_ssid:</span>
+<span class="sd">                Currently active Wi-Fi SSID.</span>
+<span class="sd">            notify:</span>
+<span class="sd">                Whether to emit a network-changed notification.</span>
+<span class="sd">            reason:</span>
+<span class="sd">                Optional human-readable explanation for the change.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">previous_ssid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_known_wifi_ssid</span>
+        <span class="k">if</span> <span class="n">current_ssid</span> <span class="o">==</span> <span class="n">previous_ssid</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_known_wifi_ssid</span> <span class="o">=</span> <span class="n">current_ssid</span>
+        <span class="k">if</span> <span class="n">notify</span> <span class="ow">and</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_notify_wifi_network_changed</span><span class="p">(</span><span class="n">previous_ssid</span><span class="p">,</span> <span class="n">current_ssid</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_speed_test_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">SpeedTestResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store the latest speed-test state and refresh the tray menu.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            result:</span>
+<span class="sd">                Latest speed-test state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_latest_speed_test_result</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notify_status_changed</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sync_speed_test_state_with_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Align runtime speed-test state with the current configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_speed_tests</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_speed_test_result</span><span class="p">(</span>
+                <span class="n">SpeedTestResult</span><span class="p">(</span>
+                    <span class="n">status</span><span class="o">=</span><span class="s1">&#39;disabled&#39;</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Speed tests disabled in config.&#39;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_lock</span><span class="p">:</span>
+            <span class="n">current_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latest_speed_test_result</span><span class="o">.</span><span class="n">status</span>
+
+        <span class="k">if</span> <span class="n">current_status</span> <span class="o">==</span> <span class="s1">&#39;disabled&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_speed_test_result</span><span class="p">(</span>
+                <span class="n">SpeedTestResult</span><span class="p">(</span>
+                    <span class="n">status</span><span class="o">=</span><span class="s1">&#39;waiting&#39;</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Waiting for an active network connection.&#39;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="WiFiPreferenceService.restore_startup_network_state">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.restore_startup_network_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">restore_startup_network_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore the Wi-Fi adapter and SSID state captured at startup.</span>
+
+<span class="sd">        This method is registered as an atexit handler and must never propagate</span>
+<span class="sd">        exceptions; any failure is logged and silently swallowed so that the</span>
+<span class="sd">        calling exit machinery (e.g. easy-exit-calls) does not raise a crash</span>
+<span class="sd">        dialog on Windows shutdown or restart.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_restore_wifi_state_after_ethernet</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="s1">&#39;application exit&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_wifi_adapter_enabled</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Restoring startup network state before exit.&#39;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">current_adapter_enabled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">is_interface_enabled</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log_exit_restore_error</span><span class="p">(</span>
+                    <span class="s1">&#39;Could not determine current Wi-Fi adapter state during exit restore: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_wifi_adapter_enabled</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current_adapter_enabled</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Restoring Wi-Fi adapter to enabled state.&#39;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">enable_wifi_adapter</span><span class="p">()</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_log_exit_restore_error</span><span class="p">(</span>
+                        <span class="s1">&#39;Failed to re-enable Wi-Fi adapter during exit restore: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                        <span class="n">exc</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_wifi_adapter_enabled</span> <span class="ow">and</span> <span class="n">current_adapter_enabled</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Restoring Wi-Fi adapter to disabled state.&#39;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">disable_wifi_adapter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_log_exit_restore_error</span><span class="p">(</span>
+                        <span class="s1">&#39;Failed to disable Wi-Fi adapter during exit restore: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                        <span class="n">exc</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_wifi_adapter_enabled</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">current_ssid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_current_ssid</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log_exit_restore_error</span><span class="p">(</span>
+                    <span class="s1">&#39;Could not determine current Wi-Fi SSID during exit restore: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">current_ssid</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span><span class="p">:</span>
+                    <span class="k">return</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Restoring Wi-Fi connection to startup SSID </span><span class="si">%r</span><span class="s1">.&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                        <span class="n">interface_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+                        <span class="n">ssid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">connect_timeout</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_log_exit_restore_error</span><span class="p">(</span>
+                        <span class="s1">&#39;Failed to restore startup SSID </span><span class="si">%r</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_startup_ssid</span><span class="p">,</span>
+                        <span class="n">exc</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Disconnecting Wi-Fi to restore the startup disconnected state.&#39;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">NetshError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_log_exit_restore_error</span><span class="p">(</span><span class="s1">&#39;Failed to restore startup disconnected state: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_restore_blocked</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s1">&#39;application exit&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s1">&#39;Startup network state restore skipped during Windows shutdown: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                    <span class="n">exc</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Unexpected error during startup network state restore: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.get_speed_test_status_text">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.get_speed_test_status_text">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_speed_test_status_text</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a compact tray-friendly summary of the latest speed-test state.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Status text for the tray context menu.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_lock</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latest_speed_test_result</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;disabled&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;Speed Test: Disabled&#39;</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;running&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Speed Test: Running on </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">ssid</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">&quot;current connection&quot;</span><span class="si">}</span><span class="s1">...&#39;</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;success&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Speed Test: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">ssid</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">&quot;Connection&quot;</span><span class="si">}</span><span class="s1"> | &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;D </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">download_mbps</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1"> Mbps | &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;U </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">upload_mbps</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1"> Mbps | &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;P </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">ping_ms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> ms&#39;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;error&#39;</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="s1">&#39;Unknown error.&#39;</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">48</span><span class="p">:</span>
+                <span class="n">summary</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">summary</span><span class="p">[:</span><span class="mi">45</span><span class="p">]</span><span class="si">}</span><span class="s1">...&#39;</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Speed Test: Failed on </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">ssid</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">&quot;Connection&quot;</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">summary</span><span class="si">}</span><span class="s1">)&#39;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Speed Test: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">message</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">&quot;Waiting for a connection&quot;</span><span class="si">}</span><span class="s1">&#39;</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.set_auto_disable_wifi_on_ethernet">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.set_auto_disable_wifi_on_ethernet">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_auto_disable_wifi_on_ethernet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the runtime Ethernet auto-detection setting.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            enabled:</span>
+<span class="sd">                Desired auto-detection state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_disable_wifi_on_ethernet</span> <span class="o">=</span> <span class="n">enabled</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">enabled</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_restore_wifi_state_after_ethernet</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="s1">&#39;runtime feature disable&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_disabled_by_ethernet</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Ethernet detection disabled at runtime.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ethernet_disable_permission_warning_shown</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Ethernet detection enabled at runtime.&#39;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_non_admin_ethernet_disable</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">active_ethernet_interfaces</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">exc</span><span class="p">:</span> <span class="n">NetshError</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle the case where Ethernet auto-disable needs elevation.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            active_ethernet_interfaces:</span>
+<span class="sd">                Active Ethernet interface names.</span>
+<span class="sd">            exc:</span>
+<span class="sd">                Underlying adapter-disable failure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">interfaces</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span> <span class="k">if</span> <span class="n">active_ethernet_interfaces</span> <span class="k">else</span> <span class="s1">&#39;Ethernet&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s1">&#39;Ethernet adapter-disable mode requires administrator rights on </span><span class="si">%s</span><span class="s1">. &#39;</span>
+            <span class="s1">&#39;Disabling that feature for this running instance: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="n">interfaces</span><span class="p">,</span>
+            <span class="n">exc</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_auto_disable_wifi_on_ethernet</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ethernet_disable_permission_warning_shown</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ethernet_disable_permission_warning_shown</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notify_runtime_warning</span><span class="p">(</span>
+            <span class="s1">&#39;Administrator Required&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;PolyFi detected an active Ethernet connection, but Windows denied the Wi-Fi disable step because &#39;</span>
+            <span class="s1">&#39;this app is not running as administrator.</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;Automatic &quot;disable Wi-Fi on Ethernet&quot; has been turned off for this session. &#39;</span>
+            <span class="s1">&#39;Restart PolyFi as administrator if you want this feature.&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="WiFiPreferenceService.enable_wifi_adapter">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.enable_wifi_adapter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_wifi_adapter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Re-enable the managed Wi-Fi adapter and clear Ethernet-disable state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">enable_wifi_adapter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_disabled_by_ethernet</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_speed_test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connection_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run a speed test in the background for the specified connection.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            connection_name:</span>
+<span class="sd">                Human-readable label for the active connection.</span>
+<span class="sd">            reason:</span>
+<span class="sd">                Human-readable reason for the run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Queueing speed test for </span><span class="si">%r</span><span class="s1"> (</span><span class="si">%s</span><span class="s1">).&#39;</span><span class="p">,</span> <span class="n">connection_name</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_test_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">connection_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Unexpected speed-test failure for </span><span class="si">%r</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">connection_name</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">SpeedTestResult</span><span class="p">(</span>
+                <span class="n">status</span><span class="o">=</span><span class="s1">&#39;error&#39;</span><span class="p">,</span>
+                <span class="n">ssid</span><span class="o">=</span><span class="n">connection_name</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Unexpected speed-test failure.&#39;</span><span class="p">,</span>
+                <span class="n">tested_at</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_speed_tests</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Speed test finished for </span><span class="si">%r</span><span class="s1">, but speed tests are now disabled.&#39;</span><span class="p">,</span> <span class="n">connection_name</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">save_speed_test_history</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">speed_test_history_writer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_history_file</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Failed to save speed-test history to </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_history_file</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_speed_test_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_start_speed_test</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connection_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Start a background speed test immediately.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            connection_name:</span>
+<span class="sd">                Human-readable label for the active connection.</span>
+<span class="sd">            reason:</span>
+<span class="sd">                Human-readable reason for the run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_speed_test_attempt_ssid</span> <span class="o">=</span> <span class="n">connection_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_speed_test_at</span> <span class="o">=</span> <span class="n">now</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_speed_test_result</span><span class="p">(</span>
+            <span class="n">SpeedTestResult</span><span class="p">(</span>
+                <span class="n">status</span><span class="o">=</span><span class="s1">&#39;running&#39;</span><span class="p">,</span>
+                <span class="n">ssid</span><span class="o">=</span><span class="n">connection_name</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Running speed test on </span><span class="si">{</span><span class="n">connection_name</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_speed_test</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">connection_name</span><span class="p">,</span> <span class="n">reason</span><span class="p">),</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_active_connection_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resolve the currently active connection label for speed-test purposes.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Wi-Fi SSID, Ethernet label, or None when no active connection is detected.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current_ssid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_current_ssid</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">current_ssid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">current_ssid</span>
+
+        <span class="n">active_ethernet_interfaces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_active_ethernet_interfaces</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">active_ethernet_interfaces</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_ethernet_connection_label</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_start_immediate_speed_test_for_current_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Trigger a speed test immediately for the current active connection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Skipping immediate speed test because a speed test is already running.&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">connection_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_active_connection_name</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">connection_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_speed_test_result</span><span class="p">(</span>
+                <span class="n">SpeedTestResult</span><span class="p">(</span>
+                    <span class="n">status</span><span class="o">=</span><span class="s1">&#39;waiting&#39;</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Waiting for an active network connection.&#39;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Speed tests enabled at runtime. Starting an immediate speed test for </span><span class="si">%r</span><span class="s1">.&#39;</span><span class="p">,</span> <span class="n">connection_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_speed_test</span><span class="p">(</span><span class="n">connection_name</span><span class="p">,</span> <span class="s1">&#39;speed tests enabled at runtime&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_maybe_schedule_speed_test</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">current_ssid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">connection_changed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Start a background speed test when the config and connection state require it.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            current_ssid:</span>
+<span class="sd">                Human-readable label for the currently active connection.</span>
+<span class="sd">            connection_changed:</span>
+<span class="sd">                Optional explicit connection-change signal for immediate post-connect runs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">previous_ssid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_observed_ssid</span>
+        <span class="n">had_observed_connection_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_observed_connection_state</span>
+        <span class="n">observed_change</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">had_observed_connection_state</span> <span class="ow">and</span> <span class="n">current_ssid</span> <span class="o">!=</span> <span class="n">previous_ssid</span>
+            <span class="k">if</span> <span class="n">connection_changed</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">connection_changed</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">had_observed_connection_state</span> <span class="ow">or</span> <span class="n">current_ssid</span> <span class="o">!=</span> <span class="n">previous_ssid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connected_ssid_since</span> <span class="o">=</span> <span class="n">now</span> <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_observed_ssid</span> <span class="o">=</span> <span class="n">current_ssid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_has_observed_connection_state</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_speed_tests</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_lock</span><span class="p">:</span>
+                <span class="n">current_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latest_speed_test_result</span><span class="o">.</span><span class="n">status</span>
+            <span class="k">if</span> <span class="n">current_status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">}:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_speed_test_result</span><span class="p">(</span>
+                    <span class="n">SpeedTestResult</span><span class="p">(</span>
+                        <span class="n">status</span><span class="o">=</span><span class="s1">&#39;waiting&#39;</span><span class="p">,</span>
+                        <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Waiting for an active network connection.&#39;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_thread</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+            <span class="k">return</span>
+
+        <span class="n">should_run</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="k">if</span> <span class="n">observed_change</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_on_new_connection</span><span class="p">:</span>
+            <span class="n">should_run</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="s1">&#39;new network connection&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_interval</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">reference_time</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_last_speed_test_at</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_speed_test_attempt_ssid</span> <span class="o">==</span> <span class="n">current_ssid</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_speed_test_at</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connected_ssid_since</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">reference_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">now</span> <span class="o">-</span> <span class="n">reference_time</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_interval</span><span class="p">:</span>
+                <span class="n">should_run</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">reason</span> <span class="o">=</span> <span class="s1">&#39;periodic interval reached&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">should_run</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed_test_lock</span><span class="p">:</span>
+                <span class="n">current_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latest_speed_test_result</span><span class="o">.</span><span class="n">status</span>
+            <span class="k">if</span> <span class="n">current_status</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">&#39;waiting&#39;</span><span class="p">,</span> <span class="s1">&#39;disabled&#39;</span><span class="p">}:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_speed_test_result</span><span class="p">(</span>
+                    <span class="n">SpeedTestResult</span><span class="p">(</span>
+                        <span class="n">status</span><span class="o">=</span><span class="s1">&#39;waiting&#39;</span><span class="p">,</span>
+                        <span class="n">ssid</span><span class="o">=</span><span class="n">current_ssid</span><span class="p">,</span>
+                        <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Waiting to test </span><span class="si">{</span><span class="n">current_ssid</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_speed_test</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WiFiPreferenceService.reload_config_if_needed">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.reload_config_if_needed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reload_config_if_needed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reload configuration when the config file changes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_loader</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_loader</span><span class="o">.</span><span class="n">has_changed</span><span class="p">():</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">new_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_loader</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">ConfigError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Config reload failed; keeping previous config: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reload_config</span><span class="p">(</span><span class="n">new_config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.evaluate_and_switch">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.evaluate_and_switch">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate_and_switch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform one scan/evaluation cycle.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NetshError:</span>
+<span class="sd">                If netsh operations fail.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_disable_wifi_on_ethernet</span><span class="p">:</span>
+            <span class="n">active_ethernet_interfaces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_active_ethernet_interfaces</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+            <span class="n">ethernet_active</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span>
+            <span class="n">adapter_control_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_requires_adapter_control_for_ethernet</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;Ethernet connection check: active=</span><span class="si">%s</span><span class="s1">, mode=</span><span class="si">%s</span><span class="s1">, interfaces=</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="n">ethernet_active</span><span class="p">,</span>
+                <span class="s1">&#39;disable_adapter&#39;</span> <span class="k">if</span> <span class="n">adapter_control_mode</span> <span class="k">else</span> <span class="s1">&#39;disconnect_and_disable_autoconnect&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span> <span class="k">if</span> <span class="n">active_ethernet_interfaces</span> <span class="k">else</span> <span class="s1">&#39;[none]&#39;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;Ethernet connection check state: _wifi_disabled_by_ethernet=</span><span class="si">%s</span><span class="s1"> _wifi_manually_disconnected_by_ethernet=</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_disabled_by_ethernet</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_manually_disconnected_by_ethernet</span><span class="p">,</span>
+            <span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">ethernet_active</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">adapter_control_mode</span><span class="p">:</span>
+                    <span class="c1"># Ethernet is connected - disable Wi-Fi adapter completely</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_disabled_by_ethernet</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s1">&#39;Ethernet connection detected on </span><span class="si">%s</span><span class="s1">. Disabling Wi-Fi adapter completely.&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">),</span>
+                        <span class="p">)</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">disable_wifi_adapter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_disabled_by_ethernet</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">show_wifi_disabled_dialog</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_notify_wifi_adapter_disabled</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="n">NetshError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">NetshWiFiApi</span><span class="o">.</span><span class="n">is_elevation_required_error</span><span class="p">(</span><span class="n">exc</span><span class="p">):</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_non_admin_ethernet_disable</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Failed to disable Wi-Fi adapter: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_soft_ethernet_wifi_action</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="n">NetshError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                            <span class="s1">&#39;Failed to apply Ethernet Wi-Fi soft-disable action on </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">),</span>
+                            <span class="n">exc</span><span class="p">,</span>
+                        <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_disable_wifi_on_ethernet</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_schedule_speed_test</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_format_ethernet_connection_label</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">adapter_control_mode</span><span class="p">:</span>
+                    <span class="c1"># Ethernet is not connected - re-enable Wi-Fi if it was disabled</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_disabled_by_ethernet</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Ethernet disconnected. Re-enabling Wi-Fi adapter.&#39;</span><span class="p">)</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">enable_wifi_adapter</span><span class="p">()</span>
+                        <span class="k">except</span> <span class="n">NetshError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Failed to re-enable Wi-Fi adapter: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+                            <span class="c1"># Clear the flag anyway to avoid getting stuck</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_wifi_disabled_by_ethernet</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_restore_wifi_state_after_ethernet</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="s1">&#39;ethernet disconnect&#39;</span><span class="p">)</span>
+
+        <span class="n">current_ssid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_current_ssid</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_track_current_wifi_network</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_needs_visible_network_scan</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s1">&#39;Skipping visible-network scan while connected to </span><span class="si">%r</span><span class="s1">; no higher-priority &#39;</span>
+                <span class="s1">&#39;auto-switch network or signal threshold applies.&#39;</span><span class="p">,</span>
+                <span class="n">current_ssid</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_schedule_speed_test</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">visible_networks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_visible_network_signals</span><span class="p">()</span>
+        <span class="n">best_available</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_available_ssid</span><span class="p">(</span><span class="n">visible_networks</span><span class="p">)</span>
+        <span class="n">current_meets_min_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_network_meets_signal_requirement</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">,</span> <span class="n">visible_networks</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Current SSID: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">current_ssid</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Visible SSIDs: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ssid</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">signal_dbm</span><span class="si">}</span><span class="s1"> dBm)&#39;</span> <span class="k">for</span> <span class="n">ssid</span><span class="p">,</span> <span class="n">signal_dbm</span> <span class="ow">in</span> <span class="n">visible_networks</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">visible_networks</span>
+            <span class="k">else</span> <span class="s1">&#39;[none]&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Best available preferred SSID: </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">best_available</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">best_available</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current_meets_min_signal</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s1">&#39;Current network </span><span class="si">%r</span><span class="s1"> is below its configured minimum signal, &#39;</span>
+                    <span class="s1">&#39;but no other preferred network currently meets its own threshold.&#39;</span><span class="p">,</span>
+                    <span class="n">current_ssid</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;No preferred network currently visible.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_schedule_speed_test</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">current_ssid</span> <span class="o">==</span> <span class="n">best_available</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Already connected to the best available network.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_schedule_speed_test</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">current_rank</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preference_index</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">)</span>
+        <span class="n">best_rank</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preference_index</span><span class="p">(</span><span class="n">best_available</span><span class="p">)</span>
+        <span class="n">should_switch_for_signal</span> <span class="o">=</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current_meets_min_signal</span>
+        <span class="n">switch_reason</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_build_signal_switch_reason</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">,</span> <span class="n">best_available</span><span class="p">,</span> <span class="n">visible_networks</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">should_switch_for_signal</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">best_rank</span> <span class="o">&lt;</span> <span class="n">current_rank</span> <span class="ow">or</span> <span class="n">should_switch_for_signal</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">current_ssid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">should_switch_for_signal</span> <span class="ow">and</span> <span class="n">best_rank</span> <span class="o">&gt;=</span> <span class="n">current_rank</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s1">&#39;Switching from </span><span class="si">%r</span><span class="s1"> to </span><span class="si">%r</span><span class="s1"> because the current network is below its configured minimum signal.&#39;</span><span class="p">,</span>
+                        <span class="n">current_ssid</span><span class="p">,</span>
+                        <span class="n">best_available</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s1">&#39;Switching from </span><span class="si">%r</span><span class="s1"> to more preferred network </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span>
+                        <span class="n">current_ssid</span><span class="p">,</span>
+                        <span class="n">best_available</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;No active Wi-Fi connection. Connecting to </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">best_available</span><span class="p">)</span>
+
+            <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                <span class="n">interface_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+                <span class="n">ssid</span><span class="o">=</span><span class="n">best_available</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">connect_timeout</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Connected to </span><span class="si">%r</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">best_available</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_track_current_wifi_network</span><span class="p">(</span><span class="n">best_available</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">switch_reason</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_schedule_speed_test</span><span class="p">(</span><span class="n">best_available</span><span class="p">,</span> <span class="n">connection_changed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Connection attempt to </span><span class="si">%r</span><span class="s1"> could not be confirmed.&#39;</span><span class="p">,</span> <span class="n">best_available</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_schedule_speed_test</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_current_ssid</span><span class="p">())</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_maybe_schedule_speed_test</span><span class="p">(</span><span class="n">current_ssid</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WiFiPreferenceService.run_forever">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.service.WiFiPreferenceService.run_forever">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_forever</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the monitoring loop in the current thread.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Using interface: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">sync_profile_order_on_start</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Syncing Windows Wi-Fi profile order...&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">sync_profile_order</span><span class="p">(</span>
+                <span class="n">interface_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">,</span>
+                <span class="n">ssids</span><span class="o">=</span><span class="p">[</span><span class="n">entry</span><span class="o">.</span><span class="n">ssid</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">preferred_networks</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Wi-Fi preference service started.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_disable_wifi_on_ethernet</span><span class="p">:</span>
+            <span class="n">active_ethernet_interfaces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wifi_api</span><span class="o">.</span><span class="n">get_active_ethernet_interfaces</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">interface_name</span><span class="p">)</span>
+            <span class="n">ethernet_mode</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;ethernet_wifi_mode&#39;</span><span class="p">,</span> <span class="n">ETHERNET_WIFI_MODE_DISCONNECT</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s1">&#39;Ethernet detection: ENABLED (mode=</span><span class="si">%s</span><span class="s1">). Active Ethernet interfaces right now: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="n">ethernet_mode</span><span class="p">,</span>
+                <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">active_ethernet_interfaces</span><span class="p">)</span> <span class="k">if</span> <span class="n">active_ethernet_interfaces</span> <span class="k">else</span> <span class="s1">&#39;[none]&#39;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s1">&#39;Ethernet detection: DISABLED &#39;</span>
+                <span class="s1">&#39;(auto_disable_wifi_on_ethernet = false in config). &#39;</span>
+                <span class="s1">&#39;Set it to true to enable automatic Wi-Fi disable on Ethernet.&#39;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">enable_speed_tests</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s1">&#39;Speed tests: ENABLED (on_new_connection=</span><span class="si">%s</span><span class="s1">, interval=</span><span class="si">%s</span><span class="s1">s, history=</span><span class="si">%s</span><span class="s1">)&#39;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_on_new_connection</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">speed_test_interval</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">save_speed_test_history</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Speed tests: DISABLED.&#39;</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reload_config_if_needed</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_and_switch</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">NetshError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Wi-Fi command error: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Unexpected runtime error: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stop_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">scan_interval</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

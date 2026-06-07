@@ -1,0 +1,318 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wifi_pref_manager.models &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config-reference.html">Config Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Command-Line-Interface-%28CLI%29-Reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wifi_pref_manager.models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wifi_pref_manager.models</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Author:</span>
+<span class="sd">    Inspyre Softworks</span>
+
+<span class="sd">Project:</span>
+<span class="sd">    PolyFi: Ranked</span>
+
+<span class="sd">File:</span>
+<span class="sd">    models.py</span>
+
+<span class="sd">Description:</span>
+<span class="sd">    Data models for runtime configuration and Wi-Fi preference entries.</span>
+
+<span class="sd">Functions:</span>
+<span class="sd">    None.</span>
+
+<span class="sd">Constants:</span>
+<span class="sd">    None.</span>
+
+<span class="sd">Dependencies:</span>
+<span class="sd">    dataclasses</span>
+<span class="sd">    typing</span>
+
+<span class="sd">Example Usage:</span>
+<span class="sd">    from wifi_pref_manager.models import AppConfig</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="n">ETHERNET_WIFI_MODE_DISCONNECT</span> <span class="o">=</span> <span class="s1">&#39;disconnect_and_disable_autoconnect&#39;</span>
+<span class="n">ETHERNET_WIFI_MODE_DISABLE_ADAPTER</span> <span class="o">=</span> <span class="s1">&#39;disable_adapter&#39;</span>
+<span class="n">ETHERNET_WIFI_MODE_VALUES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">ETHERNET_WIFI_MODE_DISCONNECT</span><span class="p">,</span>
+    <span class="n">ETHERNET_WIFI_MODE_DISABLE_ADAPTER</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="WiFiProfilePreference">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.models.WiFiProfilePreference">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WiFiProfilePreference</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a preferred Wi-Fi network.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        ssid:</span>
+<span class="sd">            Saved Windows Wi-Fi profile name / SSID.</span>
+<span class="sd">        auto_switch:</span>
+<span class="sd">            Whether the manager may automatically switch to this network.</span>
+<span class="sd">        min_db:</span>
+<span class="sd">            Optional minimum signal threshold. When set, the network is treated</span>
+<span class="sd">            as unavailable if the observed signal is weaker than this value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ssid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">auto_switch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">min_db</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="AppConfig">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.models.AppConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AppConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores runtime configuration for the application.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        preferred_networks:</span>
+<span class="sd">            Ordered list of Wi-Fi preferences, highest priority first.</span>
+<span class="sd">        interface_name:</span>
+<span class="sd">            Optional Wi-Fi interface name. If blank, auto-detect is used.</span>
+<span class="sd">        scan_interval:</span>
+<span class="sd">            Number of seconds between scan cycles.</span>
+<span class="sd">        connect_timeout:</span>
+<span class="sd">            Number of seconds to wait after a connect attempt.</span>
+<span class="sd">        sync_profile_order_on_start:</span>
+<span class="sd">            Whether to sync Windows profile order at startup.</span>
+<span class="sd">        log_level:</span>
+<span class="sd">            Logging level string.</span>
+<span class="sd">        log_file:</span>
+<span class="sd">            Path to the application log file.</span>
+<span class="sd">        start_minimized_to_tray:</span>
+<span class="sd">            Whether the tray app should start minimized.</span>
+<span class="sd">        auto_disable_wifi_on_ethernet:</span>
+<span class="sd">            Automatically disconnect Wi-Fi when an Ethernet connection is detected.</span>
+<span class="sd">        ethernet_wifi_mode:</span>
+<span class="sd">            Action taken when Ethernet is active and auto-disable is enabled.</span>
+<span class="sd">            ``disconnect_and_disable_autoconnect`` disconnects Wi-Fi and sets all</span>
+<span class="sd">            saved profiles to manual connect until Ethernet disconnects (or app exit).</span>
+<span class="sd">            ``disable_adapter`` turns the Wi-Fi adapter fully off.</span>
+<span class="sd">        show_wifi_disabled_dialog:</span>
+<span class="sd">            Whether to show a dialog when PolyFi disables the Wi-Fi adapter.</span>
+<span class="sd">        add_to_startup_programs:</span>
+<span class="sd">            Whether PolyFi should keep a tray-launch shortcut in the user&#39;s</span>
+<span class="sd">            Windows Startup Programs folder.</span>
+<span class="sd">        add_scheduled_logon_task:</span>
+<span class="sd">            Whether PolyFi should keep a Windows Task Scheduler logon task</span>
+<span class="sd">            registered for earlier tray startup after sign-in. ``None`` means</span>
+<span class="sd">            the active config predates this setting and the task should not be</span>
+<span class="sd">            managed automatically until the setting is saved explicitly.</span>
+<span class="sd">        show_startup_splash:</span>
+<span class="sd">            Whether to show the startup splash screen.</span>
+<span class="sd">        splash_image_path:</span>
+<span class="sd">            Optional splash image path. Blank uses built-in default lookup paths.</span>
+<span class="sd">        splash_fade_in_ms:</span>
+<span class="sd">            Legacy splash fade-in duration in milliseconds. Retained for config compatibility.</span>
+<span class="sd">        splash_hold_ms:</span>
+<span class="sd">            Splash display duration in milliseconds.</span>
+<span class="sd">        splash_fade_out_ms:</span>
+<span class="sd">            Legacy splash fade-out duration in milliseconds. Retained for config compatibility.</span>
+<span class="sd">        enable_speed_tests:</span>
+<span class="sd">            Whether automatic speed tests are enabled.</span>
+<span class="sd">        speed_test_on_new_connection:</span>
+<span class="sd">            Whether to run a speed test when connecting to a new Wi-Fi network.</span>
+<span class="sd">        speed_test_interval:</span>
+<span class="sd">            Seconds between repeated speed tests while staying on the same Wi-Fi network.</span>
+<span class="sd">        save_speed_test_history:</span>
+<span class="sd">            Whether completed speed-test results should be appended to a history file.</span>
+<span class="sd">        speed_test_history_file:</span>
+<span class="sd">            Path to the speed-test history file. Blank uses the default local app-data path.</span>
+<span class="sd">        auto_check_for_updates:</span>
+<span class="sd">            Whether the tray app should check GitHub Releases for an update</span>
+<span class="sd">            after startup.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">preferred_networks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">WiFiProfilePreference</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">interface_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scan_interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">connect_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">sync_profile_order_on_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">log_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;INFO&#39;</span>
+    <span class="n">log_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">start_minimized_to_tray</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">auto_disable_wifi_on_ethernet</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">ethernet_wifi_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">ETHERNET_WIFI_MODE_DISCONNECT</span>
+    <span class="n">show_wifi_disabled_dialog</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">add_to_startup_programs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">add_scheduled_logon_task</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">show_startup_splash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">splash_image_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">splash_fade_in_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">280</span>
+    <span class="n">splash_hold_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1100</span>
+    <span class="n">splash_fade_out_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">280</span>
+    <span class="n">enable_speed_tests</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">speed_test_on_new_connection</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">speed_test_interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1800</span>
+    <span class="n">save_speed_test_history</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">speed_test_history_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">auto_check_for_updates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="SpeedTestResult">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.models.SpeedTestResult">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SpeedTestResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores the latest automatic speed-test state/result.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        status:</span>
+<span class="sd">            Current state such as disabled, waiting, running, success, or error.</span>
+<span class="sd">        ssid:</span>
+<span class="sd">            SSID associated with the test or wait state.</span>
+<span class="sd">        download_mbps:</span>
+<span class="sd">            Measured download throughput in Mbps.</span>
+<span class="sd">        upload_mbps:</span>
+<span class="sd">            Measured upload throughput in Mbps.</span>
+<span class="sd">        ping_ms:</span>
+<span class="sd">            Measured latency in milliseconds.</span>
+<span class="sd">        message:</span>
+<span class="sd">            Short human-readable summary.</span>
+<span class="sd">        tested_at:</span>
+<span class="sd">            Unix timestamp for the last completed attempt.</span>
+<span class="sd">        local_ip:</span>
+<span class="sd">            Local IP address observed at the time of the test, if available.</span>
+<span class="sd">        public_ip:</span>
+<span class="sd">            Public IP address observed at the time of the test, if available.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">ssid</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">download_mbps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">upload_mbps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ping_ms</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">tested_at</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">local_ip</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">public_ip</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

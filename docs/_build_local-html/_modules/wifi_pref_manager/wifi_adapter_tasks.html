@@ -1,0 +1,531 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wifi_pref_manager.wifi_adapter_tasks &mdash; PolyFi: Ranked  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PolyFi: Ranked
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quick-start.html">Quick Start (from Source)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started-installer.html">Getting Started: Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Usage</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../cli-reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../runtime-features.html">Runtime Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Configuration &amp; Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config-reference.html">Config Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api-reference.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development &amp; Packaging</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../building-windows-installer.html">Building the Windows Installer</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Wiki</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Home.html">PolyFi: Ranked</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Command-Line-Interface-%28CLI%29-Reference.html">CLI Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../wiki/Contributing-Docs.html">Contributing Docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PolyFi: Ranked</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wifi_pref_manager.wifi_adapter_tasks</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wifi_pref_manager.wifi_adapter_tasks</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Author:</span>
+<span class="sd">    Inspyre Softworks</span>
+
+<span class="sd">Project:</span>
+<span class="sd">    PolyFi: Ranked</span>
+
+<span class="sd">File:</span>
+<span class="sd">    wifi_adapter_tasks.py</span>
+
+<span class="sd">Description:</span>
+<span class="sd">    Windows Task Scheduler helpers that let a non-elevated process control</span>
+<span class="sd">    the Wi-Fi adapter.  When an administrator policy prevents Python from</span>
+<span class="sd">    running elevated (e.g. an AppLocker rule targeting ``python.exe``),</span>
+<span class="sd">    PolyFi registers two on-demand scheduled tasks that execute ``netsh.exe``</span>
+<span class="sd">    on its behalf.</span>
+
+<span class="sd">    Tasks are created by elevating ``powershell.exe`` — a Microsoft-signed</span>
+<span class="sd">    system binary not typically covered by AppLocker rules for Python — so</span>
+<span class="sd">    the one-time setup prompt shows &quot;Windows PowerShell&quot; in the UAC dialog</span>
+<span class="sd">    rather than the blocked ``python.exe``.</span>
+
+<span class="sd">    The tasks run as the currently logged-in user with ``RunLevel Highest``.</span>
+<span class="sd">    That lets a normal, non-elevated PolyFi tray process trigger them later</span>
+<span class="sd">    via ``schtasks /run`` without re-prompting for UAC.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.paths</span><span class="w"> </span><span class="kn">import</span> <span class="n">AppPaths</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">wifi_pref_manager.subprocess_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">hidden_subprocess_kwargs</span>
+
+
+<span class="n">TASK_NAME_DISABLE</span> <span class="o">=</span> <span class="s1">&#39;PolyFi-DisableWiFi&#39;</span>
+<span class="n">TASK_NAME_ENABLE</span> <span class="o">=</span> <span class="s1">&#39;PolyFi-EnableWiFi&#39;</span>
+<span class="n">TASK_INSTALL_MARKER_VERSION</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="n">_INSTALL_POLL_INTERVAL</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">_INSTALL_TIMEOUT</span> <span class="o">=</span> <span class="mf">12.0</span>
+
+
+<div class="viewcode-block" id="WifiAdapterTaskError">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WifiAdapterTaskError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a scheduled-task trigger operation fails.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="WifiAdapterTaskManager">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WifiAdapterTaskManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Manage Windows scheduled tasks for privileged Wi-Fi adapter control.</span>
+
+<span class="sd">    Two on-demand scheduled tasks are registered — one to disable and one to</span>
+<span class="sd">    enable a specific Wi-Fi interface.  They run as the interactive user with</span>
+<span class="sd">    highest privileges so a non-elevated PolyFi tray process can trigger them</span>
+<span class="sd">    later via ``schtasks /run``.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        are_installed:</span>
+<span class="sd">            Return True when both tasks exist and target the given interface.</span>
+<span class="sd">        install:</span>
+<span class="sd">            Launch an elevated PowerShell to create both SYSTEM tasks.</span>
+<span class="sd">        install_and_wait:</span>
+<span class="sd">            Install and poll until tasks appear or the timeout expires.</span>
+<span class="sd">        uninstall:</span>
+<span class="sd">            Delete both tasks.</span>
+<span class="sd">        disable_wifi:</span>
+<span class="sd">            Trigger the disable task and wait briefly for execution.</span>
+<span class="sd">        enable_wifi:</span>
+<span class="sd">            Trigger the enable task and wait briefly for execution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">marker_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">marker_path</span> <span class="o">=</span> <span class="n">marker_path</span> <span class="ow">or</span> <span class="p">(</span><span class="n">AppPaths</span><span class="p">()</span><span class="o">.</span><span class="n">local_data_dir</span> <span class="o">/</span> <span class="s1">&#39;wifi_adapter_tasks.json&#39;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_hidden_subprocess_kwargs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return subprocess kwargs that suppress console windows.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">hidden_subprocess_kwargs</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_schtasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CompletedProcess</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;schtasks&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">],</span>
+            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">,</span>
+            <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hidden_subprocess_kwargs</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_task_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Quick existence check via schtasks (avoids PowerShell overhead).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_schtasks</span><span class="p">(</span><span class="s1">&#39;/query&#39;</span><span class="p">,</span> <span class="s1">&#39;/tn&#39;</span><span class="p">,</span> <span class="n">task_name</span><span class="p">)</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_install_marker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove the local install-confirmation marker if it exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">marker_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="k">return</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_install_marker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read the install-confirmation marker written by the elevated setup step.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parsed marker payload, or ``None`` when unavailable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">marker_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8-sig&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="n">raw</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+            <span class="c1"># Older PolyFi builds accidentally wrote PowerShell-escaped JSON</span>
+            <span class="c1"># with literal backticks. Accept that legacy marker format so a</span>
+            <span class="c1"># successful install is not reported as a timeout forever.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;`&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">))</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">payload</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_marker_matches_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine whether the local marker confirms installation for the interface.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wi-Fi interface name to verify.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ``True`` when the marker matches the requested interface.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_install_marker</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">payload</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">marker_version</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;marker_version&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">marker_version</span> <span class="o">!=</span> <span class="n">TASK_INSTALL_MARKER_VERSION</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;status&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;installed&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">saved_interface</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;interface_name&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">saved_interface</span><span class="p">)</span> <span class="ow">and</span> <span class="n">saved_interface</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">interface_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_task_action_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the action-arguments string for the task&#39;s first action.</span>
+
+<span class="sd">        Uses ``Get-ScheduledTask`` so the full argument string (including the</span>
+<span class="sd">        embedded interface name) is reliably returned regardless of locale.</span>
+
+<span class="sd">        Returns ``None`` when the task does not exist, has no actions, or</span>
+<span class="sd">        cannot be queried.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ps</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;$t = Get-ScheduledTask -TaskName &#39;</span><span class="si">{</span><span class="n">task_name</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;-ErrorAction SilentlyContinue; &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;if ($t -and $t.Actions -and $t.Actions.Count -gt 0) &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2"> $t.Actions[0].Arguments </span><span class="se">}}</span><span class="s2"> else </span><span class="se">{{</span><span class="s2"> &#39;&#39; </span><span class="se">}}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;powershell&#39;</span><span class="p">,</span> <span class="s1">&#39;-NoProfile&#39;</span><span class="p">,</span> <span class="s1">&#39;-NonInteractive&#39;</span><span class="p">,</span> <span class="s1">&#39;-Command&#39;</span><span class="p">,</span> <span class="n">ps</span><span class="p">],</span>
+            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">,</span>
+            <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;replace&#39;</span><span class="p">,</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hidden_subprocess_kwargs</span><span class="p">(),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">output</span> <span class="k">if</span> <span class="n">output</span> <span class="k">else</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="WifiAdapterTaskManager.are_installed">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.are_installed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">are_installed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return True when the current PolyFi helper marker matches the interface.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wi-Fi interface name to verify (case-insensitive).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_marker_matches_interface</span><span class="p">(</span><span class="n">interface_name</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encode_ps_command</span><span class="p">(</span><span class="n">script</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Base64-encode a PowerShell script for use with ``-EncodedCommand``.</span>
+
+<span class="sd">        PowerShell&#39;s ``-EncodedCommand`` parameter expects the script encoded as</span>
+<span class="sd">        UTF-16LE (little-endian) and then base64-encoded.  UTF-8 or other</span>
+<span class="sd">        encodings will cause silent failures or decoding errors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">script</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-16-le&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_escape_for_ps_double_quoted_string</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Escape a string for safe embedding inside a PowerShell double-quoted string.</span>
+
+<span class="sd">        PowerShell uses the backtick as its escape character inside ``&quot;...&quot;``</span>
+<span class="sd">        strings.  The three characters that require escaping are:</span>
+
+<span class="sd">        * `` ` `` (backtick — the escape character itself, must be doubled)</span>
+<span class="sd">        * ``&quot;`` (double-quote — would close the surrounding string)</span>
+<span class="sd">        * ``$`` (dollar-sign — would trigger variable expansion)</span>
+
+<span class="sd">        Backtick escaping is applied first to avoid double-processing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;`&#39;</span><span class="p">,</span> <span class="s1">&#39;``&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;`&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;$&#39;</span><span class="p">,</span> <span class="s1">&#39;`$&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_install_script_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build the PowerShell script that creates both SYSTEM tasks.</span>
+
+<span class="sd">        The interface name is embedded directly in the task action arguments</span>
+<span class="sd">        after being escaped for PowerShell double-quoted string context, so</span>
+<span class="sd">        no variable interpolation risks exist at task execution time. A marker</span>
+<span class="sd">        file is written only after both tasks are registered successfully.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">esc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_escape_for_ps_double_quoted_string</span><span class="p">(</span><span class="n">interface_name</span><span class="p">)</span>
+        <span class="n">marker_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_escape_for_ps_double_quoted_string</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">marker_path</span><span class="p">))</span>
+        <span class="n">disable_arg</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;interface set interface `&quot;</span><span class="si">{</span><span class="n">esc</span><span class="si">}</span><span class="s1">`&quot; admin=disabled&#39;</span>
+        <span class="n">enable_arg</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;interface set interface `&quot;</span><span class="si">{</span><span class="n">esc</span><span class="si">}</span><span class="s1">`&quot; admin=enabled&#39;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;$markerPath = &quot;</span><span class="si">{</span><span class="n">marker_path</span><span class="si">}</span><span class="s1">&quot;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;$markerDir = Split-Path -Parent $markerPath</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;if ($markerDir) { New-Item -ItemType Directory -Path $markerDir -Force | Out-Null }</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;$principal = New-ScheduledTaskPrincipal &#39;</span>
+            <span class="s1">&#39;-UserId $currentUser -LogonType Interactive -RunLevel Highest</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s2">&quot;Register-ScheduledTask -Force -TaskName &#39;</span><span class="si">{</span><span class="n">TASK_NAME_DISABLE</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+            <span class="s2">&quot;-Action (New-ScheduledTaskAction -Execute &#39;netsh.exe&#39; &quot;</span>
+            <span class="sa">f</span><span class="s1">&#39;-Argument &quot;</span><span class="si">{</span><span class="n">disable_arg</span><span class="si">}</span><span class="s1">&quot;) &#39;</span>
+            <span class="s2">&quot;-Principal $principal</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Register-ScheduledTask -Force -TaskName &#39;</span><span class="si">{</span><span class="n">TASK_NAME_ENABLE</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+            <span class="s2">&quot;-Action (New-ScheduledTaskAction -Execute &#39;netsh.exe&#39; &quot;</span>
+            <span class="sa">f</span><span class="s1">&#39;-Argument &quot;</span><span class="si">{</span><span class="n">enable_arg</span><span class="si">}</span><span class="s1">&quot;) &#39;</span>
+            <span class="s2">&quot;-Principal $principal</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s1">&#39;$markerPayload = [ordered]@{</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;  marker_version = </span><span class="si">{</span><span class="n">TASK_INSTALL_MARKER_VERSION</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;  interface_name = &quot;</span><span class="si">{</span><span class="n">esc</span><span class="si">}</span><span class="s1">&quot;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;  installed_by = &quot;PolyFi&quot;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;  principal_user = $currentUser</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;  principal_mode = &quot;interactive-highest&quot;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;  status = &quot;installed&quot;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;}</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;$markerPayload | ConvertTo-Json -Compress | &#39;</span>
+            <span class="s1">&#39;Set-Content -LiteralPath $markerPath -Encoding UTF8 -Force&#39;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_install_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build and encode a PowerShell script that creates both SYSTEM tasks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encode_ps_command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_install_script_text</span><span class="p">(</span><span class="n">interface_name</span><span class="p">))</span>
+
+<div class="viewcode-block" id="WifiAdapterTaskManager.install">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">install</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Launch an elevated PowerShell to create both SYSTEM tasks.</span>
+
+<span class="sd">        ``powershell.exe`` is a Microsoft-signed system binary.  AppLocker</span>
+<span class="sd">        rules that block ``python.exe`` from elevation do not apply to it,</span>
+<span class="sd">        so a standard UAC prompt for PowerShell will appear instead.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wi-Fi interface name to embed in the task commands.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ``True`` when the elevation request was accepted</span>
+<span class="sd">            (``ShellExecuteW`` &gt; 32), ``False`` when the user cancelled the</span>
+<span class="sd">            UAC prompt (code 1223).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            OSError:</span>
+<span class="sd">                When ``ShellExecuteW`` returns a hard-error code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clear_install_marker</span><span class="p">()</span>
+        <span class="n">encoded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_install_script</span><span class="p">(</span><span class="n">interface_name</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">windll</span><span class="o">.</span><span class="n">shell32</span><span class="o">.</span><span class="n">ShellExecuteW</span><span class="p">(</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;runas&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;powershell.exe&#39;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s1">&#39;-NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand </span><span class="si">{</span><span class="n">encoded</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="mi">0</span><span class="p">,</span>  <span class="c1"># SW_HIDE</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ShellExecuteW is unavailable on this platform: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="o">&gt;</span> <span class="mi">32</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="mi">1223</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;ShellExecuteW for scheduled-task installation returned code </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s1">.&#39;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WifiAdapterTaskManager.install_and_wait">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.install_and_wait">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">install_and_wait</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">interface_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_INSTALL_TIMEOUT</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Install tasks and poll until both appear or the timeout expires.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            interface_name:</span>
+<span class="sd">                Wi-Fi interface name passed to :meth:`install`.</span>
+<span class="sd">            timeout:</span>
+<span class="sd">                Maximum seconds to wait for tasks to become queryable.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ``True`` when both tasks were confirmed created within</span>
+<span class="sd">            ``timeout``, ``False`` otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="n">interface_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">deadline</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">+</span> <span class="n">timeout</span>
+        <span class="k">while</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">deadline</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">_INSTALL_POLL_INTERVAL</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_marker_matches_interface</span><span class="p">(</span><span class="n">interface_name</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="WifiAdapterTaskManager.uninstall">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.uninstall">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uninstall</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete both PolyFi Wi-Fi control tasks if they exist.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="n">TASK_NAME_DISABLE</span><span class="p">,</span> <span class="n">TASK_NAME_ENABLE</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_schtasks</span><span class="p">(</span><span class="s1">&#39;/delete&#39;</span><span class="p">,</span> <span class="s1">&#39;/tn&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s1">&#39;/f&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clear_install_marker</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_trigger_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">post_wait</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_schtasks</span><span class="p">(</span><span class="s1">&#39;/run&#39;</span><span class="p">,</span> <span class="s1">&#39;/tn&#39;</span><span class="p">,</span> <span class="n">task_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">WifiAdapterTaskError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Failed to trigger scheduled task </span><span class="si">{</span><span class="n">task_name</span><span class="si">!r}</span><span class="s1">: &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">post_wait</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WifiAdapterTaskManager.disable_wifi">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.disable_wifi">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">disable_wifi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">post_wait</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Trigger the disable-WiFi task and wait briefly for execution.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            post_wait:</span>
+<span class="sd">                Seconds to sleep after triggering so ``netsh.exe`` finishes.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            WifiAdapterTaskError:</span>
+<span class="sd">                When ``schtasks /run`` exits with a non-zero code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trigger_task</span><span class="p">(</span><span class="n">TASK_NAME_DISABLE</span><span class="p">,</span> <span class="n">post_wait</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WifiAdapterTaskManager.enable_wifi">
+<a class="viewcode-back" href="../../api-reference.html#wifi_pref_manager.wifi_adapter_tasks.WifiAdapterTaskManager.enable_wifi">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_wifi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">post_wait</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Trigger the enable-WiFi task and wait briefly for execution.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">            post_wait:</span>
+<span class="sd">                Seconds to sleep after triggering so ``netsh.exe`` finishes.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            WifiAdapterTaskError:</span>
+<span class="sd">                When ``schtasks /run`` exits with a non-zero code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trigger_task</span><span class="p">(</span><span class="n">TASK_NAME_ENABLE</span><span class="p">,</span> <span class="n">post_wait</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Inspyre Softworks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
