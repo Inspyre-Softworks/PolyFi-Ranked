@@ -24,6 +24,11 @@ highest-priority available Wi-Fi network from your configured preference list.
 
    configuration
    config-reference
+
+.. toctree::
+   :maxdepth: 2
+   :caption: AutoAPI
+
    api-reference
 
 .. toctree::

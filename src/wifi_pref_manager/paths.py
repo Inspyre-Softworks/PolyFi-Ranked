@@ -51,10 +51,6 @@ APPDATA_ROOT_ENV_VAR = 'POLYFI_APPDATA_ROOT'
 class AppPaths:
     """
     Resolve platform-appropriate application paths.
-
-    Methods:
-        ensure_directories:
-            Create required directories.
     """
 
     def __init__(self) -> None:
