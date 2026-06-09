@@ -28,6 +28,17 @@ versions so packaging, docs, and support paths stay aligned.
 - Added `permissions: contents: read` to `ci.yml` in line with the `main`
   branch baseline.
 
+## [1.0.0-dev.21] - 2026-06-06
+
+### Fixed
+
+- Prevented Read the Docs builds from failing when Sphinx autodoc imports
+  `wifi_pref_manager.service` by mocking the runtime-only `easy_exit_calls`
+  dependency during docs generation.
+- Added a dedicated CI documentation job that runs
+  `poetry run sphinx-build -W -b html docs docs/_build/local-html` so Sphinx
+  warnings-as-errors failures surface in GitHub Actions before Read the Docs.
+
 ## [1.0.0-dev.20] - 2026-06-06
 
 ### Fixed
