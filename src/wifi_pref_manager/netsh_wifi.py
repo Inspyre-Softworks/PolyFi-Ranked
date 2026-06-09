@@ -51,44 +51,6 @@ class NetshError(RuntimeError):
 class NetshWiFiApi:
     """
     Simple wrapper around Windows `netsh wlan`.
-
-    Methods:
-        detect_wifi_interface:
-            Detect a wireless interface name.
-        get_current_ssid:
-            Get the currently connected SSID.
-        get_visible_network_signals:
-            Get visible SSIDs with their strongest observed signal levels.
-        get_visible_ssids:
-            Get visible SSIDs.
-        get_saved_profiles:
-            Get saved Windows Wi-Fi profiles.
-        connect:
-            Connect to a saved Wi-Fi profile.
-        disconnect:
-            Disconnect current Wi-Fi.
-        get_profiles_autoconnect_modes:
-            Get auto/manual connect state for saved profiles.
-        set_profiles_autoconnect:
-            Set auto/manual connect state for saved profiles.
-        disable_wifi_adapter:
-            Disable the Wi-Fi adapter (turn off the radio).
-        enable_wifi_adapter:
-            Enable the Wi-Fi adapter (turn on the radio).
-        sync_profile_order:
-            Set Windows profile order.
-        get_active_ethernet_interfaces:
-            Return active Ethernet interface names.
-        is_ethernet_connected:
-            Check whether a physical Ethernet interface is currently connected.
-        _run_powershell:
-            Run a PowerShell one-liner and return its output.
-        _get_known_wireless_interface_names:
-            Return Wi-Fi interface names even when currently disabled.
-        _get_all_wireless_interface_names:
-            Return the names of every WLAN adapter detected by Windows.
-        _get_active_ethernet_interfaces_netsh:
-            Netsh-based fallback for Ethernet detection.
     """
 
     def __init__(

@@ -46,10 +46,6 @@ TASK_NAME = 'PolyFi Ranked'
 class TaskSchedulerInstaller:
     """
     Registers a Windows scheduled task that launches the app at logon.
-
-    Methods:
-        install:
-            Create or update the scheduled task.
     """
 
     def __init__(

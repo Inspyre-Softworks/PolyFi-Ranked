@@ -67,18 +67,6 @@ class WiFiPreferenceService:
     """
     Background service that keeps the system attached to the highest-priority
     available configured Wi-Fi network.
-
-    Methods:
-        start:
-            Start the background thread.
-        stop:
-            Stop the background thread.
-        run_forever:
-            Run the polling loop in the current thread.
-        evaluate_and_switch:
-            Perform a single preference evaluation.
-        reload_config:
-            Apply a freshly loaded configuration at runtime.
     """
 
     def __init__(

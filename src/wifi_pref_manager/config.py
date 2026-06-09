@@ -92,16 +92,6 @@ class ConfigError(RuntimeError):
 class ConfigLoader:
     """
     Loads and validates TOML configuration.
-
-    Methods:
-        load:
-            Load an AppConfig from disk.
-        write_default_config:
-            Write the current default configuration template to disk.
-        ensure_default_config:
-            Create a default configuration file if one does not exist.
-        has_changed:
-            Determine whether the configuration file has changed.
     """
 
     def __init__(self, config_path: str | Path | None = None) -> None:

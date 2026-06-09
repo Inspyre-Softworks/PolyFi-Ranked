@@ -58,20 +58,6 @@ class WifiAdapterTaskManager:
     enable a specific Wi-Fi interface.  They run as the interactive user with
     highest privileges so a non-elevated PolyFi tray process can trigger them
     later via ``schtasks /run``.
-
-    Methods:
-        are_installed:
-            Return True when both tasks exist and target the given interface.
-        install:
-            Launch an elevated PowerShell to create both SYSTEM tasks.
-        install_and_wait:
-            Install and poll until tasks appear or the timeout expires.
-        uninstall:
-            Delete both tasks.
-        disable_wifi:
-            Trigger the disable task and wait briefly for execution.
-        enable_wifi:
-            Trigger the enable task and wait briefly for execution.
     """
 
     def __init__(self, marker_path: Path | None = None) -> None:

@@ -7,6 +7,27 @@ versions so packaging, docs, and support paths stay aligned.
 
 ## [Unreleased]
 
+## [1.0.0-dev.22] - 2026-06-09
+
+### Fixed
+
+- Fixed failing `docs` CI job caused by Sphinx Napoleon converting `Methods:`
+  sections in class docstrings into `.. method::` RST directives.  Those
+  directives conflicted with the same methods already documented by autodoc
+  `:members:`, producing 31 "duplicate object description" warnings that were
+  treated as errors by the `-W` flag.  Removed the redundant `Methods:` summary
+  sections from the `ConfigLoader`, `NetshWiFiApi`, `AppPaths`,
+  `TaskSchedulerInstaller`, `WiFiPreferenceService`, and `WifiAdapterTaskManager`
+  class docstrings.
+
+### Changed
+
+- Restored the `docs` CI job to `ci.yml` (Linux, runs
+  `poetry run sphinx-build -W -b html docs docs/_build/local-html`) so
+  Sphinx warnings-as-errors are caught before Read the Docs.
+- Added `permissions: contents: read` to `ci.yml` in line with the `main`
+  branch baseline.
+
 ## [1.0.0-dev.20] - 2026-06-06
 
 ### Fixed
