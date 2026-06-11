@@ -45,6 +45,38 @@ class UpdateTests(unittest.TestCase):
         self.assertTrue(is_newer_version('1.0.0', '1.0.0-dev.18'))
         self.assertFalse(is_newer_version('1.0.0-dev.17', '1.0.0-dev.17'))
 
+    def test_version_comparison_handles_release_candidate_sequence(self) -> None:
+        self.assertTrue(is_newer_version('1.0.0-rc.1', '1.0.0-dev.22'))
+        self.assertTrue(is_newer_version('1.0.0', '1.0.0-rc.1'))
+        self.assertFalse(is_newer_version('1.0.0-rc.1', '1.0.0'))
+        self.assertFalse(is_newer_version('1.0.0', '1.0.0'))
+
+    def test_choose_latest_update_prefers_stable_over_release_candidate(self) -> None:
+        update = choose_latest_update(
+            [
+                {
+                    'tag_name': 'v1.0.0-rc.1',
+                    'html_url': 'https://example.invalid/releases/v1.0.0-rc.1',
+                    'assets': [],
+                },
+                {
+                    'tag_name': 'v1.0.0',
+                    'html_url': 'https://example.invalid/releases/v1.0.0',
+                    'assets': [],
+                },
+                {
+                    'tag_name': 'v1.0.0-dev.22',
+                    'html_url': 'https://example.invalid/releases/v1.0.0-dev.22',
+                    'assets': [],
+                },
+            ],
+            '1.0.0-dev.22',
+        )
+
+        self.assertIsNotNone(update)
+        assert update is not None
+        self.assertEqual(update.version, '1.0.0')
+
     def test_select_windows_installer_prefers_setup_exe(self) -> None:
         asset = select_windows_installer_asset(
             [

@@ -7,6 +7,20 @@ versions so packaging, docs, and support paths stay aligned.
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2026-06-11
+
+### Changed
+
+- Promoted the 1.0 release train to a release candidate after stabilizing the
+  Python 3.12+ exit-state restoration dependency on `easy-exit-calls` 1.0.0.
+
+### Fixed
+
+- Added regression coverage for updater version ordering across the final
+  prerelease sequence, ensuring `1.0.0-dev.22` upgrades to `1.0.0-rc.1`,
+  release candidates upgrade to `1.0.0`, and the stable release does not report
+  itself as outdated.
+
 ## [1.0.0-dev.22] - 2026-06-09
 
 ### Fixed
