@@ -269,7 +269,12 @@ def _show_windows_layered_splash(
     width, height = image.size
     image_bytes = _premultiply_bgra_bytes(image)
 
-    def window_proc(hwnd, message, w_param, l_param):
+    def window_proc(
+        hwnd: wintypes.HWND,
+        message: wintypes.UINT,
+        w_param: wintypes.WPARAM,
+        l_param: wintypes.LPARAM,
+    ) -> int:
         if message == WM_DESTROY:
             user32.PostQuitMessage(0)
             return 0

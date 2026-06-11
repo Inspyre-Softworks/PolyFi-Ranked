@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 import sys
 import unittest
@@ -15,10 +16,10 @@ class FakeTrayIcon:
         self.visible = False
         self.stopped = False
 
-    def notify(self, *args, **kwargs) -> None:
+    def notify(self, *args: object, **kwargs: object) -> None:
         del args, kwargs
 
-    def run(self, setup=None) -> None:
+    def run(self, setup: Callable[['FakeTrayIcon'], None] | None = None) -> None:
         if setup is not None:
             setup(self)
 

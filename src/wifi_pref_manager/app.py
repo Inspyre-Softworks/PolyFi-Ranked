@@ -50,7 +50,7 @@ from wifi_pref_manager.config import ConfigError, ConfigLoader, save_config
 from wifi_pref_manager import __version__
 from wifi_pref_manager.install_record import default_install_record_path, remove_install_record, upsert_install_record
 from wifi_pref_manager.logging_utils import configure_logging
-from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
+from wifi_pref_manager.models import AppConfig, ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.netsh_wifi import NetshWiFiApi
 from wifi_pref_manager.paths import APPDATA_ROOT_ENV_VAR, APP_NAME, APP_SLUG, APP_USER_MODEL_ID, AppPaths
 from wifi_pref_manager.scheduler import (
@@ -445,7 +445,7 @@ class Application:
         """
         return (self.log_level_override or configured_log_level).upper()
 
-    def on_config_reloaded(self, config) -> object:
+    def on_config_reloaded(self, config: AppConfig) -> logging.Logger:
         """
         Reconfigure logging when the config changes.
 
@@ -464,7 +464,7 @@ class Application:
         self.sync_scheduled_logon_task_preference(config, logger)
         return logger
 
-    def apply_runtime_overrides(self, config) -> None:
+    def apply_runtime_overrides(self, config: AppConfig) -> None:
         """
         Apply CLI overrides to a loaded config object.
 
@@ -571,7 +571,7 @@ class Application:
             runtime_args.append('--no-splash')
         return runtime_args
 
-    def maybe_show_startup_splash(self, config, logger) -> bool:
+    def maybe_show_startup_splash(self, config: AppConfig, logger: logging.Logger) -> bool:
         """
         Show the configured startup splash if enabled and available.
 
@@ -655,7 +655,7 @@ class Application:
             loader.mark_loaded()
         return loader.config_path
 
-    def sync_startup_programs_preference(self, config, logger) -> None:
+    def sync_startup_programs_preference(self, config: AppConfig, logger: logging.Logger) -> None:
         """
         Install or remove the Startup Programs shortcut to match the config.
 
@@ -716,7 +716,7 @@ class Application:
             create_if_missing=create_if_missing,
         )
 
-    def sync_scheduled_logon_task_preference(self, config, logger) -> None:
+    def sync_scheduled_logon_task_preference(self, config: AppConfig, logger: logging.Logger) -> None:
         """
         Install or remove the scheduled logon task to match the config.
         """
@@ -962,7 +962,7 @@ class Application:
             return False
 
     @staticmethod
-    def _ethernet_action_requires_admin(config) -> bool:
+    def _ethernet_action_requires_admin(config: AppConfig) -> bool:
         """
         Return whether the selected Ethernet Wi-Fi mode needs adapter control.
         """
@@ -971,7 +971,7 @@ class Application:
         mode = getattr(config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
         return mode == ETHERNET_WIFI_MODE_DISABLE_ADAPTER
 
-    def handle_startup_admin_requirements(self, config, logger) -> int | None:
+    def handle_startup_admin_requirements(self, config: AppConfig, logger: logging.Logger) -> int | None:
         """
         Warn when the Ethernet auto-disable feature needs administrator rights.
 

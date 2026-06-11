@@ -13,6 +13,7 @@ from pathlib import Path
 import queue
 import sys
 import threading
+from typing import Any
 
 
 IS_WINDOWS = sys.platform == 'win32'
@@ -154,7 +155,7 @@ class BufferedConsoleStream(io.TextIOBase):
     def flush(self) -> None:
         self.manager.flush_transcript()
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         stream = self.manager.get_fallback_stream(self.stream_name)
         if stream is None:
             raise AttributeError(name)
@@ -258,7 +259,7 @@ class ConsoleOutputManager:
         self._ensure_viewer_thread()
         self._viewer_events.put(('show', self.history.snapshot()))
 
-    def get_fallback_stream(self, stream_name: str):
+    def get_fallback_stream(self, stream_name: str) -> io.TextIOBase | None:
         """
         Return the original process stream for proxy attribute lookups.
         """

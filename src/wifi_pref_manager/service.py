@@ -56,6 +56,7 @@ from wifi_pref_manager.models import (
     ETHERNET_WIFI_MODE_DISCONNECT,
     AppConfig,
     SpeedTestResult,
+    WiFiProfilePreference,
 )
 from wifi_pref_manager.netsh_wifi import NetshError, NetshWiFiApi
 from wifi_pref_manager.paths import AppPaths
@@ -186,7 +187,7 @@ class WiFiPreferenceService:
 
         return 10**9
 
-    def _get_preference(self, ssid: str | None):
+    def _get_preference(self, ssid: str | None) -> WiFiProfilePreference | None:
         """
         Return the configured preference entry for an SSID, if any.
 

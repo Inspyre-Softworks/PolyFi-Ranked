@@ -4,6 +4,7 @@ from io import BytesIO
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
+from types import TracebackType
 import unittest
 from unittest.mock import Mock, patch
 
@@ -23,10 +24,15 @@ class _FakeResponse:
     def __init__(self, payload: bytes) -> None:
         self._stream = BytesIO(payload)
 
-    def __enter__(self):
+    def __enter__(self) -> '_FakeResponse':
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
         del exc_type, exc, tb
 
     def read(self, size: int = -1) -> bytes:

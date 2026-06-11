@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from pathlib import Path
 import sys
 import unittest
@@ -29,10 +30,10 @@ _WLAN_SHOW_INTERFACES_MULTI = (
 )
 
 
-def _make_run_netsh_side_effect(wlan_output: str):
+def _make_run_netsh_side_effect(wlan_output: str) -> Callable[[Sequence[str]], str]:
     """Return a side_effect callable that dispatches on the netsh sub-command."""
 
-    def _dispatch(args):
+    def _dispatch(args: Sequence[str]) -> str:
         if args[0] == 'wlan':
             return wlan_output
         return _INTERFACE_TABLE

@@ -43,9 +43,9 @@ from PIL import Image
 import pystray
 
 from wifi_pref_manager import __version__
-from wifi_pref_manager.config import save_config
+from wifi_pref_manager.config import ConfigLoader, save_config
 from wifi_pref_manager.icon_assets import create_app_icon_image
-from wifi_pref_manager.models import ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
+from wifi_pref_manager.models import AppConfig, ETHERNET_WIFI_MODE_DISABLE_ADAPTER, ETHERNET_WIFI_MODE_DISCONNECT
 from wifi_pref_manager.paths import APP_NAME
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.startup_trace import append_startup_trace_line
@@ -81,7 +81,7 @@ class TrayApplication:
         self,
         service: WiFiPreferenceService,
         logger: logging.Logger,
-        config_loader=None,
+        config_loader: ConfigLoader | None = None,
         needs_admin_notification: bool = False,
         show_output_console_callback: Callable[[], None] | None = None,
         startup_marker_path: Path | None = None,
@@ -149,7 +149,7 @@ class TrayApplication:
         del icon, item
         self.reenable_wifi_adapter_and_disable_auto_ethernet()
 
-    def _save_and_reload_config(self, new_config) -> bool:
+    def _save_and_reload_config(self, new_config: AppConfig) -> bool:
         """
         Persist and apply an updated config object.
 

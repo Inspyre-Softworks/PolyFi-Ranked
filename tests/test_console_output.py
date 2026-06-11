@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 import sys
 import unittest
@@ -54,7 +55,12 @@ class NullStreamTests(unittest.TestCase):
 class RedirectNoneStreamsTests(unittest.TestCase):
     """Tests for :func:`~wifi_pref_manager.console_output.redirect_none_streams`."""
 
-    def _run_with_none_streams(self, stdin=None, stdout=None, stderr=None):
+    def _run_with_none_streams(
+        self,
+        stdin: io.TextIOBase | None = None,
+        stdout: io.TextIOBase | None = None,
+        stderr: io.TextIOBase | None = None,
+    ) -> tuple[io.TextIOBase, io.TextIOBase, io.TextIOBase]:
         """
         Temporarily set the given std streams to the supplied values,
         call ``redirect_none_streams()``, capture what they become, then restore.
@@ -86,19 +92,16 @@ class RedirectNoneStreamsTests(unittest.TestCase):
         self.assertIsInstance(new_stderr, NullStream)
 
     def test_non_none_stdin_is_preserved(self) -> None:
-        import io
         sentinel = io.StringIO()
         new_stdin, _, _ = self._run_with_none_streams(stdin=sentinel, stdout=None, stderr=None)
         self.assertIs(new_stdin, sentinel)
 
     def test_non_none_stdout_is_preserved(self) -> None:
-        import io
         sentinel = io.StringIO()
         _, new_stdout, _ = self._run_with_none_streams(stdin=None, stdout=sentinel, stderr=None)
         self.assertIs(new_stdout, sentinel)
 
     def test_non_none_stderr_is_preserved(self) -> None:
-        import io
         sentinel = io.StringIO()
         _, _, new_stderr = self._run_with_none_streams(stdin=None, stdout=None, stderr=sentinel)
         self.assertIs(new_stderr, sentinel)

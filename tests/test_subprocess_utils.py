@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from pathlib import Path
 import sys
 import unittest
@@ -15,7 +16,13 @@ from wifi_pref_manager.subprocess_utils import hidden_subprocess_kwargs
 class HiddenSubprocessKwargsTests(unittest.TestCase):
     """Tests for :func:`~wifi_pref_manager.subprocess_utils.hidden_subprocess_kwargs`."""
 
-    def _patch_subprocess(self, *, create_no_window=0, startupinfo_type=None, startf_flag=0):
+    def _patch_subprocess(
+        self,
+        *,
+        create_no_window: int = 0,
+        startupinfo_type: type[object] | None = None,
+        startf_flag: int = 0,
+    ) -> tuple[AbstractContextManager[object], AbstractContextManager[object], AbstractContextManager[object]]:
         """Return a context manager stack that patches the subprocess attrs used by the helper."""
         return (
             patch.object(subprocess_utils_module.subprocess, 'CREATE_NO_WINDOW', create_no_window, create=True),

@@ -152,7 +152,7 @@ def _show_dialog(
     title: str,
     message: str,
     action_label: str | None = None,
-    action_callback=None,
+    action_callback: Callable[[], None] | None = None,
     continue_label: str = 'OK',
 ) -> bool:
     """
@@ -300,7 +300,7 @@ def show_dialog(
     title: str,
     message: str,
     action_label: str | None = None,
-    action_callback=None,
+    action_callback: Callable[[], None] | None = None,
     continue_label: str = 'OK',
 ) -> bool:
     """
@@ -344,7 +344,7 @@ def show_dialog_async(
     title: str,
     message: str,
     action_label: str | None = None,
-    action_callback=None,
+    action_callback: Callable[[], None] | None = None,
     continue_label: str = 'OK',
 ) -> None:
     """

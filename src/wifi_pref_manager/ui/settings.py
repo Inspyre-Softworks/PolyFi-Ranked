@@ -32,7 +32,7 @@ import logging
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from wifi_pref_manager.config import save_config
+from wifi_pref_manager.config import ConfigLoader, save_config
 from wifi_pref_manager.models import (
     ETHERNET_WIFI_MODE_DISABLE_ADAPTER,
     ETHERNET_WIFI_MODE_DISCONNECT,
@@ -55,7 +55,7 @@ class SettingsWindow:
     def __init__(
         self,
         service: WiFiPreferenceService,
-        config_loader,
+        config_loader: ConfigLoader,
         logger: logging.Logger,
     ) -> None:
         """
@@ -198,7 +198,7 @@ class SettingsWindow:
             combo = ttk.Combobox(dialog, textvariable=network_var, values=available_networks, width=36)
             combo.grid(row=1, column=0, padx=12, pady=(0, 12), sticky='ew')
 
-            def _filter_network_choices(*_args) -> None:
+            def _filter_network_choices(*_args: object) -> None:
                 typed = network_var.get().strip().lower()
                 if not typed:
                     combo['values'] = available_networks
@@ -316,10 +316,10 @@ class SettingsWindow:
         ethernet_mode_combo.set(selected_mode)
         ethernet_mode_combo.grid(row=2, column=0, sticky='w')
 
-        def _sync_mode_control_state(*_args) -> None:
+        def _sync_mode_control_state(*_args: object) -> None:
             ethernet_mode_combo.configure(state='readonly' if auto_eth_var.get() else 'disabled')
 
-        def _on_mode_selected(_event=None) -> None:
+        def _on_mode_selected(_event: object | None = None) -> None:
             selected_label = ethernet_mode_combo.get()
             for label, value in ethernet_mode_choices:
                 if label == selected_label:

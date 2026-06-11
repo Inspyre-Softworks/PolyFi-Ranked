@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -41,7 +41,7 @@ class WindowsPackagingTests(unittest.TestCase):
     @patch.object(build_windows_artifacts.shutil, 'which')
     def test_candidate_iscc_paths_honor_override_and_deduplicate(
         self,
-        mock_which,
+        mock_which: Mock,
     ) -> None:
         mock_which.side_effect = [r'C:\Tools\ISCC.exe', r'C:\Tools\ISCC.exe']
         env = {
@@ -145,7 +145,7 @@ class WindowsPackagingTests(unittest.TestCase):
     @patch.object(build_windows_artifacts, 'remove_tree')
     def test_prepare_pyinstaller_paths_cleans_work_and_app_dirs_when_requested(
         self,
-        mock_remove_tree,
+        mock_remove_tree: Mock,
     ) -> None:
         paths = build_windows_artifacts.build_packaging_paths(PROJECT_ROOT)
 
@@ -157,7 +157,7 @@ class WindowsPackagingTests(unittest.TestCase):
     @patch.object(build_windows_artifacts, 'remove_tree')
     def test_prepare_pyinstaller_paths_skips_cleanup_when_not_requested(
         self,
-        mock_remove_tree,
+        mock_remove_tree: Mock,
     ) -> None:
         paths = build_windows_artifacts.build_packaging_paths(PROJECT_ROOT)
 
@@ -172,11 +172,11 @@ class WindowsPackagingTests(unittest.TestCase):
     @patch.object(build_windows_artifacts, 'build_packaging_paths')
     def test_main_builds_packaging_art_before_pyinstaller(
         self,
-        mock_build_packaging_paths,
-        mock_read_project_version,
-        mock_run_command,
-        mock_prepare_pyinstaller_paths,
-        mock_ensure_packaging_art,
+        mock_build_packaging_paths: Mock,
+        mock_read_project_version: Mock,
+        mock_run_command: Mock,
+        mock_prepare_pyinstaller_paths: Mock,
+        mock_ensure_packaging_art: Mock,
     ) -> None:
         del mock_read_project_version
         with TemporaryDirectory() as tmp_dir:
@@ -223,11 +223,11 @@ class WindowsPackagingTests(unittest.TestCase):
     @patch.object(build_windows_artifacts, 'build_packaging_paths')
     def test_main_fails_when_console_executable_is_missing(
         self,
-        mock_build_packaging_paths,
-        mock_read_project_version,
-        mock_run_command,
-        mock_prepare_pyinstaller_paths,
-        mock_ensure_packaging_art,
+        mock_build_packaging_paths: Mock,
+        mock_read_project_version: Mock,
+        mock_run_command: Mock,
+        mock_prepare_pyinstaller_paths: Mock,
+        mock_ensure_packaging_art: Mock,
     ) -> None:
         del mock_read_project_version, mock_prepare_pyinstaller_paths, mock_ensure_packaging_art
         with TemporaryDirectory() as tmp_dir:
