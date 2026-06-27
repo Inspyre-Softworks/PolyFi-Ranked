@@ -1,0 +1,40 @@
+{
+  "name": "intro",
+  "splash": {
+    "width": 1200,
+    "height": 1200,
+    "transparent": true,
+    "stay_on_top": true
+  },
+  "layers": [
+    {
+      "type": "image",
+      "path": "glow.png",
+      "scale": 1.00,
+      "position": "center"
+    },
+    {
+      "type": "animated_image",
+      "path": "transparent_splash.webp",
+      "loops": 10,
+      "scale": 1.0,
+      "position": "center"
+    },
+    {
+      "type": "text_sequence",
+      "font_family": "Metal Gear Solid 2",
+      "font_size": 42,
+      "color": "#ffffff",
+      "x": 500,
+      "y": 550,
+      "background_color": "#111827",
+      "background_opacity": 0.75,
+      "shadow_color": "#000000",
+      "shadow_opacity": 0.7,
+      "loops": 2,
+      "entries": [
+        {"text": "TAYLOR SUITE", "effect": "wipe_in"}
+      ]
+    }
+  ]
+}

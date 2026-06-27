@@ -134,8 +134,8 @@ download the installer to local app-data and launch it for the user.
 Startup Splash Screen
 ---------------------
 
-PolyFi can show a brief splash screen on startup.  These ``[general]`` settings
-control it:
+PolyFi can show an InspyreSplash-powered splash screen on startup.  These
+``[general]`` settings control it:
 
 .. code-block:: toml
 
@@ -147,14 +147,17 @@ control it:
 
 - ``splash_hold_ms`` controls how long the splash stays visible.
 - The fade timing fields (``splash_fade_in_ms``, ``splash_fade_out_ms``) are
-  accepted so existing configs keep working, but fade animations are not
-  currently implemented.  The fields are preserved for forward compatibility.
-- When ``splash_image_path`` is blank, PolyFi looks for
-  ``polyfi_ranked_splash.png`` in:
+  accepted so existing configs keep working, but the packaged InspyreSplash
+  animation controls its own layer effects.
+- When ``splash_image_path`` is blank, PolyFi first looks for the legacy
+  ``polyfi_ranked_splash.png`` override in:
 
   - ``%LOCALAPPDATA%\Inspyre-Softworks\PolyFi-Ranked\``
   - ``%USERPROFILE%\OneDrive\Pictures\``
   - ``%USERPROFILE%\Pictures\``
+
+  If no image override exists, PolyFi uses the packaged
+  ``wifi_pref_manager/assets/splashes/intro/splash.json`` InspyreSplash bundle.
 
 Notes
 -----

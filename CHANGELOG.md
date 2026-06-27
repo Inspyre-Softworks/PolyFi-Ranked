@@ -7,6 +7,15 @@ versions so packaging, docs, and support paths stay aligned.
 
 ## [Unreleased]
 
+## [1.0.0-rc.2] - 2026-06-16
+
+### Added
+
+- Added a packaged `wifi_pref_manager/assets` directory and configured Poetry
+  to include those runtime assets in both wheel and source distributions.
+- Switched the startup splash to the packaged InspyreSplash bundle while
+  preserving legacy single-image splash overrides.
+
 ## [1.0.0-rc.1] - 2026-06-11
 
 ### Changed

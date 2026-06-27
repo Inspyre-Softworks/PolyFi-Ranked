@@ -487,6 +487,31 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
             fade_out_ms=280,
         )
 
+    @patch('wifi_pref_manager.app.show_startup_splash')
+    @patch('wifi_pref_manager.app.startup_splash_available', return_value=True)
+    @patch('wifi_pref_manager.app.resolve_splash_image_path', return_value=None)
+    def test_maybe_show_startup_splash_uses_packaged_inspyre_splash_when_no_image_exists(
+        self,
+        mock_resolve_splash_image_path: Mock,
+        mock_startup_splash_available: Mock,
+        mock_show_startup_splash: Mock,
+    ) -> None:
+        app = Application()
+        logger = Mock()
+        config = AppConfig(preferred_networks=[WiFiProfilePreference('ExampleWiFi')])
+
+        shown = app.maybe_show_startup_splash(config, logger)
+
+        self.assertTrue(shown)
+        mock_resolve_splash_image_path.assert_called_once_with('', app.paths)
+        mock_startup_splash_available.assert_called_once_with()
+        mock_show_startup_splash.assert_called_once_with(
+            None,
+            fade_in_ms=280,
+            hold_ms=1100,
+            fade_out_ms=280,
+        )
+
     @patch.object(Application, 'launch_detached_tray_process')
     @patch.object(Application, 'maybe_show_startup_splash')
     @patch.object(Application, 'release_single_instance_guard')

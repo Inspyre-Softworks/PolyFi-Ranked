@@ -63,7 +63,11 @@ from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
 from wifi_pref_manager.startup_trace import append_startup_trace_line
 from wifi_pref_manager.ui.dialogs import show_dialog, show_native_message_box
-from wifi_pref_manager.ui.splash import resolve_splash_image_path, show_startup_splash
+from wifi_pref_manager.ui.splash import (
+    resolve_splash_image_path,
+    show_startup_splash,
+    startup_splash_available,
+)
 from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
 from wifi_pref_manager.windows_shell import (
@@ -590,19 +594,24 @@ class Application:
         if not getattr(config, 'show_startup_splash', True):
             return False
 
-        splash_path = resolve_splash_image_path(
-            getattr(config, 'splash_image_path', ''),
-            self.paths,
-        )
-        if splash_path is None:
-            logger.debug(
-                'Startup splash is enabled, but no splash image was found. '
-                'Looked for config path, app-data splash, and Pictures defaults.'
-            )
+        configured_splash_path = getattr(config, 'splash_image_path', '')
+        splash_path = resolve_splash_image_path(configured_splash_path, self.paths)
+        if splash_path is None and not startup_splash_available():
+            if configured_splash_path.strip():
+                logger.debug(
+                    'Startup splash is enabled, but the configured splash image '
+                    'was not found and no packaged InspyreSplash bundle is available.'
+                )
+            else:
+                logger.debug(
+                    'Startup splash is enabled, but no splash image or packaged '
+                    'InspyreSplash bundle was found.'
+                )
             return False
 
         try:
-            logger.info('Showing startup splash from: %s', splash_path)
+            splash_source = str(splash_path) if splash_path is not None else 'packaged InspyreSplash intro'
+            logger.info('Showing startup splash from: %s', splash_source)
             show_startup_splash(
                 splash_path,
                 fade_in_ms=max(0, int(getattr(config, 'splash_fade_in_ms', 280))),
