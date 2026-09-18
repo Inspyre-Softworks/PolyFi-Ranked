@@ -117,6 +117,22 @@ class UpdateTests(unittest.TestCase):
         assert update is not None
         self.assertEqual(update.version, '1.0.0-dev.18')
 
+    def test_choose_latest_update_excludes_prereleases_by_default(self) -> None:
+        releases = [
+            {
+                'tag_name': 'v2.0.0-rc.1',
+                'prerelease': True,
+                'html_url': 'https://example.invalid/releases/v2.0.0-rc.1',
+                'assets': [],
+            }
+        ]
+
+        self.assertIsNone(choose_latest_update(releases, '1.0.0'))
+        update = choose_latest_update(releases, '1.0.0', allow_prerelease=True)
+        self.assertIsNotNone(update)
+        assert update is not None
+        self.assertEqual(update.version, '2.0.0-rc.1')
+
     @patch('wifi_pref_manager.updates.urlopen')
     def test_download_installer_writes_update_file(self, mock_urlopen: Mock) -> None:
         with TemporaryDirectory() as tmp_dir:

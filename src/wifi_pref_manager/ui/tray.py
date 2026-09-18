@@ -59,6 +59,7 @@ from wifi_pref_manager.updates import (
 )
 
 if TYPE_CHECKING:
+    from wifi_pref_manager.ui.global_config import GlobalConfigurationWindow
     from wifi_pref_manager.ui.settings import SettingsWindow
 
 
@@ -98,6 +99,7 @@ class TrayApplication:
         self._post_icon_ready_callback = post_icon_ready_callback
         self.icon: pystray.Icon | None = None
         self._settings_window: SettingsWindow | None = None
+        self._global_configuration_window: GlobalConfigurationWindow | None = None
         self._icon_ready_event: threading.Event | None = None
         self._icon_run_done_event: threading.Event | None = None
         self._update_check_lock = threading.Lock()
@@ -234,6 +236,20 @@ class TrayApplication:
             )
         self._settings_window.open()
 
+    def on_global_configuration(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        """Open the application-wide Global Configuration window."""
+        del icon, item
+        self.logger.info('Opening global configuration window.')
+        if self._global_configuration_window is None:
+            from wifi_pref_manager.ui.global_config import GlobalConfigurationWindow  # noqa: PLC0415
+
+            self._global_configuration_window = GlobalConfigurationWindow(
+                service=self.service,
+                config_loader=self.config_loader,
+                logger=self.logger,
+            )
+        self._global_configuration_window.open()
+
     def on_show_output_console(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         """
         Reveal the buffered output console for the tray session.
@@ -275,7 +291,10 @@ class TrayApplication:
 
     def _run_update_check(self, *, auto: bool) -> None:
         try:
-            update = self.update_manager.check_for_update(__version__)
+            update = self.update_manager.check_for_update(
+                __version__,
+                allow_prerelease=self.service.config.allow_prerelease_updates,
+            )
         except UpdateError as exc:
             self.logger.warning('Update check failed: %s', exc)
             if not auto:
@@ -410,6 +429,7 @@ class TrayApplication:
                     visible=lambda item: self._needs_admin_notification,
                 ),
                 pystray.MenuItem('Manage Networks…', self.on_manage_networks),
+                pystray.MenuItem('Global Configuration…', self.on_global_configuration),
                 pystray.MenuItem('Rescan Now', self.on_rescan),
                 pystray.MenuItem('Restore Wi-Fi (Disable Auto Ethernet)', self.on_reenable_wifi),
                 pystray.MenuItem(
@@ -673,6 +693,6 @@ class TrayApplication:
                 name='polyfi-post-icon-setup',
             ).start()
 
-        if getattr(self.service.config, 'auto_check_for_updates', True):
+        if getattr(self.service.config, 'auto_check_for_updates', False):
             self.check_for_updates(auto=True)
 

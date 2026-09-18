@@ -23,7 +23,7 @@
     {
       "type": "text_sequence",
       "font_family": "Metal Gear Solid 2",
-      "font_size": 52,
+      "font_size": 42,
       "color": "#ffffff",
       "x": 500,
       "y": 550,
@@ -31,10 +31,12 @@
       "background_opacity": 0.75,
       "shadow_color": "#000000",
       "shadow_opacity": 0.7,
-      "loops": 2,
+      "loops": 10,
       "entries": [
-        {"text": "PolyFi: Ranked", "effect": "typewriter"}
-
+        {"text": "TAYLOR SUITE", "effect": "wipe_in"},
+        {"text": "Loading modules...", "effect": {"type": "fly_in", "direction": "bottom"}},
+        {"text": "Almost there...", "effect": {"type": "typewriter", "speed_ms": 42}},
+        {"text": "READY", "effect": "explode_in"}
       ]
     }
   ]

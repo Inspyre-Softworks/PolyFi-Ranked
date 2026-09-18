@@ -307,6 +307,55 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
         runtime_args = app.build_runtime_argument_list(args)
         self.assertIn('--no-splash', runtime_args)
 
+    def test_global_configuration_cli_overrides_are_applied_and_forwarded(self) -> None:
+        app = Application()
+        args = app.argument_parser.parse_args(
+            [
+                'run',
+                '--scan-interval',
+                '25',
+                '--start-with-windows',
+                '--schedule-with-task-scheduler',
+                '--enable-speed-tests',
+                '--speed-test-interval',
+                '900',
+                '--no-speed-test-on-connect',
+                '--wifi-off-on-ethernet',
+                '--no-connect-preferred-after-ethernet-disconnect',
+                '--ethernet-action',
+                'disable-adapter',
+                '--check-for-updates-automatically',
+                '--allow-prerelease',
+                '--save-config-overrides',
+            ]
+        )
+
+        self.assertEqual(app.apply_cli_overrides_from_args(args), 0)
+        config = AppConfig(preferred_networks=[WiFiProfilePreference('ExampleWiFi')])
+        app.apply_runtime_overrides(config)
+
+        self.assertEqual(config.scan_interval, 25)
+        self.assertTrue(config.add_to_startup_programs)
+        self.assertTrue(config.add_scheduled_logon_task)
+        self.assertTrue(config.enable_speed_tests)
+        self.assertEqual(config.speed_test_interval, 900)
+        self.assertFalse(config.speed_test_on_new_connection)
+        self.assertTrue(config.auto_disable_wifi_on_ethernet)
+        self.assertFalse(config.connect_preferred_after_ethernet_disconnect)
+        self.assertEqual(config.ethernet_wifi_mode, 'disable_adapter')
+        self.assertTrue(config.auto_check_for_updates)
+        self.assertTrue(config.allow_prerelease_updates)
+        self.assertTrue(app.save_config_overrides)
+        self.assertIn('--save-config-overrides', app.build_runtime_argument_list(args))
+
+    def test_cli_rejects_scheduled_start_without_start_with_windows(self) -> None:
+        app = Application()
+        args = app.argument_parser.parse_args(
+            ['run', '--no-start-with-windows', '--schedule-with-task-scheduler']
+        )
+
+        self.assertEqual(app.apply_cli_overrides_from_args(args), 1)
+
     def test_start_menu_runtime_options_force_tray_and_splash(self) -> None:
         app = Application()
         args = app.argument_parser.parse_args(['windows', 'start-menu', 'install'])

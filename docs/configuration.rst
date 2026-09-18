@@ -21,7 +21,7 @@ Configuration Layout
 
 The file has two main sections:
 
-``[general]``
+``[global]``
    App-wide behavior such as scan timing, logging, Ethernet handling, and
    automatic speed tests.
 
@@ -33,7 +33,7 @@ Example
 
 .. code-block:: toml
 
-   [general]
+   [global]
    scan_interval = 10
    connect_timeout = 8
    sync_profile_order_on_start = true
@@ -41,10 +41,13 @@ Example
    log_file = ''
    interface_name = ''
    start_minimized_to_tray = false
-   auto_disable_wifi_on_ethernet = true
+   auto_disable_wifi_on_ethernet = false
+   connect_preferred_after_ethernet_disconnect = true
+   ethernet_wifi_mode = 'disconnect_and_disable_autoconnect'
    add_to_startup_programs = false
    add_scheduled_logon_task = false
-   auto_check_for_updates = true
+   auto_check_for_updates = false
+   allow_prerelease_updates = false
    show_wifi_disabled_dialog = true
    enable_speed_tests = false
    speed_test_on_new_connection = true
@@ -65,6 +68,18 @@ How PolyFi Uses It
 PolyFi reads the file at startup and watches it for changes while running.
 Most settings can be updated live without restarting the app.
 
+The tray menu exposes two distinct editors:
+
+- **Global Configuration…** controls the ``[global]`` values that affect the
+  whole application: scan timing, splash/startup integration, speed tests,
+  Ethernet handling, and update checks.
+- **Manage Networks…** opens Network Settings and controls only
+  ``[[networks]]`` entries: priority, automatic switching, and minimum signal.
+
+Older files that use ``[general]`` remain readable. The first save through
+either settings window rewrites those values under ``[global]``; existing
+values are preserved, and ``[global]`` takes precedence if both tables exist.
+
 The service uses the ``[[networks]]`` list from top to bottom:
 
 1. Scan for visible SSIDs.
@@ -82,6 +97,8 @@ Practical Notes
   logon task registered for earlier startup after sign-in."
 - ``auto_check_for_updates = true`` means "check GitHub Releases for a newer
   installer after the tray icon starts."
+- ``allow_prerelease_updates = true`` allows update checks to offer development,
+  beta, or release-candidate versions.
 - ``speed_test_interval`` is measured in seconds.
 - Every ``[[networks]]`` entry must have a non-empty ``ssid``.
 - If a network has ``auto_switch = false``, it stays in the list but will not
