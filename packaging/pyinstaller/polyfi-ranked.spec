@@ -19,8 +19,10 @@ from wifi_pref_manager.icon_assets import write_app_icon_file
 write_app_icon_file(icon_path)
 
 hiddenimports = collect_submodules('pystray')
+hiddenimports.extend(collect_submodules('inspyre_splash'))
 hiddenimports.append('PIL.ImageTk')
 datas = collect_data_files('inspy_logger', includes=['version/VERSION.txt'])
+datas.extend(collect_data_files('wifi_pref_manager', includes=['assets/**/*']))
 
 a = Analysis(
     [str(src_root / 'wifi_pref_manager' / 'app.py')],

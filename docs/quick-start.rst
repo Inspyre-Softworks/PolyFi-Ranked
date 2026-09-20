@@ -46,6 +46,10 @@ Print all resolved file paths with:
 
    poetry run polyfi-ranked paths
 
+When running in tray mode, use **Global Configuration…** for app-wide scan,
+startup, speed-test, Ethernet, splash, and update settings. Use **Manage
+Networks…** for Wi-Fi priority and per-network switching thresholds.
+
 One-Shot Setup Script
 ---------------------
 

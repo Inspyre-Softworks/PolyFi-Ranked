@@ -7,6 +7,33 @@ versions so packaging, docs, and support paths stay aligned.
 
 ## [Unreleased]
 
+### Added
+
+- Added a Global Configuration window for application-wide scan, startup,
+  speed-test, Ethernet, splash, and update settings, including conditional
+  controls and prerelease-update selection.
+- Added CLI equivalents for every Global Configuration control plus
+  ``--save-config-overrides`` for explicitly persisting command-line values.
+
+### Changed
+
+- Limited Network Settings to per-network priority, switching, and signal
+  configuration.
+- Moved application-wide TOML values to ``[global]`` while retaining read
+  compatibility with legacy ``[general]`` files and migrating them on save.
+- Changed new-install defaults so Windows startup, automatic Ethernet Wi-Fi
+  handling, automatic update checks, and prerelease updates are disabled;
+  preferred Wi-Fi reconnection after Ethernet disconnects remains enabled.
+
+## [1.0.0-rc.2] - 2026-06-16
+
+### Added
+
+- Added a packaged `wifi_pref_manager/assets` directory and configured Poetry
+  to include those runtime assets in both wheel and source distributions.
+- Switched the startup splash to the packaged InspyreSplash bundle while
+  preserving legacy single-image splash overrides.
+
 ## [1.0.0-rc.1] - 2026-06-11
 
 ### Changed

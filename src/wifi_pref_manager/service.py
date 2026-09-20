@@ -125,6 +125,7 @@ class WiFiPreferenceService:
         self._wifi_manually_disconnected_by_ethernet: bool = False
         self._wifi_profiles_autoconnect_before_ethernet: dict[str, bool] | None = None
         self._wifi_ssid_before_ethernet: str | None = None
+        self._suppress_preferred_connect_after_ethernet = False
 
         self.config.interface_name = self._resolve_managed_interface_name()
         if not self.config.speed_test_history_file:
@@ -132,6 +133,8 @@ class WiFiPreferenceService:
         self._capture_startup_network_state()
         self._register_exit_restore_handler()
         self._sync_speed_test_state_with_config()
+        if self.config.connect_preferred_after_ethernet_disconnect:
+            self._suppress_preferred_connect_after_ethernet = False
 
     def _format_ethernet_connection_label(self, active_ethernet_interfaces: list[str]) -> str:
         """
@@ -365,6 +368,8 @@ class WiFiPreferenceService:
         self.logger.info('Configuration reloaded from disk.')
         self.logger.debug('Updated preferred SSID order: %s', ', '.join(entry.ssid for entry in self.config.preferred_networks))
         self._sync_speed_test_state_with_config()
+        if self.config.connect_preferred_after_ethernet_disconnect:
+            self._suppress_preferred_connect_after_ethernet = False
 
         if self.config.sync_profile_order_on_start:
             self.logger.debug('Re-syncing Windows Wi-Fi profile order after config reload...')
@@ -579,7 +584,12 @@ class WiFiPreferenceService:
         if self.config.show_wifi_disabled_dialog:
             self._notify_wifi_adapter_disabled(active_ethernet_interfaces)
 
-    def _restore_wifi_state_after_ethernet(self, *, reason: str) -> None:
+    def _restore_wifi_state_after_ethernet(
+        self,
+        *,
+        reason: str,
+        reconnect: bool = True,
+    ) -> None:
         """
         Restore Wi-Fi profile auto-connect and SSID state captured before Ethernet action.
 
@@ -623,7 +633,7 @@ class WiFiPreferenceService:
                 self.logger.warning('Could not read current SSID while restoring Wi-Fi state (%s): %s', reason, exc)
                 current_ssid = None
 
-        if self._wifi_ssid_before_ethernet:
+        if reconnect and self._wifi_ssid_before_ethernet:
             if current_ssid != self._wifi_ssid_before_ethernet:
                 if current_ssid is not None:
                     try:
@@ -656,7 +666,7 @@ class WiFiPreferenceService:
                             reason,
                             exc,
                         )
-        elif current_ssid is not None:
+        elif reconnect and current_ssid is not None:
             try:
                 self.wifi_api.disconnect(self.interface_name)
             except (NetshError, OSError) as exc:
@@ -1206,14 +1216,25 @@ class WiFiPreferenceService:
                         self.logger.info('Ethernet disconnected. Re-enabling Wi-Fi adapter.')
                         try:
                             self.enable_wifi_adapter()
+                            if not self.config.connect_preferred_after_ethernet_disconnect:
+                                self._suppress_preferred_connect_after_ethernet = True
                         except NetshError as exc:
                             self.logger.error('Failed to re-enable Wi-Fi adapter: %s', exc)
                             # Clear the flag anyway to avoid getting stuck
                             self._wifi_disabled_by_ethernet = False
                 else:
-                    self._restore_wifi_state_after_ethernet(reason='ethernet disconnect')
+                    ethernet_action_was_active = self._wifi_manually_disconnected_by_ethernet
+                    reconnect = self.config.connect_preferred_after_ethernet_disconnect
+                    self._restore_wifi_state_after_ethernet(
+                        reason='ethernet disconnect',
+                        reconnect=reconnect,
+                    )
+                    if ethernet_action_was_active and not reconnect:
+                        self._suppress_preferred_connect_after_ethernet = True
 
         current_ssid = self.wifi_api.get_current_ssid()
+        if current_ssid is not None:
+            self._suppress_preferred_connect_after_ethernet = False
         self._track_current_wifi_network(current_ssid)
 
         if not self._needs_visible_network_scan(current_ssid):
@@ -1246,6 +1267,14 @@ class WiFiPreferenceService:
                     current_ssid,
                 )
             self.logger.debug('No preferred network currently visible.')
+            self._maybe_schedule_speed_test(current_ssid)
+            return
+
+        if current_ssid is None and self._suppress_preferred_connect_after_ethernet:
+            self.logger.debug(
+                'Skipping preferred-network reconnect because automatic reconnect after '
+                'Ethernet disconnect is disabled.'
+            )
             self._maybe_schedule_speed_test(current_ssid)
             return
 

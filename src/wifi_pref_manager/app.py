@@ -63,7 +63,11 @@ from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.single_instance import SingleInstanceGuard
 from wifi_pref_manager.startup_trace import append_startup_trace_line
 from wifi_pref_manager.ui.dialogs import show_dialog, show_native_message_box
-from wifi_pref_manager.ui.splash import resolve_splash_image_path, show_startup_splash
+from wifi_pref_manager.ui.splash import (
+    resolve_splash_image_path,
+    show_startup_splash,
+    startup_splash_available,
+)
 from wifi_pref_manager.ui.tray import TrayApplication
 from wifi_pref_manager.wifi_adapter_tasks import WifiAdapterTaskManager
 from wifi_pref_manager.windows_shell import (
@@ -93,6 +97,8 @@ class Application:
         self.save_speed_test_history_override: bool | None = None
         self.speed_test_history_file_override: str | None = None
         self.show_startup_splash_override: bool | None = None
+        self.global_config_overrides: dict[str, object] = {}
+        self.save_config_overrides = False
         self.original_argv: list[str] = list(sys.argv)
         self.single_instance_guard = SingleInstanceGuard(f'Local\\{APP_USER_MODEL_ID}')
         self.console_output_manager: ConsoleOutputManager | None = None
@@ -173,6 +179,105 @@ class Application:
             action='store_true',
             default=argparse.SUPPRESS,
             help='Disable the startup splash for this run.',
+        )
+        parser.add_argument(
+            '--scan-interval',
+            type=int,
+            default=argparse.SUPPRESS,
+            metavar='SECONDS',
+            help='Override how often available Wi-Fi networks are evaluated.',
+        )
+
+        def _add_boolean_override(
+            destination: str,
+            enable_flags: tuple[str, ...],
+            disable_flags: tuple[str, ...],
+            description: str,
+        ) -> None:
+            group = parser.add_mutually_exclusive_group()
+            group.add_argument(
+                *enable_flags,
+                dest=destination,
+                action='store_const',
+                const=True,
+                default=argparse.SUPPRESS,
+                help=f'Enable {description} for this run.',
+            )
+            group.add_argument(
+                *disable_flags,
+                dest=destination,
+                action='store_const',
+                const=False,
+                default=argparse.SUPPRESS,
+                help=f'Disable {description} for this run.',
+            )
+
+        _add_boolean_override(
+            'start_with_windows',
+            ('--start-with-windows',),
+            ('--no-start-with-windows',),
+            'starting PolyFi with Windows',
+        )
+        _add_boolean_override(
+            'schedule_with_task_scheduler',
+            ('--schedule-with-task-scheduler',),
+            ('--no-schedule-with-task-scheduler',),
+            'the earlier Task Scheduler startup',
+        )
+        _add_boolean_override(
+            'enable_speed_tests',
+            ('--enable-speed-tests',),
+            ('--disable-speed-tests', '--no-speed-tests'),
+            'automatic speed tests',
+        )
+        parser.add_argument(
+            '--speed-test-interval',
+            type=int,
+            default=argparse.SUPPRESS,
+            metavar='SECONDS',
+            help='Override the repeated speed-test interval for this run (0 disables repeats).',
+        )
+        _add_boolean_override(
+            'speed_test_on_connect',
+            ('--speed-test-on-connect',),
+            ('--no-speed-test-on-connect',),
+            'speed tests after Wi-Fi connections',
+        )
+        _add_boolean_override(
+            'wifi_off_on_ethernet',
+            ('--wifi-off-on-ethernet',),
+            ('--no-wifi-off-on-ethernet',),
+            'automatic Wi-Fi handling while Ethernet is connected',
+        )
+        _add_boolean_override(
+            'connect_preferred_after_ethernet_disconnect',
+            ('--connect-preferred-after-ethernet-disconnect',),
+            ('--no-connect-preferred-after-ethernet-disconnect',),
+            'preferred-network connection after Ethernet disconnects',
+        )
+        parser.add_argument(
+            '--ethernet-action',
+            choices=('disconnect-and-disable-autoconnect', 'disable-adapter'),
+            default=argparse.SUPPRESS,
+            help='Override the Wi-Fi action used while Ethernet is active.',
+        )
+        _add_boolean_override(
+            'check_for_updates_automatically',
+            ('--check-for-updates-automatically', '--auto-check-for-updates'),
+            ('--no-check-for-updates-automatically', '--no-auto-check-for-updates'),
+            'automatic update checks',
+        )
+        _add_boolean_override(
+            'allow_prerelease',
+            ('--allow-prerelease',),
+            ('--no-allow-prerelease',),
+            'prerelease versions in update checks',
+        )
+        parser.add_argument(
+            '--save-config-overrides',
+            action='store_true',
+            default=argparse.SUPPRESS,
+            help='Write supplied configuration overrides to the active TOML file.',
         )
         parser.add_argument(
             '--direct-tray',
@@ -407,6 +512,8 @@ class Application:
             Process exit code when validation fails, otherwise 0.
         """
         self.log_level_override = getattr(args, 'log_level', None)
+        self.global_config_overrides = {}
+        self.save_config_overrides = bool(getattr(args, 'save_config_overrides', False))
         save_speed_test_history = bool(getattr(args, 'save_speed_test_history', False))
         disable_speed_test_history = bool(getattr(args, 'no_save_speed_test_history', False))
         if save_speed_test_history and disable_speed_test_history:
@@ -430,6 +537,57 @@ class Application:
             self.show_startup_splash_override = False
         else:
             self.show_startup_splash_override = None
+
+        scan_interval = getattr(args, 'scan_interval', None)
+        if scan_interval is not None:
+            if scan_interval < 1:
+                print('--scan-interval must be at least 1 second.', file=sys.stderr)
+                return 1
+            self.global_config_overrides['scan_interval'] = scan_interval
+
+        speed_test_interval = getattr(args, 'speed_test_interval', None)
+        if speed_test_interval is not None:
+            if speed_test_interval < 0:
+                print('--speed-test-interval cannot be negative.', file=sys.stderr)
+                return 1
+            self.global_config_overrides['speed_test_interval'] = speed_test_interval
+
+        override_fields = {
+            'start_with_windows': 'add_to_startup_programs',
+            'schedule_with_task_scheduler': 'add_scheduled_logon_task',
+            'enable_speed_tests': 'enable_speed_tests',
+            'speed_test_on_connect': 'speed_test_on_new_connection',
+            'wifi_off_on_ethernet': 'auto_disable_wifi_on_ethernet',
+            'connect_preferred_after_ethernet_disconnect': (
+                'connect_preferred_after_ethernet_disconnect'
+            ),
+            'check_for_updates_automatically': 'auto_check_for_updates',
+            'allow_prerelease': 'allow_prerelease_updates',
+        }
+        for argument_name, config_name in override_fields.items():
+            if hasattr(args, argument_name):
+                self.global_config_overrides[config_name] = getattr(args, argument_name)
+
+        ethernet_action = getattr(args, 'ethernet_action', None)
+        if ethernet_action is not None:
+            self.global_config_overrides['ethernet_wifi_mode'] = (
+                ETHERNET_WIFI_MODE_DISABLE_ADAPTER
+                if ethernet_action == 'disable-adapter'
+                else ETHERNET_WIFI_MODE_DISCONNECT
+            )
+
+        if (
+            self.global_config_overrides.get('add_to_startup_programs') is False
+            and self.global_config_overrides.get('add_scheduled_logon_task') is True
+        ):
+            print(
+                '--schedule-with-task-scheduler cannot be combined with '
+                '--no-start-with-windows.',
+                file=sys.stderr,
+            )
+            return 1
+        if self.global_config_overrides.get('add_to_startup_programs') is False:
+            self.global_config_overrides['add_scheduled_logon_task'] = False
         return 0
 
     def resolve_log_level(self, configured_log_level: str) -> str:
@@ -479,6 +637,8 @@ class Application:
             config.speed_test_history_file = self.speed_test_history_file_override
         if self.show_startup_splash_override is not None:
             config.show_startup_splash = self.show_startup_splash_override
+        for field_name, value in self.global_config_overrides.items():
+            setattr(config, field_name, value)
 
     def print_paths(self) -> int:
         """
@@ -569,6 +729,39 @@ class Application:
             runtime_args.append('--show-splash')
         if no_splash:
             runtime_args.append('--no-splash')
+        value_arguments = {
+            'scan_interval': '--scan-interval',
+            'speed_test_interval': '--speed-test-interval',
+            'ethernet_action': '--ethernet-action',
+        }
+        for argument_name, flag in value_arguments.items():
+            if hasattr(args, argument_name):
+                runtime_args.extend([flag, str(getattr(args, argument_name))])
+
+        boolean_arguments = {
+            'start_with_windows': ('--start-with-windows', '--no-start-with-windows'),
+            'schedule_with_task_scheduler': (
+                '--schedule-with-task-scheduler',
+                '--no-schedule-with-task-scheduler',
+            ),
+            'enable_speed_tests': ('--enable-speed-tests', '--disable-speed-tests'),
+            'speed_test_on_connect': ('--speed-test-on-connect', '--no-speed-test-on-connect'),
+            'wifi_off_on_ethernet': ('--wifi-off-on-ethernet', '--no-wifi-off-on-ethernet'),
+            'connect_preferred_after_ethernet_disconnect': (
+                '--connect-preferred-after-ethernet-disconnect',
+                '--no-connect-preferred-after-ethernet-disconnect',
+            ),
+            'check_for_updates_automatically': (
+                '--check-for-updates-automatically',
+                '--no-check-for-updates-automatically',
+            ),
+            'allow_prerelease': ('--allow-prerelease', '--no-allow-prerelease'),
+        }
+        for argument_name, (enabled_flag, disabled_flag) in boolean_arguments.items():
+            if hasattr(args, argument_name):
+                runtime_args.append(enabled_flag if getattr(args, argument_name) else disabled_flag)
+        if bool(getattr(args, 'save_config_overrides', False)):
+            runtime_args.append('--save-config-overrides')
         return runtime_args
 
     def maybe_show_startup_splash(self, config: AppConfig, logger: logging.Logger) -> bool:
@@ -590,19 +783,24 @@ class Application:
         if not getattr(config, 'show_startup_splash', True):
             return False
 
-        splash_path = resolve_splash_image_path(
-            getattr(config, 'splash_image_path', ''),
-            self.paths,
-        )
-        if splash_path is None:
-            logger.debug(
-                'Startup splash is enabled, but no splash image was found. '
-                'Looked for config path, app-data splash, and Pictures defaults.'
-            )
+        configured_splash_path = getattr(config, 'splash_image_path', '')
+        splash_path = resolve_splash_image_path(configured_splash_path, self.paths)
+        if splash_path is None and not startup_splash_available():
+            if configured_splash_path.strip():
+                logger.debug(
+                    'Startup splash is enabled, but the configured splash image '
+                    'was not found and no packaged InspyreSplash bundle is available.'
+                )
+            else:
+                logger.debug(
+                    'Startup splash is enabled, but no splash image or packaged '
+                    'InspyreSplash bundle was found.'
+                )
             return False
 
         try:
-            logger.info('Showing startup splash from: %s', splash_path)
+            splash_source = str(splash_path) if splash_path is not None else 'packaged InspyreSplash intro'
+            logger.info('Showing startup splash from: %s', splash_source)
             show_startup_splash(
                 splash_path,
                 fade_in_ms=max(0, int(getattr(config, 'splash_fade_in_ms', 280))),
@@ -1563,6 +1761,13 @@ class Application:
             return 1
 
         self.apply_runtime_overrides(config)
+        if self.save_config_overrides:
+            try:
+                save_config(config, loader.config_path)
+                loader.mark_loaded()
+            except OSError as exc:
+                print(f'Could not save configuration overrides: {exc}', file=sys.stderr)
+                return 1
         # pythonw.exe (and other consoleless launchers) redirect stdout to None
         # because there is no console window attached.  Use this as the canonical
         # indicator rather than inspecting the executable name, which may not always

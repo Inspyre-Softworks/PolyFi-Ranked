@@ -156,6 +156,8 @@ def update_from_release_payload(
 def choose_latest_update(
     releases: list[dict[str, Any]],
     current_version: str,
+    *,
+    allow_prerelease: bool = False,
 ) -> UpdateInfo | None:
     """
     Pick the highest newer release from GitHub Release payloads.
@@ -163,6 +165,8 @@ def choose_latest_update(
     candidates: list[UpdateInfo] = []
     for payload in releases:
         if not isinstance(payload, dict):
+            continue
+        if payload.get('prerelease') and not allow_prerelease:
             continue
         update = update_from_release_payload(payload, current_version)
         if update is not None:
@@ -212,11 +216,21 @@ class UpdateManager:
             raise UpdateError('GitHub Releases response was not a list.')
         return [entry for entry in payload if isinstance(entry, dict)]
 
-    def check_for_update(self, current_version: str, *, timeout: float = 6.0) -> UpdateInfo | None:
+    def check_for_update(
+        self,
+        current_version: str,
+        *,
+        timeout: float = 6.0,
+        allow_prerelease: bool = False,
+    ) -> UpdateInfo | None:
         """
         Return update metadata when a newer release is available.
         """
-        return choose_latest_update(self.fetch_releases(timeout=timeout), current_version)
+        return choose_latest_update(
+            self.fetch_releases(timeout=timeout),
+            current_version,
+            allow_prerelease=allow_prerelease,
+        )
 
     @staticmethod
     def _safe_asset_name(name: str) -> str:

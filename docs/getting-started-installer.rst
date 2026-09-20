@@ -76,8 +76,9 @@ An example file documenting every supported setting is also written to:
 
    %LOCALAPPDATA%\Inspyre-Softworks\PolyFi-Ranked\config.example.toml
 
-PolyFi starts minimized to the system tray by default.  Click the tray icon to
-open the settings window or right-click for the context menu.
+PolyFi starts minimized to the system tray by default. Right-click the tray
+icon and choose **Global Configuration…** for app-wide behavior or **Manage
+Networks…** for Wi-Fi priority and per-network settings.
 
 Configuring Your Wi-Fi Networks
 --------------------------------
@@ -88,7 +89,7 @@ priority order from highest to lowest:
 
 .. code-block:: toml
 
-   [general]
+   [global]
    scan_interval = 10
 
    [[networks]]
@@ -153,8 +154,9 @@ To have PolyFi launch automatically at logon you can:
 
 - Enable the **Startup Programs shortcut** option in the installer wizard, or
 - Enable the **Scheduled logon task** option in the installer wizard, or
-- Open the settings window from the tray icon and turn on
-  *Run at Windows startup* or *Start earlier with Task Scheduler*, or
+- Open **Global Configuration…** from the tray, enable **Start with Windows**,
+  and optionally enable **Schedule with Task Scheduler (for earlier start)**,
+  or
 - Register a Windows Task Scheduler logon task with:
 
   .. code-block:: text
@@ -183,7 +185,7 @@ Update Checks
 -------------
 
 The tray menu includes **Check for Updates** and **About PolyFi: Ranked**.  If
-automatic update checks are enabled in Settings, PolyFi checks GitHub Releases
+automatic update checks are enabled in Global Configuration, PolyFi checks GitHub Releases
 after the tray icon starts.  When a newer release includes a Windows installer
 asset, PolyFi can download the installer under local app-data and launch it.
 

@@ -11,6 +11,25 @@ from wifi_pref_manager.ui.settings import SettingsWindow
 
 
 class SettingsWindowThreadingTests(unittest.TestCase):
+    def test_network_settings_does_not_define_global_controls(self) -> None:
+        settings_path = (
+            Path(__file__).resolve().parents[1]
+            / 'src'
+            / 'wifi_pref_manager'
+            / 'ui'
+            / 'settings.py'
+        )
+        source = settings_path.read_text(encoding='utf-8')
+
+        for global_label in (
+            'Show splash on app start',
+            'Start with Windows',
+            'Schedule with Task Scheduler',
+            'Automatically turn off Wi-Fi when Ethernet is connected',
+            'Check for updates automatically',
+        ):
+            self.assertNotIn(global_label, source)
+
     @patch('wifi_pref_manager.ui.settings.run_on_ui_thread')
     def test_open_schedules_window_build_on_ui_thread(self, mock_run_on_ui_thread: Mock) -> None:
         service = Mock()
