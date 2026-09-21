@@ -9,8 +9,8 @@ File:
     ui/settings.py
 
 Description:
-    Tkinter-based settings window for managing network priority order and
-    Ethernet auto-disable behaviour.
+    Tkinter-based Network Settings window for managing per-network priority,
+    automatic switching, and minimum signal thresholds.
 
 Classes:
     SettingsWindow
@@ -29,16 +29,12 @@ Example Usage:
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from wifi_pref_manager.config import ConfigLoader, save_config
-from wifi_pref_manager.models import (
-    ETHERNET_WIFI_MODE_DISABLE_ADAPTER,
-    ETHERNET_WIFI_MODE_DISCONNECT,
-    AppConfig,
-    WiFiProfilePreference,
-)
+from wifi_pref_manager.models import WiFiProfilePreference
 from wifi_pref_manager.service import WiFiPreferenceService
 from wifi_pref_manager.ui.dialogs import run_on_ui_thread
 
@@ -102,11 +98,6 @@ class SettingsWindow:
         self._window = win
 
         config = self.service.config
-        enable_speed_tests = getattr(config, 'enable_speed_tests', False)
-        speed_test_on_new_connection = getattr(config, 'speed_test_on_new_connection', True)
-        speed_test_interval = getattr(config, 'speed_test_interval', 1800)
-        save_speed_test_history = getattr(config, 'save_speed_test_history', False)
-        speed_test_history_file = getattr(config, 'speed_test_history_file', '')
 
         # ---- Network list frame ----------------------------------------
         frame_list = ttk.LabelFrame(win, text='Network Priority (highest first)', padding=6)
@@ -284,85 +275,9 @@ class SettingsWindow:
         ttk.Separator(btn_frame, orient='horizontal').pack(fill='x', pady=4)
         ttk.Button(btn_frame, text='Auto ⇄', command=_toggle_auto_switch, width=10).pack(pady=2)
 
-        # ---- General options frame -------------------------------------
-        frame_opts = ttk.LabelFrame(win, text='General Options', padding=6)
-        frame_opts.grid(row=1, column=0, padx=10, pady=4, sticky='ew')
-
-        auto_eth_var = tk.BooleanVar(value=config.auto_disable_wifi_on_ethernet)
-        ttk.Checkbutton(
-            frame_opts,
-            text='Automatically turn off Wi-Fi behavior when Ethernet is connected',
-            variable=auto_eth_var,
-        ).grid(row=0, column=0, sticky='w')
-
-        ttk.Label(frame_opts, text='Ethernet action:').grid(row=1, column=0, pady=(6, 0), sticky='w')
-        ethernet_mode_choices = [
-            ('Disconnect + disable auto-connect (recommended)', ETHERNET_WIFI_MODE_DISCONNECT),
-            ('Disable Wi-Fi adapter', ETHERNET_WIFI_MODE_DISABLE_ADAPTER),
-        ]
-        ethernet_mode_var = tk.StringVar(
-            value=getattr(config, 'ethernet_wifi_mode', ETHERNET_WIFI_MODE_DISCONNECT)
-        )
-        ethernet_mode_combo = ttk.Combobox(
-            frame_opts,
-            state='readonly',
-            width=48,
-            values=[label for label, _ in ethernet_mode_choices],
-        )
-        selected_mode = next(
-            (label for label, value in ethernet_mode_choices if value == ethernet_mode_var.get()),
-            ethernet_mode_choices[0][0],
-        )
-        ethernet_mode_combo.set(selected_mode)
-        ethernet_mode_combo.grid(row=2, column=0, sticky='w')
-
-        def _sync_mode_control_state(*_args: object) -> None:
-            ethernet_mode_combo.configure(state='readonly' if auto_eth_var.get() else 'disabled')
-
-        def _on_mode_selected(_event: object | None = None) -> None:
-            selected_label = ethernet_mode_combo.get()
-            for label, value in ethernet_mode_choices:
-                if label == selected_label:
-                    ethernet_mode_var.set(value)
-                    break
-
-        auto_eth_var.trace_add('write', _sync_mode_control_state)
-        ethernet_mode_combo.bind('<<ComboboxSelected>>', _on_mode_selected)
-        _sync_mode_control_state()
-
-        splash_var = tk.BooleanVar(value=getattr(config, 'show_startup_splash', True))
-        ttk.Checkbutton(
-            frame_opts,
-            text='Show startup splash',
-            variable=splash_var,
-        ).grid(row=3, column=0, pady=(8, 0), sticky='w')
-
-        startup_programs_var = tk.BooleanVar(value=getattr(config, 'add_to_startup_programs', False))
-        ttk.Checkbutton(
-            frame_opts,
-            text='Run at Windows startup',
-            variable=startup_programs_var,
-        ).grid(row=4, column=0, pady=(4, 0), sticky='w')
-
-        scheduled_logon_task_var = tk.BooleanVar(
-            value=bool(getattr(config, 'add_scheduled_logon_task', False))
-        )
-        ttk.Checkbutton(
-            frame_opts,
-            text='Start earlier with Task Scheduler',
-            variable=scheduled_logon_task_var,
-        ).grid(row=5, column=0, pady=(4, 0), sticky='w')
-
-        update_check_var = tk.BooleanVar(value=getattr(config, 'auto_check_for_updates', True))
-        ttk.Checkbutton(
-            frame_opts,
-            text='Check for updates automatically',
-            variable=update_check_var,
-        ).grid(row=6, column=0, pady=(4, 0), sticky='w')
-
         # ---- Action buttons --------------------------------------------
         frame_btns = ttk.Frame(win)
-        frame_btns.grid(row=2, column=0, padx=10, pady=(4, 10), sticky='e')
+        frame_btns.grid(row=1, column=0, padx=10, pady=(4, 10), sticky='e')
 
         def _on_save() -> None:
             if not network_list:
@@ -373,32 +288,7 @@ class SettingsWindow:
                 )
                 return
 
-            new_config = AppConfig(
-                preferred_networks=list(network_list),
-                interface_name=config.interface_name,
-                scan_interval=config.scan_interval,
-                connect_timeout=config.connect_timeout,
-                sync_profile_order_on_start=config.sync_profile_order_on_start,
-                log_level=config.log_level,
-                log_file=config.log_file,
-                start_minimized_to_tray=config.start_minimized_to_tray,
-                auto_disable_wifi_on_ethernet=auto_eth_var.get(),
-                ethernet_wifi_mode=ethernet_mode_var.get(),
-                show_wifi_disabled_dialog=getattr(config, 'show_wifi_disabled_dialog', True),
-                add_to_startup_programs=startup_programs_var.get(),
-                add_scheduled_logon_task=scheduled_logon_task_var.get(),
-                show_startup_splash=splash_var.get(),
-                splash_image_path=getattr(config, 'splash_image_path', ''),
-                splash_fade_in_ms=getattr(config, 'splash_fade_in_ms', 280),
-                splash_hold_ms=getattr(config, 'splash_hold_ms', 1100),
-                splash_fade_out_ms=getattr(config, 'splash_fade_out_ms', 280),
-                enable_speed_tests=enable_speed_tests,
-                speed_test_on_new_connection=speed_test_on_new_connection,
-                speed_test_interval=speed_test_interval,
-                save_speed_test_history=save_speed_test_history,
-                speed_test_history_file=speed_test_history_file,
-                auto_check_for_updates=update_check_var.get(),
-            )
+            new_config = replace(config, preferred_networks=list(network_list))
 
             try:
                 save_config(new_config, self.config_loader.config_path)

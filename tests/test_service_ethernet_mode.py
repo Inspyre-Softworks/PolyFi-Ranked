@@ -15,6 +15,8 @@ class FakeWiFiApi:
     def __init__(self) -> None:
         self.task_manager = None
         self.adapter_enabled = True
+        self.enable_wifi_adapter_calls = 0
+        self.disable_wifi_adapter_calls = 0
         self.current_ssid = 'HomeWiFi'
         self.profile_modes = {
             'HomeWiFi': True,
@@ -67,6 +69,16 @@ class FakeWiFiApi:
     def get_active_ethernet_interfaces(self, wifi_interface_name: str | None = None) -> list[str]:
         del wifi_interface_name
         return list(self.active_ethernet_interfaces)
+
+    def disable_wifi_adapter(self, interface_name: str) -> None:
+        del interface_name
+        self.adapter_enabled = False
+        self.disable_wifi_adapter_calls += 1
+
+    def enable_wifi_adapter(self, interface_name: str) -> None:
+        del interface_name
+        self.adapter_enabled = True
+        self.enable_wifi_adapter_calls += 1
 
     def disconnect(self, interface_name: str) -> None:
         del interface_name
@@ -134,6 +146,19 @@ class EthernetWiFiModeStateTests(unittest.TestCase):
         self.assertEqual(api.current_ssid, 'HomeWiFi')
         self.assertEqual(api.profile_modes, {'HomeWiFi': True, 'CafeWiFi': False})
 
+    def test_preferred_network_is_not_reconnected_when_setting_is_disabled(self) -> None:
+        api = FakeWiFiApi()
+        config = self._build_config()
+        config.connect_preferred_after_ethernet_disconnect = False
+        service = WiFiPreferenceService(config=config, wifi_api=api, logger=Mock())
+
+        service.evaluate_and_switch()
+        api.active_ethernet_interfaces = []
+        service.evaluate_and_switch()
+
+        self.assertIsNone(api.current_ssid)
+        self.assertEqual(api.profile_modes, {'HomeWiFi': True, 'CafeWiFi': False})
+
     def test_exit_restore_swallows_oserror_from_get_current_ssid(self) -> None:
         api = FakeWiFiApi()
         service = WiFiPreferenceService(
@@ -166,6 +191,38 @@ class EthernetWiFiModeStateTests(unittest.TestCase):
             'Could not determine current Wi-Fi SSID during exit restore: %s',
             service.wifi_api.get_current_ssid.side_effect,
         )
+
+    def test_set_auto_disable_restores_disabled_adapter_state_immediately(self) -> None:
+        api = FakeWiFiApi()
+        config = self._build_config()
+        config.ethernet_wifi_mode = 'disable_adapter'
+        service = WiFiPreferenceService(config=config, wifi_api=api, logger=Mock())
+        service._wifi_disabled_by_ethernet = True
+        api.adapter_enabled = False
+
+        service.set_auto_disable_wifi_on_ethernet(False)
+
+        self.assertTrue(api.adapter_enabled)
+        self.assertEqual(api.enable_wifi_adapter_calls, 1)
+        self.assertFalse(service._wifi_disabled_by_ethernet)
+
+    def test_reload_config_restores_soft_ethernet_state_when_feature_disabled(self) -> None:
+        api = FakeWiFiApi()
+        logger = Mock()
+        service = WiFiPreferenceService(config=self._build_config(), wifi_api=api, logger=logger)
+        service._wifi_manually_disconnected_by_ethernet = True
+        service._wifi_profiles_autoconnect_before_ethernet = {'HomeWiFi': True, 'CafeWiFi': False}
+        service._wifi_ssid_before_ethernet = 'HomeWiFi'
+        api.current_ssid = None
+        api.profile_modes = {'HomeWiFi': False, 'CafeWiFi': False}
+
+        new_config = self._build_config()
+        new_config.auto_disable_wifi_on_ethernet = False
+        service.reload_config(new_config)
+
+        self.assertEqual(api.current_ssid, 'HomeWiFi')
+        self.assertEqual(api.profile_modes, {'HomeWiFi': True, 'CafeWiFi': False})
+        self.assertFalse(service._wifi_manually_disconnected_by_ethernet)
 
 
 if __name__ == '__main__':

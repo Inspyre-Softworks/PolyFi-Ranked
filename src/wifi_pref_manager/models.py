@@ -82,6 +82,9 @@ class AppConfig:
             Whether the tray app should start minimized.
         auto_disable_wifi_on_ethernet:
             Automatically disconnect Wi-Fi when an Ethernet connection is detected.
+        connect_preferred_after_ethernet_disconnect:
+            Whether to connect to the best available preferred network after
+            Ethernet disconnects.
         ethernet_wifi_mode:
             Action taken when Ethernet is active and auto-disable is enabled.
             ``disconnect_and_disable_autoconnect`` disconnects Wi-Fi and sets all
@@ -120,6 +123,8 @@ class AppConfig:
         auto_check_for_updates:
             Whether the tray app should check GitHub Releases for an update
             after startup.
+        allow_prerelease_updates:
+            Whether update checks may offer prerelease versions.
     """
 
     preferred_networks: list[WiFiProfilePreference] = field(default_factory=list)
@@ -130,11 +135,12 @@ class AppConfig:
     log_level: str = 'INFO'
     log_file: str = ''
     start_minimized_to_tray: bool = False
-    auto_disable_wifi_on_ethernet: bool = True
+    auto_disable_wifi_on_ethernet: bool = False
+    connect_preferred_after_ethernet_disconnect: bool = True
     ethernet_wifi_mode: str = ETHERNET_WIFI_MODE_DISCONNECT
     show_wifi_disabled_dialog: bool = True
     add_to_startup_programs: bool = False
-    add_scheduled_logon_task: bool | None = None
+    add_scheduled_logon_task: bool | None = False
     show_startup_splash: bool = True
     splash_image_path: str = ''
     splash_fade_in_ms: int = 280
@@ -145,7 +151,8 @@ class AppConfig:
     speed_test_interval: int = 1800
     save_speed_test_history: bool = False
     speed_test_history_file: str = ''
-    auto_check_for_updates: bool = True
+    auto_check_for_updates: bool = False
+    allow_prerelease_updates: bool = False
 
 
 @dataclass

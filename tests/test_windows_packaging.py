@@ -95,6 +95,15 @@ class WindowsPackagingTests(unittest.TestCase):
         self.assertIn("collect_data_files('inspy_logger'", spec_content)
         self.assertIn("version/VERSION.txt", spec_content)
 
+    def test_pyinstaller_spec_collects_splash_runtime_assets(self) -> None:
+        spec_content = (
+            PROJECT_ROOT / 'packaging' / 'pyinstaller' / 'polyfi-ranked.spec'
+        ).read_text(encoding='utf-8')
+
+        self.assertIn("collect_submodules('inspyre_splash')", spec_content)
+        self.assertIn("collect_data_files('wifi_pref_manager'", spec_content)
+        self.assertIn("includes=['assets/**/*']", spec_content)
+
     def test_pyinstaller_spec_builds_windowed_app_and_console_launcher(self) -> None:
         spec_content = (
             PROJECT_ROOT / 'packaging' / 'pyinstaller' / 'polyfi-ranked.spec'

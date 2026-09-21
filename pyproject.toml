@@ -1,10 +1,13 @@
 [tool.poetry]
 name = "polyfi-ranked"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 description = "Windows Wi-Fi preference manager that auto-switches to the highest-priority available network."
 authors = ["Inspyre Softworks"]
 readme = "README.md"
 packages = [{ include = "wifi_pref_manager", from = "src" }]
+include = [
+    { path = "src/wifi_pref_manager/assets/**/*", format = ["sdist", "wheel"] },
+]
 classifiers = [
     "Environment :: Win32 (MS Windows)",
     "Operating System :: Microsoft :: Windows",
@@ -18,13 +21,18 @@ pystray = "^0.19.5"
 pillow = "^11.1.0"
 speedtest-cli = "^2.1.3"
 easy-exit-calls = {version = "^1.0.0", python = ">=3.12,<4.0"}
-inspy-logger = "^3.2.3"
+inspy-logger = ">=3.2.3,<4.0.0"
+inspyre-splash = {version = "^0.2.0", python = ">=3.11,<3.15"}
 platformdirs = "^4.9.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
 pytest-cov = "^7.0.0"
 py-spy = "^0.4.2"
+ipython = ">=8.18,<9.0"
+prompt-toolkit = "^3.0.52"
+ptipython = "^1.0.1"
+faker = "^40.23.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = ">=7.4,<9.0"

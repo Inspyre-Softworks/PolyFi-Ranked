@@ -56,6 +56,14 @@ class TrayUiTests(unittest.TestCase):
         tray._settings_window.open.assert_called_once_with()
         mock_thread.assert_not_called()
 
+    def test_global_configuration_uses_existing_window(self) -> None:
+        tray = TrayApplication(service=Mock(), logger=Mock())
+        tray._global_configuration_window = Mock()
+
+        tray.on_global_configuration(Mock(), Mock())
+
+        tray._global_configuration_window.open.assert_called_once_with()
+
     @patch('wifi_pref_manager.ui.tray.time.sleep')
     @patch('wifi_pref_manager.ui.tray.time.monotonic')
     @patch('wifi_pref_manager.ui.tray.threading.Thread')

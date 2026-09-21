@@ -15,8 +15,7 @@ Top-Level Flags
    Start PolyFi minimized to the system tray.
 
 ``-l <LEVEL>``
-   Override the log level for this run (e.g. ``-l DEBUG``).  Does not change
-   the value in the config file.
+   Override the log level for this run (e.g. ``-l DEBUG``).
 
 ``--show-splash`` / ``--no-splash``
    Override the ``show_startup_splash`` config setting for a single run.
@@ -26,6 +25,61 @@ Top-Level Flags
 
 ``--speed-test-history-file <PATH>``
    Override the speed-test history file path for a single run.
+
+Global Configuration Overrides
+------------------------------
+
+Every option shown in the Global Configuration window has a CLI equivalent:
+
+``--scan-interval <SECONDS>``
+   Override the network scan/evaluation interval.
+
+``--show-splash`` / ``--no-splash``
+   Show or hide the splash on app start.
+
+``--start-with-windows`` / ``--no-start-with-windows``
+   Enable or disable the Startup Programs shortcut.
+
+``--schedule-with-task-scheduler`` / ``--no-schedule-with-task-scheduler``
+   Enable or disable the earlier Task Scheduler start. Scheduling cannot be
+   enabled together with ``--no-start-with-windows``.
+
+``--enable-speed-tests`` / ``--disable-speed-tests``
+   Enable or disable automatic speed tests. ``--no-speed-tests`` is an alias
+   for the disable form.
+
+``--speed-test-interval <SECONDS>``
+   Set the repeated test interval; ``0`` disables periodic retests.
+
+``--speed-test-on-connect`` / ``--no-speed-test-on-connect``
+   Enable or disable a speed test after a Wi-Fi connection.
+
+``--wifi-off-on-ethernet`` / ``--no-wifi-off-on-ethernet``
+   Enable or disable automatic Wi-Fi handling while Ethernet is active.
+
+``--connect-preferred-after-ethernet-disconnect`` / ``--no-connect-preferred-after-ethernet-disconnect``
+   Enable or disable PolyFi-initiated preferred-network connection after
+   Ethernet disconnects.
+
+``--ethernet-action disconnect-and-disable-autoconnect`` / ``--ethernet-action disable-adapter``
+   Select the Ethernet Wi-Fi action.
+
+``--check-for-updates-automatically`` / ``--no-check-for-updates-automatically``
+   Enable or disable the automatic update check. The shorter
+   ``--auto-check-for-updates`` and ``--no-auto-check-for-updates`` aliases are
+   also accepted.
+
+``--allow-prerelease`` / ``--no-allow-prerelease``
+   Include or exclude prerelease versions from update checks.
+
+By default these options apply only to the current process. Add
+``--save-config-overrides`` to write all supplied configuration overrides to
+the active TOML file. For example:
+
+.. code-block:: powershell
+
+   polyfi-ranked --enable-speed-tests --speed-test-interval 900 `
+     --check-for-updates-automatically --save-config-overrides
 
 .. note::
 
