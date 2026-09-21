@@ -28,6 +28,7 @@ class ConfigRoundTripTests(unittest.TestCase):
                 log_file=str(Path(tmp_dir) / 'logs' / 'polyfi.log'),
                 start_minimized_to_tray=True,
                 auto_disable_wifi_on_ethernet=False,
+                connect_preferred_after_ethernet_disconnect=False,
                 ethernet_wifi_mode='disable_adapter',
                 show_wifi_disabled_dialog=False,
                 add_to_startup_programs=True,
@@ -43,6 +44,7 @@ class ConfigRoundTripTests(unittest.TestCase):
                 save_speed_test_history=True,
                 speed_test_history_file=str(Path(tmp_dir) / 'history.jsonl'),
                 auto_check_for_updates=False,
+                allow_prerelease_updates=True,
             )
 
             save_config(config, config_path)
@@ -57,6 +59,10 @@ class ConfigRoundTripTests(unittest.TestCase):
             self.assertEqual(loaded.log_file, config.log_file)
             self.assertEqual(loaded.start_minimized_to_tray, config.start_minimized_to_tray)
             self.assertEqual(loaded.auto_disable_wifi_on_ethernet, config.auto_disable_wifi_on_ethernet)
+            self.assertEqual(
+                loaded.connect_preferred_after_ethernet_disconnect,
+                config.connect_preferred_after_ethernet_disconnect,
+            )
             self.assertEqual(loaded.ethernet_wifi_mode, config.ethernet_wifi_mode)
             self.assertEqual(loaded.show_wifi_disabled_dialog, config.show_wifi_disabled_dialog)
             self.assertEqual(loaded.add_to_startup_programs, config.add_to_startup_programs)
@@ -72,6 +78,9 @@ class ConfigRoundTripTests(unittest.TestCase):
             self.assertEqual(loaded.save_speed_test_history, config.save_speed_test_history)
             self.assertEqual(loaded.speed_test_history_file, config.speed_test_history_file)
             self.assertEqual(loaded.auto_check_for_updates, config.auto_check_for_updates)
+            self.assertEqual(loaded.allow_prerelease_updates, config.allow_prerelease_updates)
+            self.assertIn('[global]', config_path.read_text(encoding='utf-8'))
+            self.assertNotIn('[general]', config_path.read_text(encoding='utf-8'))
 
     def test_invalid_toml_raises_config_error(self) -> None:
         with TemporaryDirectory() as tmp_dir:
@@ -165,6 +174,46 @@ class ConfigRoundTripTests(unittest.TestCase):
 
             with self.assertRaises(ConfigError):
                 ConfigLoader(config_path).load()
+
+    def test_global_section_overrides_legacy_general_values(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / 'config.toml'
+            config_path.write_text(
+                "\n".join(
+                    [
+                        '[general]',
+                        'scan_interval = 15',
+                        'auto_disable_wifi_on_ethernet = true',
+                        '',
+                        '[global]',
+                        'scan_interval = 30',
+                        'auto_disable_wifi_on_ethernet = false',
+                        '',
+                        '[[networks]]',
+                        'ssid = "Example"',
+                    ]
+                ),
+                encoding='utf-8',
+            )
+
+            loaded = ConfigLoader(config_path).load()
+
+            self.assertEqual(loaded.scan_interval, 30)
+            self.assertFalse(loaded.auto_disable_wifi_on_ethernet)
+
+    def test_new_global_defaults_match_application_defaults(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / 'config.toml'
+            config_path.write_text('[global]\n\n[[networks]]\nssid = "Example"\n', encoding='utf-8')
+
+            loaded = ConfigLoader(config_path).load()
+
+            self.assertFalse(loaded.add_to_startup_programs)
+            self.assertIs(loaded.add_scheduled_logon_task, False)
+            self.assertFalse(loaded.auto_disable_wifi_on_ethernet)
+            self.assertTrue(loaded.connect_preferred_after_ethernet_disconnect)
+            self.assertFalse(loaded.auto_check_for_updates)
+            self.assertFalse(loaded.allow_prerelease_updates)
 
 
 if __name__ == '__main__':

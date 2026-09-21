@@ -17,6 +17,10 @@ Launch PolyFi minimized to the system tray:
 The tray icon lets you monitor connection status and adjust settings without
 opening a terminal.  Right-click the icon for the context menu.
 
+Use **Global Configuration…** for application-wide behavior. Use **Manage
+Networks…** for the ordered Wi-Fi list and each network's automatic-switch and
+minimum-signal settings.
+
 Live Config Reload
 ------------------
 
@@ -35,6 +39,7 @@ requiring a restart:
 - ``log_file``
 - ``show_wifi_disabled_dialog``
 - ``auto_disable_wifi_on_ethernet``
+- ``connect_preferred_after_ethernet_disconnect``
 - ``ethernet_wifi_mode``
 - ``add_to_startup_programs``
 - ``show_startup_splash``
@@ -47,16 +52,20 @@ requiring a restart:
 - ``speed_test_interval``
 - ``save_speed_test_history``
 - ``speed_test_history_file``
+- ``auto_check_for_updates``
+- ``allow_prerelease_updates``
 
 Ethernet-Aware Wi-Fi Mode
 --------------------------
 
 PolyFi can manage the Wi-Fi adapter automatically when a wired Ethernet
-connection is detected.  These ``[general]`` settings control the behavior:
+connection is detected. These ``[global]`` settings, also available in the
+**Ethernet Handling** section of Global Configuration, control the behavior:
 
 .. code-block:: toml
 
-   auto_disable_wifi_on_ethernet = true
+   auto_disable_wifi_on_ethernet = false
+   connect_preferred_after_ethernet_disconnect = true
    ethernet_wifi_mode = 'disconnect_and_disable_autoconnect'
 
 **Mode options:**
@@ -72,11 +81,16 @@ connection is detected.  These ``[general]`` settings control the behavior:
    - Disables the Wi-Fi adapter entirely while Ethernet is active.
    - Re-enables it when Ethernet disconnects.
 
+When ``connect_preferred_after_ethernet_disconnect`` is false, PolyFi restores
+Wi-Fi availability and profile auto-connect state but does not initiate its own
+preferred-network connection after the Ethernet transition.
+
 Speed Tests
 -----------
 
 PolyFi can run automatic speed tests when a new connection is established or at
-a fixed interval.  These ``[general]`` settings control the feature:
+a fixed interval. These ``[global]`` settings are exposed under **Speed Tests**
+in Global Configuration:
 
 .. code-block:: toml
 
@@ -93,7 +107,7 @@ a fixed interval.  These ``[general]`` settings control the feature:
 Windows Startup Integration
 -----------------------------
 
-These ``[general]`` settings control whether PolyFi keeps itself registered for
+These ``[global]`` settings control whether PolyFi keeps itself registered for
 automatic startup:
 
 .. code-block:: toml
@@ -106,8 +120,9 @@ whenever the config reloads.  When disabled, PolyFi removes the shortcut if it
 exists.
 
 The scheduled logon task uses Windows Task Scheduler and can start earlier
-after sign-in than the Startup Programs shortcut.  Manage it from Settings or
-from the CLI:
+after sign-in than the Startup Programs shortcut. In Global Configuration it
+is shown only while **Start with Windows** is enabled. Manage it there or from
+the CLI:
 
 .. code-block:: powershell
 
@@ -130,12 +145,15 @@ after startup.  The tray menu also includes **Check for Updates** for manual
 checks and **About PolyFi: Ranked** for version, documentation, and GitHub
 links.  When a newer release includes a Windows installer asset, PolyFi can
 download the installer to local app-data and launch it for the user.
+``allow_prerelease_updates`` controls whether those checks can offer a
+prerelease and is shown in Global Configuration only while automatic checking
+is enabled. Both settings default to false.
 
 Startup Splash Screen
 ---------------------
 
-PolyFi can show a brief splash screen on startup.  These ``[general]`` settings
-control it:
+PolyFi can show an InspyreSplash-powered splash screen on startup.  These
+``[global]`` settings control it:
 
 .. code-block:: toml
 
@@ -147,14 +165,17 @@ control it:
 
 - ``splash_hold_ms`` controls how long the splash stays visible.
 - The fade timing fields (``splash_fade_in_ms``, ``splash_fade_out_ms``) are
-  accepted so existing configs keep working, but fade animations are not
-  currently implemented.  The fields are preserved for forward compatibility.
-- When ``splash_image_path`` is blank, PolyFi looks for
-  ``polyfi_ranked_splash.png`` in:
+  accepted so existing configs keep working, but the packaged InspyreSplash
+  animation controls its own layer effects.
+- When ``splash_image_path`` is blank, PolyFi first looks for the legacy
+  ``polyfi_ranked_splash.png`` override in:
 
   - ``%LOCALAPPDATA%\Inspyre-Softworks\PolyFi-Ranked\``
   - ``%USERPROFILE%\OneDrive\Pictures\``
   - ``%USERPROFILE%\Pictures\``
+
+  If no image override exists, PolyFi uses the packaged
+  ``wifi_pref_manager/assets/splashes/intro/splash.json`` InspyreSplash bundle.
 
 Notes
 -----

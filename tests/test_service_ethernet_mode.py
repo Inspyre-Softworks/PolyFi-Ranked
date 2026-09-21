@@ -134,6 +134,19 @@ class EthernetWiFiModeStateTests(unittest.TestCase):
         self.assertEqual(api.current_ssid, 'HomeWiFi')
         self.assertEqual(api.profile_modes, {'HomeWiFi': True, 'CafeWiFi': False})
 
+    def test_preferred_network_is_not_reconnected_when_setting_is_disabled(self) -> None:
+        api = FakeWiFiApi()
+        config = self._build_config()
+        config.connect_preferred_after_ethernet_disconnect = False
+        service = WiFiPreferenceService(config=config, wifi_api=api, logger=Mock())
+
+        service.evaluate_and_switch()
+        api.active_ethernet_interfaces = []
+        service.evaluate_and_switch()
+
+        self.assertIsNone(api.current_ssid)
+        self.assertEqual(api.profile_modes, {'HomeWiFi': True, 'CafeWiFi': False})
+
     def test_exit_restore_swallows_oserror_from_get_current_ssid(self) -> None:
         api = FakeWiFiApi()
         service = WiFiPreferenceService(

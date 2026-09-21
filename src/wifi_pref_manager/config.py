@@ -45,7 +45,7 @@ from wifi_pref_manager.models import (
 from wifi_pref_manager.paths import AppPaths
 
 
-DEFAULT_CONFIG_TEMPLATE = """[general]
+DEFAULT_CONFIG_TEMPLATE = """[global]
 scan_interval = 10
 connect_timeout = 8
 sync_profile_order_on_start = true
@@ -53,7 +53,8 @@ log_level = 'INFO'
 log_file = ''
 interface_name = ''
 start_minimized_to_tray = false
-auto_disable_wifi_on_ethernet = true
+auto_disable_wifi_on_ethernet = false
+connect_preferred_after_ethernet_disconnect = true
 ethernet_wifi_mode = 'disconnect_and_disable_autoconnect'
 show_wifi_disabled_dialog = true
 add_to_startup_programs = false
@@ -68,7 +69,8 @@ speed_test_on_new_connection = true
 speed_test_interval = 1800
 save_speed_test_history = false
 speed_test_history_file = ''
-auto_check_for_updates = true
+auto_check_for_updates = false
+allow_prerelease_updates = false
 
 [[networks]]
 ssid = 'MyBestWiFi'
@@ -165,7 +167,7 @@ class ConfigLoader:
         if selected is None or selected not in ETHERNET_WIFI_MODE_VALUES:
             allowed = ', '.join(sorted(ETHERNET_WIFI_MODE_VALUES))
             raise ConfigError(
-                f'Configuration field "general.ethernet_wifi_mode" must be one of: {allowed}.'
+                f'Configuration field "global.ethernet_wifi_mode" must be one of: {allowed}.'
             )
         return selected
 
@@ -319,12 +321,21 @@ class ConfigLoader:
         except tomllib.TOMLDecodeError as exc:
             raise ConfigError(f'Could not parse config file {self.config_path}: {exc}') from exc
 
-        general = raw.get('general', {})
+        legacy_general = raw.get('general', {})
+        global_settings = raw.get('global', {})
+        has_global_settings = 'global' in raw
         networks = raw.get('networks', [])
-        if not isinstance(general, dict):
+        if not isinstance(legacy_general, dict):
             raise ConfigError('The [general] section must be a TOML table.')
+        if not isinstance(global_settings, dict):
+            raise ConfigError('The [global] section must be a TOML table.')
         if not isinstance(networks, list):
             raise ConfigError('The [[networks]] section must be an array of tables.')
+
+        # Existing installations used [general].  Treat it as a legacy source
+        # and let explicitly saved [global] values win when both are present.
+        general = {**legacy_general, **global_settings}
+        field_prefix = 'global' if has_global_settings else 'general'
 
         preferred_networks: list[WiFiProfilePreference] = []
         for index, entry in enumerate(networks, start=1):
@@ -367,103 +378,113 @@ class ConfigLoader:
             interface_name=interface_name,
             scan_interval=self._coerce_int(
                 general.get('scan_interval'),
-                field_name='general.scan_interval',
+                field_name=f'{field_prefix}.scan_interval',
                 default=10,
                 minimum=1,
             ),
             connect_timeout=self._coerce_int(
                 general.get('connect_timeout'),
-                field_name='general.connect_timeout',
+                field_name=f'{field_prefix}.connect_timeout',
                 default=8,
                 minimum=1,
             ),
             sync_profile_order_on_start=self._coerce_bool(
                 general.get('sync_profile_order_on_start'),
-                field_name='general.sync_profile_order_on_start',
+                field_name=f'{field_prefix}.sync_profile_order_on_start',
                 default=True,
             ),
             log_level=self._coerce_optional_string(general.get('log_level') or 'INFO').upper(),
             log_file=log_file,
             start_minimized_to_tray=self._coerce_bool(
                 general.get('start_minimized_to_tray'),
-                field_name='general.start_minimized_to_tray',
+                field_name=f'{field_prefix}.start_minimized_to_tray',
                 default=False,
             ),
             auto_disable_wifi_on_ethernet=self._coerce_bool(
                 general.get('auto_disable_wifi_on_ethernet'),
-                field_name='general.auto_disable_wifi_on_ethernet',
+                field_name=f'{field_prefix}.auto_disable_wifi_on_ethernet',
+                default=False,
+            ),
+            connect_preferred_after_ethernet_disconnect=self._coerce_bool(
+                general.get('connect_preferred_after_ethernet_disconnect'),
+                field_name=f'{field_prefix}.connect_preferred_after_ethernet_disconnect',
                 default=True,
             ),
             ethernet_wifi_mode=self._coerce_ethernet_wifi_mode(general.get('ethernet_wifi_mode')),
             show_wifi_disabled_dialog=self._coerce_bool(
                 general.get('show_wifi_disabled_dialog'),
-                field_name='general.show_wifi_disabled_dialog',
+                field_name=f'{field_prefix}.show_wifi_disabled_dialog',
                 default=True,
             ),
             add_to_startup_programs=self._coerce_bool(
                 general.get('add_to_startup_programs'),
-                field_name='general.add_to_startup_programs',
+                field_name=f'{field_prefix}.add_to_startup_programs',
                 default=False,
             ),
             add_scheduled_logon_task=(
                 self._coerce_bool(
                     general.get('add_scheduled_logon_task'),
-                    field_name='general.add_scheduled_logon_task',
+                    field_name=f'{field_prefix}.add_scheduled_logon_task',
                     default=False,
                 )
                 if 'add_scheduled_logon_task' in general
-                else None
+                else (False if has_global_settings else None)
             ),
             show_startup_splash=self._coerce_bool(
                 general.get('show_startup_splash'),
-                field_name='general.show_startup_splash',
+                field_name=f'{field_prefix}.show_startup_splash',
                 default=True,
             ),
             splash_image_path=self._coerce_optional_string(general.get('splash_image_path')),
             splash_fade_in_ms=self._coerce_int(
                 general.get('splash_fade_in_ms'),
-                field_name='general.splash_fade_in_ms',
+                field_name=f'{field_prefix}.splash_fade_in_ms',
                 default=280,
                 minimum=0,
             ),
             splash_hold_ms=self._coerce_int(
                 general.get('splash_hold_ms'),
-                field_name='general.splash_hold_ms',
+                field_name=f'{field_prefix}.splash_hold_ms',
                 default=1100,
                 minimum=0,
             ),
             splash_fade_out_ms=self._coerce_int(
                 general.get('splash_fade_out_ms'),
-                field_name='general.splash_fade_out_ms',
+                field_name=f'{field_prefix}.splash_fade_out_ms',
                 default=280,
                 minimum=0,
             ),
             enable_speed_tests=self._coerce_bool(
                 general.get('enable_speed_tests'),
-                field_name='general.enable_speed_tests',
+                field_name=f'{field_prefix}.enable_speed_tests',
                 default=False,
             ),
             speed_test_on_new_connection=self._coerce_bool(
                 general.get('speed_test_on_new_connection'),
-                field_name='general.speed_test_on_new_connection',
+                field_name=f'{field_prefix}.speed_test_on_new_connection',
                 default=True,
             ),
             speed_test_interval=self._coerce_int(
                 general.get('speed_test_interval'),
-                field_name='general.speed_test_interval',
+                field_name=f'{field_prefix}.speed_test_interval',
                 default=1800,
                 minimum=0,
             ),
             save_speed_test_history=self._coerce_bool(
                 general.get('save_speed_test_history'),
-                field_name='general.save_speed_test_history',
+                field_name=f'{field_prefix}.save_speed_test_history',
                 default=False,
             ),
             speed_test_history_file=speed_test_history_file,
             auto_check_for_updates=self._coerce_bool(
                 general.get('auto_check_for_updates'),
-                field_name='general.auto_check_for_updates',
-                default=True,
+                field_name=f'{field_prefix}.auto_check_for_updates',
+                default=False,
+            ),
+            allow_prerelease_updates=self._coerce_bool(
+                general.get('allow_prerelease_updates'),
+                field_name=f'{field_prefix}.allow_prerelease_updates',
+                default=False,
             ),
         )
         self.mark_loaded()
@@ -488,7 +509,7 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         return json.dumps(value, ensure_ascii=False)
 
     lines: list[str] = [
-        '[general]\n',
+        '[global]\n',
         f'scan_interval = {config.scan_interval}\n',
         f'connect_timeout = {config.connect_timeout}\n',
         f'sync_profile_order_on_start = {_bool(config.sync_profile_order_on_start)}\n',
@@ -497,6 +518,8 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         f'interface_name = {_str(config.interface_name or "")}\n',
         f'start_minimized_to_tray = {_bool(config.start_minimized_to_tray)}\n',
         f'auto_disable_wifi_on_ethernet = {_bool(config.auto_disable_wifi_on_ethernet)}\n',
+        f'connect_preferred_after_ethernet_disconnect = '
+        f'{_bool(config.connect_preferred_after_ethernet_disconnect)}\n',
         f'ethernet_wifi_mode = {_str(config.ethernet_wifi_mode)}\n',
         f'show_wifi_disabled_dialog = {_bool(config.show_wifi_disabled_dialog)}\n',
         f'add_to_startup_programs = {_bool(config.add_to_startup_programs)}\n',
@@ -516,6 +539,7 @@ def save_config(config: AppConfig, config_path: Path) -> None:
         f'save_speed_test_history = {_bool(config.save_speed_test_history)}\n',
         f'speed_test_history_file = {_str(config.speed_test_history_file)}\n',
         f'auto_check_for_updates = {_bool(config.auto_check_for_updates)}\n',
+        f'allow_prerelease_updates = {_bool(config.allow_prerelease_updates)}\n',
     ]
 
     for network in config.preferred_networks:

@@ -1,8 +1,12 @@
 Config Reference
 ================
 
-``[general]`` Settings
-----------------------
+``[global]`` Settings
+---------------------
+
+These application-wide values are edited from **Global Configuration…** in
+the tray menu. Legacy ``[general]`` tables are still accepted and migrate to
+``[global]`` on the next save.
 
 ``scan_interval``
    Seconds between evaluation cycles. Lower values react faster but scan more
@@ -30,9 +34,22 @@ Config Reference
 ``start_minimized_to_tray``
    If true, the app starts in tray mode.
 
+``show_startup_splash``
+   Controls **Show splash on app start**. The existing default remains
+   ``true``.
+
 ``auto_disable_wifi_on_ethernet``
-   If true, PolyFi disables the Wi-Fi adapter when it detects an active wired
-   Ethernet connection and re-enables Wi-Fi when Ethernet disconnects.
+   If true, PolyFi applies the selected Ethernet Wi-Fi action when it detects
+   an active wired connection. Default: ``false``.
+
+``connect_preferred_after_ethernet_disconnect``
+   If true, PolyFi reconnects to the best available preferred Wi-Fi network
+   after Ethernet disconnects. Default: ``true``.
+
+``ethernet_wifi_mode``
+   ``disconnect_and_disable_autoconnect`` disconnects Wi-Fi and temporarily
+   disables profile auto-connect (the default and recommended mode).
+   ``disable_adapter`` disables the Wi-Fi adapter.
 
 ``show_wifi_disabled_dialog``
    If true, PolyFi shows a dialog after it disables the Wi-Fi adapter because
@@ -41,14 +58,22 @@ Config Reference
 ``add_to_startup_programs``
    If true, PolyFi keeps a tray-launch shortcut in the user's Windows Startup
    Programs folder so it can start automatically at logon.
+   Default: ``false``.
 
 ``add_scheduled_logon_task``
    If true, PolyFi keeps a Windows Task Scheduler logon task registered so it
    can start earlier after sign-in than the Startup Programs shortcut path.
+   This is subordinate to ``add_to_startup_programs`` in Global Configuration.
+   Default: ``false``.
 
 ``auto_check_for_updates``
    If true, the tray app checks GitHub Releases for a newer PolyFi installer
    after startup.
+   Default: ``false``.
+
+``allow_prerelease_updates``
+   If true, update checks may offer development, beta, or release-candidate
+   versions. Default: ``false``.
 
 ``enable_speed_tests``
    Enables or disables automatic speed tests entirely.
@@ -60,8 +85,31 @@ Config Reference
    Seconds between repeated speed tests while remaining connected to the same
    Wi-Fi network. Set to ``0`` to stop periodic retests.
 
+Global Configuration Window
+---------------------------
+
+The window groups the settings as follows:
+
+- **General:** ``scan_interval``, ``show_startup_splash``,
+  ``add_to_startup_programs``, and ``add_scheduled_logon_task``.
+- **Speed Tests:** ``enable_speed_tests``, ``speed_test_interval``, and
+  ``speed_test_on_new_connection``.
+- **Ethernet Handling:** ``auto_disable_wifi_on_ethernet``,
+  ``connect_preferred_after_ethernet_disconnect``, and
+  ``ethernet_wifi_mode``.
+- **Updates:** ``auto_check_for_updates`` and
+  ``allow_prerelease_updates``.
+
+The Task Scheduler control is hidden unless Start with Windows is enabled.
+Speed-test details are hidden unless speed tests are enabled. The prerelease
+control is hidden unless automatic update checking is enabled. These changes
+take effect immediately while the window is open.
+
 ``[[networks]]`` Entries
 ------------------------
+
+These per-network values are edited from **Manage Networks…** / Network
+Settings. No application-wide controls are duplicated in that window.
 
 Each network entry represents one saved Windows Wi-Fi profile:
 

@@ -17,6 +17,7 @@ A Windows-focused Python application that lets you define an ordered list of Wi-
 - Automatic switch-back when a higher-priority network returns
 - Windows `netsh` integration
 - TOML configuration with live reload
+- Separate **Global Configuration** and per-network **Network Settings** windows
 - Rotating log file support
 - Optional system tray app
 - Optional Windows Startup Programs shortcut with config-backed self-install
@@ -52,13 +53,16 @@ Full documentation is hosted on [Read the Docs](https://polyfi-ranked.readthedoc
 | [CLI Reference](docs/cli-reference.rst) | All commands, flags, and entry points |
 | [Runtime Features](docs/runtime-features.rst) | Tray, live reload, Ethernet mode, speed tests, splash |
 | [Configuration Guide](docs/configuration.rst) | Config file layout and examples |
-| [Config Reference](docs/config-reference.rst) | Every `[general]` and `[[networks]]` setting |
+| [Config Reference](docs/config-reference.rst) | Every `[global]` and `[[networks]]` setting |
 | [Development](docs/development.rst) | Dev setup, tests, packaging, releases |
 | [Building the Installer](docs/building-windows-installer.rst) | PyInstaller + Inno Setup build guide |
 
 ## Notes
 
 - PolyFi uses `netsh wlan` under the hood — your SSIDs must already exist as saved Windows Wi-Fi profiles.
+- Use **Global Configuration…** from the tray for app-wide scan, startup,
+  speed-test, Ethernet, splash, and update behavior. Use **Manage Networks…**
+  for Wi-Fi priority, automatic switching, and per-network signal thresholds.
 - Set the `POLYFI_APPDATA_ROOT` environment variable to store config, logs, and state files in a custom directory instead of the default `%LOCALAPPDATA%` path.
 
 ## Maintenance and Cleanup
