@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
@@ -18,6 +19,8 @@ from wifi_pref_manager.ui.splash import (
     show_startup_splash,
     startup_splash_available,
 )
+
+REAL_IMPORT = builtins.__import__
 
 
 class _PathsStub:
@@ -81,6 +84,34 @@ class SplashInspyreAdapterTests(unittest.TestCase):
             name='intro',
             search_user_data=False,
         )
+
+    @patch('builtins.__import__')
+    def test_startup_splash_available_returns_false_when_inspyre_splash_import_fails(
+        self,
+        mock_import: Mock,
+    ) -> None:
+        logger = Mock()
+
+        def _raising_import(name: str, *args: object, **kwargs: object) -> object:
+            if name == 'inspyre_splash':
+                raise ModuleNotFoundError('missing inspyre_splash')
+            return REAL_IMPORT(name, *args, **kwargs)
+
+        mock_import.side_effect = _raising_import
+
+        self.assertFalse(startup_splash_available(logger=logger))
+        logger.debug.assert_called_once()
+
+    @patch('inspyre_splash.discover_splash_definitions', side_effect=RuntimeError('bad splash'))
+    def test_startup_splash_available_returns_false_when_discovery_raises(
+        self,
+        mock_discover_splash_definitions: Mock,
+    ) -> None:
+        logger = Mock()
+
+        self.assertFalse(startup_splash_available(logger=logger))
+        mock_discover_splash_definitions.assert_called_once()
+        logger.debug.assert_called_once()
 
     def test_bounded_image_size_limits_legacy_image_splash_dimensions(self) -> None:
         with TemporaryDirectory() as tmp_dir:

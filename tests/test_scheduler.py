@@ -356,6 +356,74 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
 
         self.assertEqual(app.apply_cli_overrides_from_args(args), 1)
 
+    def test_schedule_override_is_clamped_when_effective_start_with_windows_is_disabled(self) -> None:
+        app = Application()
+        args = app.argument_parser.parse_args(['run', '--schedule-with-task-scheduler'])
+
+        self.assertEqual(app.apply_cli_overrides_from_args(args), 0)
+
+        config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_to_startup_programs=False,
+            add_scheduled_logon_task=True,
+        )
+        app.apply_runtime_overrides(config)
+
+        self.assertFalse(config.add_scheduled_logon_task)
+
+    def test_transient_startup_overrides_do_not_drive_startup_sync(self) -> None:
+        app = Application()
+        args = app.argument_parser.parse_args(
+            ['run', '--no-start-with-windows', '--no-schedule-with-task-scheduler']
+        )
+        self.assertEqual(app.apply_cli_overrides_from_args(args), 0)
+
+        persisted_config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_to_startup_programs=True,
+            add_scheduled_logon_task=True,
+        )
+        runtime_config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_to_startup_programs=True,
+            add_scheduled_logon_task=True,
+        )
+        app.apply_runtime_overrides(runtime_config)
+        sync_config = app.config_for_startup_synchronization(runtime_config, persisted_config)
+
+        self.assertFalse(runtime_config.add_to_startup_programs)
+        self.assertFalse(runtime_config.add_scheduled_logon_task)
+        self.assertTrue(sync_config.add_to_startup_programs)
+        self.assertTrue(sync_config.add_scheduled_logon_task)
+
+    def test_persisted_startup_overrides_drive_startup_sync_when_save_flag_is_set(self) -> None:
+        app = Application()
+        args = app.argument_parser.parse_args(
+            [
+                'run',
+                '--no-start-with-windows',
+                '--no-schedule-with-task-scheduler',
+                '--save-config-overrides',
+            ]
+        )
+        self.assertEqual(app.apply_cli_overrides_from_args(args), 0)
+
+        persisted_config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_to_startup_programs=True,
+            add_scheduled_logon_task=True,
+        )
+        runtime_config = AppConfig(
+            preferred_networks=[WiFiProfilePreference('ExampleWiFi')],
+            add_to_startup_programs=True,
+            add_scheduled_logon_task=True,
+        )
+        app.apply_runtime_overrides(runtime_config)
+        sync_config = app.config_for_startup_synchronization(runtime_config, persisted_config)
+
+        self.assertFalse(sync_config.add_to_startup_programs)
+        self.assertFalse(sync_config.add_scheduled_logon_task)
+
     def test_start_menu_runtime_options_force_tray_and_splash(self) -> None:
         app = Application()
         args = app.argument_parser.parse_args(['windows', 'start-menu', 'install'])
@@ -553,7 +621,7 @@ class RuntimeLaunchTargetTests(unittest.TestCase):
 
         self.assertTrue(shown)
         mock_resolve_splash_image_path.assert_called_once_with('', app.paths)
-        mock_startup_splash_available.assert_called_once_with()
+        mock_startup_splash_available.assert_called_once_with(logger=logger)
         mock_show_startup_splash.assert_called_once_with(
             None,
             fade_in_ms=280,

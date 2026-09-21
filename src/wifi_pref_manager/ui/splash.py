@@ -4,6 +4,7 @@ Startup splash-screen helpers.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 import time
 
@@ -47,17 +48,36 @@ def resolve_splash_image_path(configured_path: str, app_paths: AppPaths) -> Path
     return None
 
 
-def startup_splash_available(name: str = DEFAULT_SPLASH_NAME) -> bool:
+def startup_splash_available(
+    name: str = DEFAULT_SPLASH_NAME,
+    *,
+    logger: logging.Logger | None = None,
+) -> bool:
     """Return whether InspyreSplash can build PolyFi's packaged splash."""
-    from inspyre_splash import discover_splash_definitions
+    try:
+        from inspyre_splash import discover_splash_definitions
+    except Exception as exc:  # noqa: BLE001
+        if logger is not None:
+            logger.debug('InspyreSplash import failed while probing startup splash availability: %s', exc)
+        return False
 
-    return bool(
-        discover_splash_definitions(
-            'wifi_pref_manager',
-            name=name,
-            search_user_data=False,
+    try:
+        return bool(
+            discover_splash_definitions(
+                'wifi_pref_manager',
+                name=name,
+                search_user_data=False,
+            )
         )
-    )
+    except Exception as exc:  # noqa: BLE001
+        if logger is not None:
+            logger.debug(
+                'InspyreSplash discovery failed while probing startup splash availability '
+                'for %r: %s',
+                name,
+                exc,
+            )
+        return False
 
 
 def show_startup_splash(

@@ -351,7 +351,8 @@ class WiFiPreferenceService:
             new_config:
                 New configuration object.
         """
-        previous_interface_name = self.config.interface_name
+        previous_config = self.config
+        previous_interface_name = previous_config.interface_name
         speed_tests_were_enabled = self.config.enable_speed_tests
         self.config = new_config
 
@@ -367,6 +368,7 @@ class WiFiPreferenceService:
 
         self.logger.info('Configuration reloaded from disk.')
         self.logger.debug('Updated preferred SSID order: %s', ', '.join(entry.ssid for entry in self.config.preferred_networks))
+        self._reconcile_ethernet_runtime_state_after_config_reload(previous_config)
         self._sync_speed_test_state_with_config()
         if self.config.connect_preferred_after_ethernet_disconnect:
             self._suppress_preferred_connect_after_ethernet = False
@@ -912,12 +914,28 @@ class WiFiPreferenceService:
         """
         self.config.auto_disable_wifi_on_ethernet = enabled
         if not enabled:
+            if self._wifi_disabled_by_ethernet:
+                try:
+                    self.enable_wifi_adapter()
+                except NetshError as exc:
+                    self.logger.error('Failed to re-enable Wi-Fi adapter after disabling Ethernet feature: %s', exc)
+                finally:
+                    self._wifi_disabled_by_ethernet = False
             self._restore_wifi_state_after_ethernet(reason='runtime feature disable')
-            self._wifi_disabled_by_ethernet = False
             self.logger.warning('Ethernet detection disabled at runtime.')
         else:
             self._ethernet_disable_permission_warning_shown = False
             self.logger.info('Ethernet detection enabled at runtime.')
+
+    def _reconcile_ethernet_runtime_state_after_config_reload(self, previous_config: AppConfig) -> None:
+        """
+        Restore Wi-Fi state immediately when Ethernet auto-handling is disabled.
+        """
+        if (
+            previous_config.auto_disable_wifi_on_ethernet
+            and not self.config.auto_disable_wifi_on_ethernet
+        ):
+            self.set_auto_disable_wifi_on_ethernet(False)
 
     def _handle_non_admin_ethernet_disable(
         self,

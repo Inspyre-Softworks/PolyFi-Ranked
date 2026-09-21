@@ -215,6 +215,15 @@ class ConfigRoundTripTests(unittest.TestCase):
             self.assertFalse(loaded.auto_check_for_updates)
             self.assertFalse(loaded.allow_prerelease_updates)
 
+    def test_legacy_general_default_preserves_auto_disable_wifi_on_ethernet(self) -> None:
+        with TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / 'config.toml'
+            config_path.write_text('[general]\n\n[[networks]]\nssid = "Example"\n', encoding='utf-8')
+
+            loaded = ConfigLoader(config_path).load()
+
+            self.assertTrue(loaded.auto_disable_wifi_on_ethernet)
+
 
 if __name__ == '__main__':
     unittest.main()

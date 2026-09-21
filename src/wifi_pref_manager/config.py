@@ -403,7 +403,7 @@ class ConfigLoader:
             auto_disable_wifi_on_ethernet=self._coerce_bool(
                 general.get('auto_disable_wifi_on_ethernet'),
                 field_name=f'{field_prefix}.auto_disable_wifi_on_ethernet',
-                default=False,
+                default=False if has_global_settings else True,
             ),
             connect_preferred_after_ethernet_disconnect=self._coerce_bool(
                 general.get('connect_preferred_after_ethernet_disconnect'),

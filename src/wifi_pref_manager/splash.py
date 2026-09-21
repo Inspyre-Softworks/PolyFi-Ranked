@@ -1,18 +1,22 @@
-from inspyre_splash import auto_splash
+from __future__ import annotations
+
 from time import sleep
 
+from inspyre_splash import auto_splash
 
-def mock_config_load(delay=5):
+
+def mock_config_load(delay: int = 5) -> None:
     print('Delay')
     sleep(delay)
 
 
-def get_rand_color():
+def get_rand_color() -> str:
     import random
     return f'#{random.randint(0, 0xFFFFFF):06x}'
 
 
-def startup(splash, text_stream, cancel_event):
+def startup(splash: object, text_stream: object, cancel_event: object) -> None:
+    del cancel_event
     splash.add_text(
         'Peek-a-boo',
         position='center',
@@ -41,6 +45,11 @@ def startup(splash, text_stream, cancel_event):
 
 
 
-splash = auto_splash(name='intro')
-text_stream = splash.add_text_sequence(position='bottom', y_offset=92)
-splash.run_until(startup, splash, text_stream, cancel_kwarg='cancel_event')
+def run_demo() -> None:
+    splash = auto_splash(name='intro')
+    text_stream = splash.add_text_sequence(position='bottom', y_offset=92)
+    splash.run_until(startup, splash, text_stream, cancel_kwarg='cancel_event')
+
+
+if __name__ == '__main__':
+    run_demo()

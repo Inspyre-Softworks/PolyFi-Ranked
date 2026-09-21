@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+from dataclasses import replace
 import logging
 import os
 from pathlib import Path
@@ -79,6 +80,7 @@ from wifi_pref_manager.windows_shell import (
 
 BACKGROUND_TRAY_ENV_VAR = 'POLYFI_BACKGROUND_TRAY'
 SPLASH_SHOWN_ENV_VAR = 'POLYFI_SPLASH_ALREADY_SHOWN'
+_STARTUP_OVERRIDE_FIELDS = frozenset({'add_to_startup_programs', 'add_scheduled_logon_task'})
 
 
 class Application:
@@ -614,12 +616,18 @@ class Application:
         Returns:
             Refreshed logger instance.
         """
+        persisted_startup_config = replace(
+            config,
+            add_to_startup_programs=config.add_to_startup_programs,
+            add_scheduled_logon_task=config.add_scheduled_logon_task,
+        )
         self.apply_runtime_overrides(config)
         logger = configure_logging(self.resolve_log_level(config.log_level), config.log_file)
         if self.console_output_manager is not None:
             self.console_output_manager.attach_logger(logger)
-        self.sync_startup_programs_preference(config, logger)
-        self.sync_scheduled_logon_task_preference(config, logger)
+        sync_config = self.config_for_startup_synchronization(config, persisted_startup_config)
+        self.sync_startup_programs_preference(sync_config, logger)
+        self.sync_scheduled_logon_task_preference(sync_config, logger)
         return logger
 
     def apply_runtime_overrides(self, config: AppConfig) -> None:
@@ -639,6 +647,41 @@ class Application:
             config.show_startup_splash = self.show_startup_splash_override
         for field_name, value in self.global_config_overrides.items():
             setattr(config, field_name, value)
+        self.enforce_startup_option_dependency(config)
+
+    @staticmethod
+    def enforce_startup_option_dependency(config: AppConfig) -> None:
+        """
+        Keep scheduler startup disabled whenever startup-folder launch is disabled.
+        """
+        if not getattr(config, 'add_to_startup_programs', False):
+            config.add_scheduled_logon_task = False
+
+    def has_transient_startup_overrides(self) -> bool:
+        """
+        Return whether startup integration flags were supplied without persistence.
+        """
+        return (not self.save_config_overrides) and any(
+            field_name in self.global_config_overrides for field_name in _STARTUP_OVERRIDE_FIELDS
+        )
+
+    def config_for_startup_synchronization(
+        self,
+        runtime_config: AppConfig,
+        persisted_startup_config: AppConfig,
+    ) -> AppConfig:
+        """
+        Return the config values that should drive startup artifact synchronization.
+        """
+        if self.has_transient_startup_overrides():
+            sync_config = replace(
+                runtime_config,
+                add_to_startup_programs=persisted_startup_config.add_to_startup_programs,
+                add_scheduled_logon_task=persisted_startup_config.add_scheduled_logon_task,
+            )
+            self.enforce_startup_option_dependency(sync_config)
+            return sync_config
+        return runtime_config
 
     def print_paths(self) -> int:
         """
@@ -785,7 +828,7 @@ class Application:
 
         configured_splash_path = getattr(config, 'splash_image_path', '')
         splash_path = resolve_splash_image_path(configured_splash_path, self.paths)
-        if splash_path is None and not startup_splash_available():
+        if splash_path is None and not startup_splash_available(logger=logger):
             if configured_splash_path.strip():
                 logger.debug(
                     'Startup splash is enabled, but the configured splash image '
@@ -1760,6 +1803,11 @@ class Application:
             print(f'Config path: {config_path}', file=sys.stderr)
             return 1
 
+        persisted_startup_config = replace(
+            config,
+            add_to_startup_programs=config.add_to_startup_programs,
+            add_scheduled_logon_task=config.add_scheduled_logon_task,
+        )
         self.apply_runtime_overrides(config)
         if self.save_config_overrides:
             try:
@@ -1837,8 +1885,9 @@ class Application:
         if self.console_output_manager is not None:
             self.console_output_manager.attach_logger(logger)
         self.set_windows_app_user_model_id()
-        self.sync_startup_programs_preference(config, logger)
-        self.sync_scheduled_logon_task_preference(config, logger)
+        sync_config = self.config_for_startup_synchronization(config, persisted_startup_config)
+        self.sync_startup_programs_preference(sync_config, logger)
+        self.sync_scheduled_logon_task_preference(sync_config, logger)
         logger.info('Using config file: %s', config_path)
         logger.info('Effective log level: %s', effective_log_level)
 
