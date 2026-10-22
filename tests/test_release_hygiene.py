@@ -110,20 +110,22 @@ class VersionActuallyChangedTests(unittest.TestCase):
     def _mock_git_result(self, stdout: str) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(args=[], returncode=0, stdout=stdout)
 
-    def test_returns_true_when_git_fails(self) -> None:
+    def test_raises_when_git_fails(self) -> None:
         with unittest.mock.patch(
             'subprocess.run',
             side_effect=subprocess.CalledProcessError(128, 'git'),
         ):
-            self.assertTrue(check_release_hygiene.version_actually_changed('abc123'))
+            with self.assertRaises(ValueError):
+                check_release_hygiene.version_actually_changed('abc123')
 
-    def test_returns_true_when_pyproject_missing_at_base(self) -> None:
+    def test_raises_when_pyproject_missing_at_base(self) -> None:
         # git show returns non-zero (file didn't exist at base ref)
         with unittest.mock.patch(
             'subprocess.run',
             side_effect=subprocess.CalledProcessError(128, 'git show'),
         ):
-            self.assertTrue(check_release_hygiene.version_actually_changed('abc123'))
+            with self.assertRaises(ValueError):
+                check_release_hygiene.version_actually_changed('abc123')
 
     def test_returns_false_when_version_unchanged(self) -> None:
         with unittest.mock.patch(
@@ -143,15 +145,17 @@ class VersionActuallyChangedTests(unittest.TestCase):
         ):
             self.assertTrue(check_release_hygiene.version_actually_changed('abc123'))
 
-    def test_returns_true_when_head_pyproject_unreadable(self) -> None:
+    def test_raises_when_head_pyproject_unreadable(self) -> None:
         with unittest.mock.patch(
             'subprocess.run',
             return_value=self._mock_git_result(self._OLD_TOML),
         ), unittest.mock.patch.object(
             Path, 'read_text', side_effect=OSError('not found')
         ):
-            self.assertTrue(check_release_hygiene.version_actually_changed('abc123'))
+            with self.assertRaises(OSError):
+                check_release_hygiene.version_actually_changed('abc123')
 
 
 if __name__ == '__main__':
     unittest.main()
+

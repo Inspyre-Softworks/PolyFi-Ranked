@@ -7,6 +7,21 @@ versions so packaging, docs, and support paths stay aligned.
 
 ## [Unreleased]
 
+## [1.0.0-rc.3] - 2026-10-22
+
+### Fixed
+
+- Validate matching package versions, a real version increase, and dated release
+  notes against the complete PR diff. Invalid or unavailable Git comparisons now
+  fail instead of silently passing, while test-only changes need no release bump.
+- Use the same metadata validation and changelog notes in automatic and tagged
+  releases. Serialize publishing, anchor automatic tags to the tested commit,
+  and wait for Windows tests and all build artifacts before publishing packages.
+- Resume automatic releases for an existing tag only when it points to the
+  same commit, preventing both partial-release dead ends and version reuse.
+- Declare the test suite's YAML dependency and align contributor guidance around
+  one version bump per PR. Version rc.2 remains reserved by the open development PR.
+
 ## [1.0.0-rc.1] - 2026-06-11
 
 ### Changed
@@ -179,7 +194,7 @@ versions so packaging, docs, and support paths stay aligned.
   increments, creates the matching `v<version>` git tag, publishes prerelease
   versions to TestPyPI and stable versions to PyPI via OIDC trusted publishing,
   and opens a GitHub Release with the built distributions attached. The workflow
-  is idempotent — it skips silently when the version is unchanged or the tag
+  is idempotent - it skips silently when the version is unchanged or the tag
   already exists.
 
 ## [1.0.0-dev.10] - 2026-05-23
@@ -297,3 +312,4 @@ versions so packaging, docs, and support paths stay aligned.
 
 - Release hygiene is now tracked in-repo with explicit changelog/version
   maintenance guidance, automated verification, and CI checks.
+
