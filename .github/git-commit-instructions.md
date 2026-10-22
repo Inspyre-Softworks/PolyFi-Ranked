@@ -12,7 +12,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 [optional footer(s)]
 ```
 
-- Subject line: 72 characters max, imperative mood ("add", "fix", "remove" — not "added" or "fixes")
+- Subject line: 72 characters max, imperative mood ("add", "fix", "remove" - not "added" or "fixes")
 - Body: wrap at 80 characters; explain *why*, not just *what*
 
 ## Types
@@ -34,32 +34,37 @@ Use the module or subsystem most affected:
 
 | Scope | Covers |
 |-------|--------|
-| `app` | `app.py` — CLI entry point, startup flow, tray handoff |
-| `service` | `service.py` — Wi-Fi preference evaluation and switching |
-| `config` | `config.py` — TOML config loading and live reload |
-| `models` | `models.py` — `AppConfig`, `WiFiProfilePreference`, `SpeedTestResult` |
-| `paths` | `paths.py` — `AppPaths`, `POLYFI_APPDATA_ROOT`, legacy migration |
-| `ui` | `ui/` — tray, dialogs, splash, settings window |
-| `scheduler` | `scheduler.py` — Task Scheduler logon-task integration |
-| `wifi-adapter` | `wifi_adapter_tasks.py` — elevated schtasks adapter helpers |
-| `installer` | `scripts/`, `packaging/` — install/uninstall/purge scripts and Inno Setup |
+| `app` | `app.py` - CLI entry point, startup flow, tray handoff |
+| `service` | `service.py` - Wi-Fi preference evaluation and switching |
+| `config` | `config.py` - TOML config loading and live reload |
+| `models` | `models.py` - `AppConfig`, `WiFiProfilePreference`, `SpeedTestResult` |
+| `paths` | `paths.py` - `AppPaths`, `POLYFI_APPDATA_ROOT`, legacy migration |
+| `ui` | `ui/` - tray, dialogs, splash, settings window |
+| `scheduler` | `scheduler.py` - Task Scheduler logon-task integration |
+| `wifi-adapter` | `wifi_adapter_tasks.py` - elevated schtasks adapter helpers |
+| `installer` | `scripts/`, `packaging/` - install/uninstall/purge scripts and Inno Setup |
 | `packaging` | PyInstaller spec, CI artifact build |
-| `install-record` | `install_record.py` — `install-record.json` persistence |
-| `single-instance` | `single_instance.py` — named Windows mutex guard |
+| `install-record` | `install_record.py` - `install-record.json` persistence |
+| `single-instance` | `single_instance.py` - named Windows mutex guard |
 | `speedtest` | `speedtest_runner.py`, `speedtest_history.py` |
-| `windows-shell` | `windows_shell.py` — launcher, Start Menu, Startup Programs |
-| `ci` | `.github/workflows/` — CI and release workflows |
-| `tests` | `tests/` — regression suite |
-| `docs` | `docs/` — Sphinx documentation |
+| `windows-shell` | `windows_shell.py` - launcher, Start Menu, Startup Programs |
+| `ci` | `.github/workflows/` - CI and release workflows |
+| `tests` | `tests/` - regression suite |
+| `docs` | `docs/` - Sphinx documentation |
 
 Omit the scope when a commit touches many unrelated files.
 
 ## Version and Changelog Rules
 
-When a commit affects **shipped behavior, packaging, dependencies, Windows integration, or release automation**, the same commit must also:
+When a PR affects **shipped behavior, packaging, dependencies, Windows integration, or release automation**, the complete PR must also:
 
-1. Update `CHANGELOG.md` (add an entry under `[Unreleased]`)
+1. Update `CHANGELOG.md` with a dated `[<version>]` section containing the release notes, directly below `[Unreleased]`
 2. Bump the version consistently in **both** `pyproject.toml` and `src/wifi_pref_manager/__init__.py`
+
+Use one version bump per PR relative to its target branch. Follow-up commits
+reuse that bump; they do not each need a new version. The new version must be
+greater under PEP 440 ordering, so changing spelling or downgrading does not
+count. Test-only, documentation-only, and template-only PRs need no bump.
 
 Include a footer referencing the version bump when applicable:
 
@@ -105,4 +110,5 @@ docs(config): document ethernet_wifi_mode disable_adapter UAC requirement
   (e.g., `feat(paths)!: rename shortcut_icon_file to tray_icon_file`).
 - Commits that change `install-record.json` schema must bump `schema_version` in
   `install_record.py` and note it in the commit body.
+
 

@@ -5,6 +5,10 @@ on:
     branches:
       - main
       - master
+      - dev
+
+permissions:
+  contents: read
 
 jobs:
   require-changelog-and-version-bump:
@@ -15,15 +19,20 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
+      - name: Install version parser
+        run: python -m pip install 'packaging>=24,<27'
+
       - name: Enforce changelog and version updates for release-sensitive changes
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" | python scripts/check_release_hygiene.py --base "$BASE_SHA"
+          python scripts/check_release_hygiene.py --base "$BASE_SHA" --head "$HEAD_SHA"
+

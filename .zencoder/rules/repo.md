@@ -47,12 +47,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
 ```
 
 GitHub Actions retains Python package artifacts in `ci.yml`. `auto-release.yml`
-fires on every push to `main` and, when it detects a version increment with no
-existing tag, publishes to TestPyPI for prereleases and PyPI for non-prereleases,
+fires on every push to `main` and, when it detects a version increment,
+publishes to TestPyPI for prereleases and PyPI for non-prereleases,
 then creates a GitHub Release with the built distributions attached.
 `.github/workflows/release.yml` handles the same publishing and GitHub Release
-creation for manually pushed `v<version>` tags and additionally builds the
-Windows installer and zipped app bundle.
+creation for manually pushed `v<version>` tags. Both workflows run Windows tests
+and build the installer and zipped app bundle before publishing. Automatic
+releases can resume when an existing tag points to the same commit.
 
 ## Testing
 
@@ -80,10 +81,12 @@ poetry run sphinx-build -W -b html docs docs/_build/local-html
 For changes that affect shipped behavior, packaging, dependencies, Windows
 integration, or release automation, update `CHANGELOG.md` and bump the version
 in both `pyproject.toml` and `src/wifi_pref_manager/__init__.py` as part of the
-same change. Docs-only and template-only changes may skip that bump when the PR
-explicitly calls it out.
+same PR. One PEP 440 version increase covers all follow-up commits. Keep a dated
+changelog section matching both version files. Test-only, docs-only, and
+template-only changes may skip that bump when the PR explicitly calls it out.
 
 ## Main Entry Points
 
 - `polyfi-ranked`
 - `polyfi-ranked-install-task`
+

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "polyfi-ranked"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.3"
 description = "Windows Wi-Fi preference manager that auto-switches to the highest-priority available network."
 authors = ["Inspyre Softworks"]
 readme = "README.md"
@@ -24,6 +24,8 @@ platformdirs = "^4.9.4"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
 pytest-cov = "^7.0.0"
+packaging = ">=24,<27"
+pyyaml = "^6.0.2"
 py-spy = "^0.4.2"
 
 [tool.poetry.group.docs.dependencies]
@@ -42,3 +44,4 @@ polyfi-ranked-sync-wiki = "scripts.sync_wiki:main"
 [build-system]
 requires = ["poetry-core>=1.8.0"]
 build-backend = "poetry.core.masonry.api"
+

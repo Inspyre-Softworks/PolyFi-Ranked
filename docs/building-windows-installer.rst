@@ -10,14 +10,14 @@ Prerequisites
 
 - **Windows 10 or Windows 11** (the build must run on Windows because
   PyInstaller bundles the Windows runtime)
-- **Python 3.12 or later** — `python.org <https://www.python.org/downloads/>`_
-- **Poetry** — install with:
+- **Python 3.12 or later** - `python.org <https://www.python.org/downloads/>`_
+- **Poetry** - install with:
 
   .. code-block:: powershell
 
      python -m pip install poetry
 
-- **Inno Setup 6** — `jrsoftware.org <https://jrsoftware.org/isinfo.php>`_.
+- **Inno Setup 6** - `jrsoftware.org <https://jrsoftware.org/isinfo.php>`_.
   Required only if you want to produce the ``.exe`` installer; the PyInstaller
   app bundle can be built without it.
 
@@ -169,7 +169,7 @@ GitHub-hosted Windows runner:
 
 ``auto-release.yml``
     Fires automatically on every push to ``main``.  When a version increment
-    is detected and no matching tag exists, it builds the Python distributions
+    is detected, it builds the Python distributions
     **and** the Windows installer, then publishes a GitHub Release containing:
 
     - The Python wheel (``.whl``)
@@ -185,6 +185,9 @@ GitHub-hosted Windows runner:
 Both workflows install the Poetry ``packaging`` group, run
 ``scripts\build_windows_installer.ps1``, archive the PyInstaller bundle as a
 zip, and upload the artifacts before creating the GitHub Release.
+They validate matching version metadata and changelog notes and run the Windows
+test suite before publishing packages. Automatic retries can resume an existing
+tag only when it still targets the same commit.
 
 Troubleshooting
 ---------------
@@ -207,3 +210,4 @@ Troubleshooting
     The bundled ``.exe`` is not code-signed, so Defender SmartScreen may warn
     end users.  This is expected.  Code-signing requires a purchased certificate
     and is not part of the current build workflow.
+

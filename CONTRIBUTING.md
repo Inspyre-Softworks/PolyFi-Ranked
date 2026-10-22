@@ -90,16 +90,22 @@ GitHub Actions keeps built Python packages as CI artifacts and supports two
 release paths:
 
 - **Automatic:** `.github/workflows/auto-release.yml` fires on every push to
-  `main`. When it detects a version increment and no matching tag exists, it
+  `main`. When it detects a version increment, it
   publishes to TestPyPI (prerelease) or PyPI (stable) and opens a GitHub Release
   with the built distributions attached.
 - **Manual:** Push a tag in the format `v<version>` to trigger
-  `.github/workflows/release.yml`. That workflow additionally builds the Windows
+  `.github/workflows/release.yml`. Both workflows build the Windows
   installer and zipped PyInstaller bundle and attaches them to the GitHub Release.
 
 Prerelease tags/versions publish to TestPyPI; non-prerelease versions publish to
-PyPI. The GitHub Release attaches the wheel, source distribution, and (for manual
-tag builds) Windows installer and zipped PyInstaller app bundle.
+PyPI. Both workflows validate matching package metadata and dated changelog
+notes, run the Windows regression suite, and finish all builds before publishing
+packages. The GitHub Release uses the current version's changelog notes and
+attaches the wheel, source distribution, Windows installer, and zipped app bundle.
+Publishing is serialized across both entry points. Automatic tags target the
+exact tested commit. A failed tagged release can be retried from its Actions run.
+Automatic release retries also resume an existing tag when it points to that
+same commit, and reject versions whose tags already point elsewhere.
 
 Trusted publishing should be configured in both PyPI and TestPyPI for this
 repository before relying on the automated release workflow.
@@ -123,7 +129,23 @@ repository before relying on the automated release workflow.
    contains a version bump (i.e. `pyproject.toml` and
    `src/wifi_pref_manager/__init__.py` reflect a new version relative to the
    base branch), do not bump the version again.
-4. Docs-only and template-only changes may skip the release bump, but note that
+4. Test-only, docs-only, and template-only changes may skip the release bump, but note that
    clearly in the PR checklist.
 5. Fill in the pull request template with your testing notes.
 6. Keep changes focused and include regression coverage for bug fixes.
+
+Keep `[Unreleased]` at the top of `CHANGELOG.md`, followed by a dated
+`## [<version>] - YYYY-MM-DD` release section with real entries matching both
+version files. Versions must increase under PEP 440 ordering; retouching the
+files or changing only the spelling of a version does not satisfy the rule.
+Validate the complete PR locally with fetched refs:
+
+```powershell
+poetry run python scripts/check_release_hygiene.py --base origin/main --head HEAD
+```
+
+Use the actual target branch in place of `origin/main`. A follow-up PR targeting
+`dev` compares against `origin/dev`. Invalid or unavailable refs fail the check.
+For release preparation, use `--metadata-only --tag v<version>` to validate the
+tag and metadata without a PR comparison.
+

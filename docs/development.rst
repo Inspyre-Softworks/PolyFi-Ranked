@@ -81,18 +81,19 @@ GitHub Releases
 ---------------
 
 **Automatic (push to** ``main`` **):** ``auto-release.yml`` fires on every push
-to ``main``.  When it detects a version increment in ``pyproject.toml`` with no
-matching tag yet:
+to ``main``.  When it detects a version increment in ``pyproject.toml``:
 
 - Builds the wheel and source distribution.
 - Publishes prerelease versions to TestPyPI; non-prerelease versions to PyPI.
 - Creates the ``v<version>`` git tag and a GitHub Release with the built
   distributions attached.
 
-The workflow is idempotent — repeated pushes with the same version are no-ops.
+The workflow is idempotent - repeated pushes with the same version are no-ops.
+Retries of the original version-bump run can resume a matching existing tag;
+reusing that tag for a different commit is rejected.
 
 **Manual (tag push):** Pushing a tag matching ``v<version>`` runs
-``release.yml``.  That workflow additionally builds the Windows installer and
+``release.yml``.  Both workflows build the Windows installer and
 zipped PyInstaller bundle and attaches them to the GitHub Release.
 
 ``ci.yml`` uploads the Python wheel and source distribution as workflow
@@ -114,3 +115,23 @@ This is enforced by ``scripts/check_release_hygiene.py`` and the
 ``release-hygiene.yml`` workflow.  Files under ``docs/``, ``README.md``,
 ``AGENTS.md``, ``CONTRIBUTING.md``, and a few others are exempt from this
 requirement.
+
+Test-only changes are also exempt. One version bump covers the whole PR,
+including follow-up commits. Both version files must match exactly, and the
+version must increase under PEP 440 ordering relative to the target branch.
+The first dated changelog release must match that version and contain release
+notes; keep ``[Unreleased]`` above it. Missing refs or invalid metadata fail
+validation rather than bypassing it.
+
+Validate against fetched refs before opening a PR:
+
+.. code-block:: powershell
+
+   poetry run python scripts/check_release_hygiene.py --base origin/main --head HEAD
+
+Use ``origin/dev`` for a PR targeting ``dev``. Both release workflows reuse this
+validator, run Windows tests, and wait for all artifacts before publishing to
+TestPyPI or PyPI. GitHub Release notes come from the matching changelog section.
+Automatic tags point to the tested commit; publishing is serialized across both
+entry points. Retry a failed tagged release from its Actions run.
+

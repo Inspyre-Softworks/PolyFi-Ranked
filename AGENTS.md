@@ -50,11 +50,17 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_installer.ps1
 
 - For GitHub release automation, `ci.yml` retains built package artifacts.
   `auto-release.yml` fires on every push to `main` and, when it detects a
-  version increment with no existing tag, publishes to TestPyPI (prerelease) or
+  version increment, publishes to TestPyPI (prerelease) or
   PyPI (stable) and creates the matching GitHub Release. `release.yml` handles
   the same publishing and GitHub Release creation for manually pushed
-  `v<version>` tags and additionally builds the Windows installer and zipped
-  app bundle.
+  `v<version>` tags. Both workflows run Windows tests and build the installer
+  and zipped app bundle before publishing. Automatic releases can resume when
+  an existing tag points to the same commit; a tag pointing elsewhere is an error.
+
+- Keep `[Unreleased]` above a dated changelog section matching both version
+  files. One PEP 440 version increase covers the entire PR. Test-only changes
+  need no bump. Run `poetry run python scripts/check_release_hygiene.py --base
+  origin/main --head HEAD`, using the actual target branch for the base.
 
 - For runtime smoke checks, prefer:
 
@@ -92,9 +98,9 @@ poetry run polyfi-ranked --tray
 - `src/wifi_pref_manager/windows_shell.py`: launcher and Start Menu integration
 - `src/wifi_pref_manager/ui/`: tray, dialogs, settings, and splash UI helpers
 - `src/wifi_pref_manager/models.py`: `AppConfig`, `WiFiProfilePreference`, and
-  `SpeedTestResult` dataclasses — the canonical source of runtime config fields
+  `SpeedTestResult` dataclasses - the canonical source of runtime config fields
   and their defaults
-- `src/wifi_pref_manager/paths.py`: `AppPaths` — all resolved file paths; also
+- `src/wifi_pref_manager/paths.py`: `AppPaths` - all resolved file paths; also
   defines `APPDATA_ROOT_ENV_VAR = 'POLYFI_APPDATA_ROOT'`
 - `src/wifi_pref_manager/scheduler.py`: Task Scheduler logon-task integration,
   entry point for `polyfi-ranked-install-task` / `polyfi-ranked-install-task --uninstall`
@@ -103,10 +109,11 @@ poetry run polyfi-ranked --tray
   `disable_adapter` Ethernet mode
 - `src/wifi_pref_manager/managed_interface_state.py`: JSON persistence for the last
   managed Wi-Fi interface name across restarts
-- `src/wifi_pref_manager/single_instance.py`: `SingleInstanceGuard` — named Windows
+- `src/wifi_pref_manager/single_instance.py`: `SingleInstanceGuard` - named Windows
   mutex that prevents duplicate tray processes
 - `src/wifi_pref_manager/install_record.py`: read/write helpers for `install-record.json`
 - `src/wifi_pref_manager/speedtest_runner.py`: `SpeedTestRunner` wrapping `speedtest-cli`
 - `tests/`: regression coverage for config, paths, tray UI, splash, service switching,
   Ethernet mode, scheduler, Wi-Fi adapter tasks, install record, icon assets, settings
   window, UI dialogs, Windows packaging, release hygiene, docs setup, and version metadata
+
